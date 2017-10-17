@@ -1,18 +1,26 @@
-install:
-  - npm i
+sudo: false
+
+# trust dist provides a modern build chain (as opposed to 'precise' dist)
+# which absolves us from having to install compilers and stuff
+dist: trusty
 
 language: node_js
 
-node_js: node
+node_js:
+  - "4"
+  - "lts/*"
+  - "node"
 
-script: "npm run coverage"
+install: npm i
 
-# Send coverage report to coveralls.io
-after_script: "cat ./build/lcov.info | ./node_modules/coveralls/bin/coveralls.js"
+script: npm t
+
+# Generate coverage report and send report to coveralls.io
+after_success: "cat ./build/lcov.info | ./node_modules/coveralls/bin/coveralls.js"
 
 notifications:
   email: false
 
 branches:
   only:
-  - master
+    - master

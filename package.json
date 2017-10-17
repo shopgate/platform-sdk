@@ -40,5 +40,9 @@
     "istanbul": "^0.4.5",
     "mocha": "^4.0.1",
     "mocha-jenkins-reporter": "^0.3.9"
+  },
+  "engines": {
+    "node": ">= 4.0.0",
+    "npm": ">= 2.15.11"
   }
 }
