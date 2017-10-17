@@ -6,10 +6,15 @@ dist: trusty
 
 language: node_js
 
-node_js:
-  - "4"
-  - "lts/*"
-  - "node"
+matrix:
+  fast_finish: true
+  include:
+    - node_js: 4
+    - node_js: lts/*
+    - node_js: node
+      after_success: # Generate coverage report and send report to coveralls.io
+        - npm run cover
+        - cat ./build/lcov.info | ./node_modules/coveralls/bin/coveralls.js
 
 install:
   - npm i
@@ -17,14 +22,5 @@ install:
 script:
   - npm t
 
-# Generate coverage report and send report to coveralls.io
-after_success:
-  - npm run cover
-  - cat ./build/lcov.info | ./node_modules/coveralls/bin/coveralls.js
-
 notifications:
   email: false
-
-branches:
-  only:
-    - master
