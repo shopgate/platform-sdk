@@ -13,3 +13,4 @@ npm-debug.log*
 coverage/
 yarn.lock
 package-lock.json
+build
