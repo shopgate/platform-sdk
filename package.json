@@ -1,0 +1,43 @@
+{
+  "name": "@shopgate/cloud-sdk",
+  "version": "0.0.1",
+  "description": "Shopgate's Cloud SDK",
+  "main": "index.js",
+  "scripts": {
+    "test": "JUNIT_REPORT_PATH=build/mocha.xml JUNIT_REPORT_STACK=1 mocha --recursive test -R mocha-jenkins-reporter",
+    "cover": "istanbul cover --dir build --include-all-sources true _mocha -- --recursive test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shopgate/cloud-sdk.git"
+  },
+  "bin": {
+    "sgcloud": "./bin/sgcloud"
+  },
+  "keywords": [
+    "shopgate",
+    "cloud",
+    "sdk"
+  ],
+  "contributors": [
+    "Metin Kul <metinkul@outlook.com> (https://github.com/daddy-cool)"
+  ],
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/shopgate/cloud-sdk/issues"
+  },
+  "homepage": "https://github.com/shopgate/cloud-sdk",
+  "standard": {
+    "env": [
+      "mocha"
+    ]
+  },
+  "dependencies": {
+    "commander": "^2.11.0"
+  },
+  "devDependencies": {
+    "istanbul": "^0.4.5",
+    "mocha": "^4.0.1",
+    "mocha-jenkins-reporter": "^0.3.9"
+  }
+}
