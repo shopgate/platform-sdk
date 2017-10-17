@@ -1,0 +1,20 @@
+#!/usr/bin/env node
+
+'use strict'
+
+const commander = require('commander')
+
+// set version (includes version command)
+const {version} = require('../package.json')
+commander.version(version)
+
+// load all custom actions
+const actions = require('../')
+const actionKeys = Object.keys(actions)
+for (let i = 0; i < actionKeys.length; i++) {
+  const cmd = actions[actionKeys[i]].cmd
+  if (typeof cmd === 'function') cmd(commander)
+}
+
+// activate argument parsing
+commander.parse(process.argv)

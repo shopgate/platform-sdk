@@ -17,6 +17,6 @@ apps and mobile websites for the iPhone, iPad, Android smartphones and tablets.
 
 ## License
 
-Shopgate's Commerce Widgets extension is available under the Apache License, Version 2.0.
+Shopgate's cloud-sdk is available under the Apache License, Version 2.0.
 
 See the [LICENSE.md](./LICENSE.md) file for more information.
