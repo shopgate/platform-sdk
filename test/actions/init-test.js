@@ -10,7 +10,7 @@ const mkdirp = require('mkdirp')
 
 describe('actions', () => {
   describe('init', () => {
-    it('should set itself up in commander', () => {
+    it('should setup itself in commander', () => {
       const commander = {
         command: c => {
           assert.equal(c, 'init')
@@ -38,7 +38,7 @@ describe('actions', () => {
     })
 
     afterEach((done) => {
-      UserSettings.destroyInstance()
+      UserSettings.setInstance()
       delete process.env.USER_PATH
       rimraf(userSettingsFolder, done)
     })
@@ -73,18 +73,18 @@ describe('actions', () => {
 
       assert.ok(wasCatched)
       delete process.env.APP_PATH
-      AppSettings.destroyInstance()
+      AppSettings.setInstance()
       rimraf(appPath, done)
     })
 
     it('should create folders, settings file and save appId', (done) => {
-      AppSettings.destroyInstance()
+      AppSettings.setInstance()
       process.env.APP_PATH = appPath
       UserSettings.getInstance().getSession().token = {}
 
       init({appId: 'test'}, () => {
         delete process.env.APP_PATH
-        AppSettings.destroyInstance()
+        AppSettings.setInstance()
         rimraf(appPath, done)
       })
     })
