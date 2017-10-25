@@ -36,6 +36,7 @@
   },
   "dependencies": {
     "commander": "^2.11.0",
+    "fs-extra": "^4.0.2",
     "glob": "^7.1.2",
     "inquirer": "^3.3.0",
     "mkdirp": "^0.5.1",
