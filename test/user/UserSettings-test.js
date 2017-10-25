@@ -37,7 +37,7 @@ describe('UserSettings', () => {
 
   it('should return (same) session loaded from file', () => {
     const userSettings = new UserSettings()
-    fs.writeFileSync(userSettings.sessionFile, JSON.stringify({}))
+    fs.writeFileSync(userSettings.sessionFile, JSON.stringify({token: 'foo'}))
 
     const session = userSettings.getSession()
     assert.equal(session, userSettings.getSession())
@@ -48,7 +48,7 @@ describe('UserSettings', () => {
     const token = {foo: 'bar'}
 
     const userSettings = new UserSettings()
-    userSettings.getSession().token = token
+    userSettings.getSession().setToken(token)
     userSettings.save()
 
     assert.deepEqual(JSON.parse(fs.readFileSync(userSettings.sessionFile)).token, token)
