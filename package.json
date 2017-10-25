@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "JUNIT_REPORT_PATH=build/mocha.xml JUNIT_REPORT_STACK=1 mocha --recursive test -R mocha-jenkins-reporter",
-    "cover": "istanbul cover --dir build --include-all-sources true _mocha -- --recursive test"
+    "cover": "istanbul cover --dir build --include-all-sources true _mocha -- --recursive test",
+    "lint": "standard"
   },
   "repository": {
     "type": "git",
@@ -47,6 +48,7 @@
     "mock-stdin": "^0.3.1",
     "nock": "^9.0.25",
     "rimraf": "^2.6.2"
+    "standard": "^10.0.3"
   },
   "engines": {
     "node": ">= 8.0.0",
