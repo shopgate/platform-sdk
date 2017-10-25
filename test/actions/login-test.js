@@ -4,7 +4,7 @@ const rimraf = require('rimraf')
 const nock = require('nock')
 
 const action = require('../../lib/actions/login')
-const Settings = require('../../lib/user/Settings')
+const Settings = require('../../lib/user/UserSettings')
 
 const settingsFolder = path.join(__dirname, 'sgcloud-test')
 
@@ -23,7 +23,7 @@ describe('login', () => {
   })
 
   afterEach(() => {
-    Settings.destroyInstance()
+    Settings.setInstance()
     rimraf.sync(settingsFolder)
     nock.enableNetConnect()
   })
