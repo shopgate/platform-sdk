@@ -19,7 +19,7 @@ describe('login', () => {
     nock.disableNetConnect()
     process.env.SGCLOUD_USER = ''
     process.env.SGCLOUD_PASS = ''
-    stdin = require('mock-stdin').stdin();
+    stdin = require('mock-stdin').stdin()
   })
 
   afterEach(() => {
