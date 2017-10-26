@@ -82,7 +82,7 @@ describe('actions', () => {
       process.env.APP_PATH = appPath
       UserSettings.getInstance().getSession().token = {}
 
-      init({appId: 'test'}, null, () => {
+      init({appId: 'test'}, () => {
         delete process.env.APP_PATH
         AppSettings.setInstance()
         rimraf(appPath, done)
