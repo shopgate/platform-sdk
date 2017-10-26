@@ -40,6 +40,7 @@
     ]
   },
   "dependencies": {
+    "bunyan": "^1.8.12",
     "chalk": "^2.3.0",
     "commander": "^2.11.0",
     "glob": "^7.1.2",
