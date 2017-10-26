@@ -1,6 +1,6 @@
 {
   "name": "@shopgate/cloud-sdk",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Shopgate's Cloud SDK",
   "main": "index.js",
   "scripts": {
@@ -26,7 +26,8 @@
   ],
   "contributors": [
     "Metin Kul <metinkul@outlook.com> (https://github.com/daddy-cool)",
-    "Michael Freund <michael.freund@shopgate.com> (https://github.com/xFragger)"
+    "Michael Freund <michael.freund@shopgate.com> (https://github.com/xFragger)",
+    "Daniel Huth <daniel.huth@shopgate.com> (https://github.com/Agreon)"
   ],
   "license": "Apache-2.0",
   "bugs": {
