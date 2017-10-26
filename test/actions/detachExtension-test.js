@@ -7,14 +7,13 @@ const userSettingsFolder = path.join('test', 'usersettings')
 const appPath = path.join('test', 'appsettings')
 const rimraf = require('rimraf')
 const mkdirp = require('mkdirp')
-require('mocha-sinon')
 
 describe('actions', () => {
   describe('detachExtension', () => {
     it('should setup itself in commander', () => {
       const commander = {
         command: c => {
-          assert.equal(c, 'detachExtension [extensionNames...]')
+          assert.equal(c, 'extension detach [extensionNames...]')
           return commander
         },
         description: d => {
@@ -64,7 +63,7 @@ describe('actions', () => {
 
       AppSettings.getInstance().attachExtension(name)
       detachExtension([name])
-      assert.equal(AppSettings.getInstance().attachedExtensions.length, 0)
+      assert.deepEqual(AppSettings.getInstance().attachedExtensions, {})
     })
 
     it('should skip if extension was not attached', (done) => {
@@ -72,22 +71,18 @@ describe('actions', () => {
 
       console.warn = (text) => {
         assert.equal(text, `The extension '${name}' is not attached`)
-        assert.equal(AppSettings.getInstance().attachedExtensions, undefined)
         done()
       }
 
       detachExtension([name])
     })
 
-    it('should remove all extensions if none are specified', () => {
-      const names = ['extension1', 'extension2']
-
-      names.forEach(name => {
-        AppSettings.getInstance().attachExtension(name)
-      })
+    it('should detach all extensions if none was specified', () => {
+      AppSettings.getInstance().attachExtension('ext1')
+      AppSettings.getInstance().attachExtension('ext2')
 
       detachExtension([])
-      assert.equal(AppSettings.getInstance().attachedExtensions.length, 0)
+      assert.deepEqual(AppSettings.getInstance().attachedExtensions, {})
     })
   })
 })
