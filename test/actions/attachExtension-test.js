@@ -14,7 +14,7 @@ describe('actions', () => {
     it('should setup itself in commander', () => {
       const commander = {
         command: c => {
-          assert.equal(c, 'attachExtension [extensionNames...]')
+          assert.equal(c, 'extension attach [extensionNames...]')
           return commander
         },
         description: d => {
@@ -36,7 +36,7 @@ describe('actions', () => {
       process.env.APP_PATH = appPath
       const appSettings = new AppSettings()
       mkdirp.sync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
-      appSettings.setId(appId).save().init()
+      appSettings.setId(appId).setAttachedExtensions({}).save().init()
       AppSettings.setInstance(appSettings)
 
       UserSettings.getInstance().getSession().token = {}
@@ -67,17 +67,20 @@ describe('actions', () => {
       fsEx.writeJSONSync(path.join(extPath, 'settings.json'), {id: 'existentExtension'})
 
       attachExtension([name])
-      assert.equal(AppSettings.getInstance().attachedExtensions[0], 'existentExtension')
+      assert.deepEqual(AppSettings.getInstance().attachedExtensions[name], {id: 'existentExtension'})
     })
 
-    it('should skip if extension does not exist locally', () => {
+    it('should throw an error if extension does not exist locally', () => {
       const name = 'notExitstentExtension'
 
-      attachExtension([name])
-      assert.equal(AppSettings.getInstance().attachedExtensions, undefined)
+      try {
+        attachExtension([name])
+      } catch (e) {
+        assert.equal(e.message, `Extension '${name}' does not exist locally`)
+      }
     })
 
-    it('should skip if extension-config is invalid', () => {
+    it('should throw an error if extension-config is invalid', () => {
       const name = 'existentExtension'
 
       const extPath = path.join('extensions', name)
@@ -90,7 +93,22 @@ describe('actions', () => {
         assert.equal(e.message, `Config file of '${name}' is invalid`)
       }
 
-      assert.equal(AppSettings.getInstance().attachedExtensions, undefined)
+      assert.deepEqual(AppSettings.getInstance().attachedExtensions, {})
+    })
+
+    it('should throw an error if extension is already attached', () => {
+      const name = 'existentExtension'
+
+      const extPath = path.join('extensions', name)
+      fsEx.ensureDirSync(extPath)
+      fsEx.writeJSONSync(path.join(extPath, 'settings.json'), {id: name})
+
+      try {
+        attachExtension([name])
+        attachExtension([name])
+      } catch (e) {
+        assert.equal(e.message, `Extension '${name} is already attached`)
+      }
     })
 
     it('should add all local extensions if none are specified', () => {
@@ -103,7 +121,7 @@ describe('actions', () => {
       })
 
       attachExtension([])
-      assert.equal(AppSettings.getInstance().attachedExtensions.length, 2)
+      assert.equal(Object.keys(AppSettings.getInstance().attachedExtensions).length, 2)
     })
   })
 })

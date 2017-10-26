@@ -60,7 +60,7 @@ describe('actions', () => {
       process.env.APP_PATH = appPath
       const appSettings = new AppSettings()
       mkdirp.sync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
-      appSettings.setId(appId).save().init()
+      appSettings.setId(appId).setAttachedExtensions({}).save().init()
       AppSettings.setInstance(appSettings)
 
       let wasCatched = false
