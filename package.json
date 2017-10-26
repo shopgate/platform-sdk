@@ -40,11 +40,15 @@
     ]
   },
   "dependencies": {
+    "chalk": "^2.3.0",
     "commander": "^2.11.0",
     "glob": "^7.1.2",
     "inquirer": "^3.3.0",
+    "ip": "^1.1.5",
     "mkdirp": "^0.5.1",
-    "request": "^2.83.0"
+    "morgan": "^1.9.0",
+    "request": "^2.83.0",
+    "restify": "^6.2.3"
   },
   "devDependencies": {
     "coveralls": "^3.0.0",
