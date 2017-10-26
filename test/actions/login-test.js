@@ -34,7 +34,7 @@ describe('login', () => {
       .reply(200, {accessToken: 'token'})
 
     const cmd = {username: 'foo', password: 'bar'}
-    action(cmd, err => {
+    action(cmd, null, err => {
       assert.ifError(err)
       api.done()
       assert.equal(Settings.getInstance().getSession().token, 'token')
@@ -48,7 +48,7 @@ describe('login', () => {
       .reply(200, {accessToken: 'token2'})
 
     const cmd = {}
-    action(cmd, err => {
+    action(cmd, null, err => {
       assert.ifError(err)
       api.done()
       assert.equal(Settings.getInstance().getSession().token, 'token2')
@@ -68,7 +68,7 @@ describe('login', () => {
       .reply(200, {accessToken: 'token3'})
 
     const cmd = {}
-    action(cmd, err => {
+    action(cmd, null, err => {
       assert.ifError(err)
       api.done()
       assert.equal(Settings.getInstance().getSession().token, 'token3')
@@ -84,7 +84,7 @@ describe('login', () => {
       .reply(200, {accessToken: 'token4'})
 
     const cmd = {password: 'bar'}
-    action(cmd, err => {
+    action(cmd, null, err => {
       assert.ifError(err)
       api.done()
       assert.equal(Settings.getInstance().getSession().token, 'token4')
@@ -100,7 +100,7 @@ describe('login', () => {
       .reply(400)
 
     const cmd = {username: 'foo', password: 'bar'}
-    action(cmd, err => {
+    action(cmd, null, err => {
       assert.ok(err)
       assert.equal(err.message, 'Login failed')
       api.done()
