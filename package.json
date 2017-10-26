@@ -7,7 +7,7 @@
     "test": "JUNIT_REPORT_PATH=build/mocha.xml JUNIT_REPORT_STACK=1 mocha --recursive test",
     "cover": "istanbul cover --dir build --include-all-sources true _mocha -- --recursive test",
     "lint": "standard",
-    "precommit": "lint-staged"
+    "precommit": "lint-staged && npm t"
   },
   "lint-staged": {
     "*.js": "npm run lint"
