@@ -1,13 +1,14 @@
 {
   "name": "@shopgate/cloud-sdk",
-  "version": "0.0.5",
+  "version": "0.0.7",
   "description": "Shopgate's Cloud SDK",
   "main": "index.js",
   "scripts": {
     "test": "JUNIT_REPORT_PATH=build/mocha.xml JUNIT_REPORT_STACK=1 mocha --recursive test",
     "cover": "istanbul cover --dir build --include-all-sources true _mocha -- --recursive test",
     "lint": "standard",
-    "lint-staged": "lint-staged"
+    "lint-staged": "lint-staged",
+    "check": "nsp check"
   },
   "lint-staged": {
     "*.js": "npm run lint"
@@ -27,7 +28,8 @@
   "contributors": [
     "Metin Kul <metinkul@outlook.com> (https://github.com/daddy-cool)",
     "Michael Freund <michael.freund@shopgate.com> (https://github.com/xFragger)",
-    "Florian Müller <florian.mueller81@gmx.de> (https://github.com/devbucket)"
+    "Florian Müller <florian.mueller81@gmx.de> (https://github.com/devbucket)",
+    "Daniel Huth <daniel.huth@shopgate.com> (https://github.com/Agreon)"
   ],
   "license": "Apache-2.0",
   "bugs": {
@@ -43,6 +45,7 @@
     "bunyan": "^1.8.12",
     "chalk": "^2.3.0",
     "commander": "^2.11.0",
+    "fs-extra": "^4.0.2",
     "glob": "^7.1.2",
     "inquirer": "^3.3.0",
     "mkdirp": "^0.5.1",
@@ -58,6 +61,7 @@
     "mocha": "^4.0.1",
     "mock-stdin": "^0.3.1",
     "nock": "^9.0.25",
+    "nsp": "^2.8.1",
     "pre-commit": "^1.2.2",
     "rimraf": "^2.6.2",
     "standard": "^10.0.3"
