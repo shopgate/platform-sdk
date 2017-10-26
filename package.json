@@ -1,6 +1,6 @@
 {
   "name": "@shopgate/cloud-sdk",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Shopgate's Cloud SDK",
   "main": "index.js",
   "scripts": {
@@ -40,6 +40,7 @@
   },
   "dependencies": {
     "commander": "^2.11.0",
+    "fs-extra": "^4.0.2",
     "glob": "^7.1.2",
     "inquirer": "^3.3.0",
     "mkdirp": "^0.5.1",
