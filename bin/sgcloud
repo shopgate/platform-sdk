@@ -10,9 +10,7 @@ commander.version(version)
 
 // load all custom actions
 const actions = require('../')
-Object.keys(actions).forEach((a) => {
-  new actions[a]().register(commander)
-})
+Object.keys(actions).forEach(a => new actions[a]().register(commander))
 
 // activate argument parsing
 commander.parse(process.argv)
