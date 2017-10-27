@@ -3,6 +3,7 @@ const path = require('path')
 const rimraf = require('rimraf')
 const mkdirp = require('mkdirp')
 const fsEx = require('fs-extra')
+const sinon = require('sinon')
 
 const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
@@ -36,6 +37,19 @@ describe('ExtensionAction', () => {
   })
 
   describe('general', () => {
+    it('should register', () => {
+      const commander = {}
+      commander.command = sinon.stub().returns(commander)
+      commander.description = sinon.stub().returns(commander)
+      commander.action = sinon.stub().returns(commander)
+
+      action.register(commander)
+
+      assert(commander.command.calledWith('extension <action> [extensions...]'))
+      assert(commander.description.calledOnce)
+      assert(commander.action.calledOnce)
+    })
+
     it('should throw if user not logged in', () => {
       UserSettings.getInstance().getSession().token = null
       try {

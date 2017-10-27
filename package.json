@@ -58,6 +58,7 @@
     "nsp": "^2.8.1",
     "pre-commit": "^1.2.2",
     "rimraf": "^2.6.2",
+    "sinon": "^4.0.2",
     "standard": "^10.0.3"
   },
   "engines": {
