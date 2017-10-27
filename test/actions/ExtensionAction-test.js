@@ -8,6 +8,7 @@ const sinon = require('sinon')
 const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
 const ExtensionAction = require('../../lib/actions/ExtensionAction')
+const logger = require('../../lib/logger')
 
 const userSettingsFolder = path.join('test', 'usersettings')
 const appPath = path.join('test', 'appsettings')
@@ -154,7 +155,7 @@ describe('ExtensionAction', () => {
     it('should skip if extension was not attached', (done) => {
       const name = 'notExitstentExtension'
 
-      console.warn = (text) => {
+      logger.warn = (text) => {
         assert.equal(text, `The extension '${name}' is not attached`)
         done()
       }
