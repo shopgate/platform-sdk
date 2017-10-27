@@ -2,6 +2,7 @@ const detachExtension = require('../../lib/actions/detachExtension')
 const assert = require('assert')
 const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
+const logger = require('../../lib/logger')
 const path = require('path')
 const userSettingsFolder = path.join('test', 'usersettings')
 const appPath = path.join('test', 'appsettings')
@@ -67,10 +68,12 @@ describe('actions', () => {
     })
 
     it('should skip if extension was not attached', (done) => {
-      const name = 'notExitstentExtension'
+      const name = 'notExistentExtension'
 
-      console.warn = (text) => {
+      const oldWarn = logger.warn
+      logger.warn = (text) => {
         assert.equal(text, `The extension '${name}' is not attached`)
+        logger.warn = oldWarn
         done()
       }
 
