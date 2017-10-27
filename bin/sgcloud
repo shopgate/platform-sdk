@@ -9,10 +9,9 @@ const {version} = require('../package.json')
 commander.version(version)
 
 // load all custom actions
-const glob = require('glob')
-const actionFiles = glob.sync('../lib/actions/*.js', {cwd: __dirname, strict: true})
-actionFiles.forEach((actionFile) => {
-  new (require(actionFile))().register(commander)
+const actions = require('../')
+Object.keys(actions).forEach((a) => {
+  new actions[a]().register(commander)
 })
 
 // activate argument parsing
