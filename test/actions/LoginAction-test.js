@@ -2,13 +2,13 @@ const assert = require('assert')
 const path = require('path')
 const rimraf = require('rimraf')
 const nock = require('nock')
-
-const action = require('../../lib/actions/login')
+const sinon = require('sinon')
+const LoginAction = require('../../lib/actions/LoginAction')
 const Settings = require('../../lib/user/UserSettings')
 
 const settingsFolder = path.join(__dirname, 'sgcloud-test')
 
-describe('login', () => {
+describe('LoginAction', () => {
   let stdin
 
   beforeEach(() => {
@@ -28,13 +28,30 @@ describe('login', () => {
     nock.enableNetConnect()
   })
 
+  it('should register', () => {
+    const commander = {}
+    commander.command = sinon.stub().returns(commander)
+    commander.description = sinon.stub().returns(commander)
+    commander.option = sinon.stub().returns(commander)
+    commander.action = sinon.stub().returns(commander)
+
+    new LoginAction().register(commander)
+
+    assert(commander.command.calledWith('login'))
+    assert(commander.option.calledWith('--username [email]'))
+    assert(commander.option.calledWith('--password [password]'))
+    assert(commander.description.calledOnce)
+    assert(commander.action.calledOnce)
+  })
+
   it('should login using command line params', (done) => {
     const api = nock('http://dc.shopgate.cloud')
       .post('/login', {username: 'foo', password: 'bar'})
       .reply(200, {accessToken: 'token'})
 
     const options = {username: 'foo', password: 'bar'}
-    action(options, err => {
+    const login = new LoginAction()
+    login.run(options, err => {
       assert.ifError(err)
       api.done()
       assert.equal(Settings.getInstance().getSession().token, 'token')
@@ -47,7 +64,8 @@ describe('login', () => {
       .post('/login', {username: 'foo', password: 'bar'})
       .reply(200, {accessToken: 'token2'})
 
-    action({}, err => {
+    const login = new LoginAction()
+    login.run({}, err => {
       assert.ifError(err)
       api.done()
       assert.equal(Settings.getInstance().getSession().token, 'token2')
@@ -66,7 +84,8 @@ describe('login', () => {
       .post('/login', {username: 'foo', password: 'bar'})
       .reply(200, {accessToken: 'token3'})
 
-    action({}, err => {
+    const login = new LoginAction()
+    login.run({}, err => {
       assert.ifError(err)
       api.done()
       assert.equal(Settings.getInstance().getSession().token, 'token3')
@@ -82,7 +101,8 @@ describe('login', () => {
       .reply(200, {accessToken: 'token4'})
 
     const options = {password: 'bar'}
-    action(options, err => {
+    const login = new LoginAction()
+    login.run(options, err => {
       assert.ifError(err)
       api.done()
       assert.equal(Settings.getInstance().getSession().token, 'token4')
@@ -98,7 +118,8 @@ describe('login', () => {
       .reply(400)
 
     const options = {username: 'foo', password: 'bar'}
-    action(options, err => {
+    const login = new LoginAction()
+    login.run(options, err => {
       assert.ok(err)
       assert.equal(err.message, 'Login failed')
       api.done()
