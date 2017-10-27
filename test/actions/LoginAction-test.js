@@ -2,13 +2,13 @@ const assert = require('assert')
 const path = require('path')
 const rimraf = require('rimraf')
 const nock = require('nock')
-
+const sinon = require('sinon')
 const LoginAction = require('../../lib/actions/LoginAction')
 const Settings = require('../../lib/user/UserSettings')
 
 const settingsFolder = path.join(__dirname, 'sgcloud-test')
 
-describe('login', () => {
+describe('LoginAction', () => {
   let stdin
 
   beforeEach(() => {
@@ -26,6 +26,22 @@ describe('login', () => {
     Settings.setInstance()
     rimraf.sync(settingsFolder)
     nock.enableNetConnect()
+  })
+
+  it('should register', () => {
+    const commander = {}
+    commander.command = sinon.stub().returns(commander)
+    commander.description = sinon.stub().returns(commander)
+    commander.option = sinon.stub().returns(commander)
+    commander.action = sinon.stub().returns(commander)
+
+    new LoginAction().register(commander)
+
+    assert(commander.command.calledWith('login'))
+    assert(commander.option.calledWith('--username [email]'))
+    assert(commander.option.calledWith('--password [password]'))
+    assert(commander.description.calledOnce)
+    assert(commander.action.calledOnce)
   })
 
   it('should login using command line params', (done) => {
