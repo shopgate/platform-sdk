@@ -1,4 +1,4 @@
-const init = require('../../lib/actions/init')
+const InitAction = require('../../lib/actions/InitAction')
 const assert = require('assert')
 const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
@@ -11,6 +11,7 @@ const mkdirp = require('mkdirp')
 describe('actions', () => {
   describe('init', () => {
     it('should setup itself in commander', () => {
+      const init = new InitAction()
       const commander = {
         command: c => {
           assert.equal(c, 'init')
@@ -26,11 +27,15 @@ describe('actions', () => {
           return commander
         },
         action: a => {
-          assert.equal(a, init)
+          assert.equal(typeof a, 'function')
           return commander
         }
       }
-      init.cmd(commander)
+
+      assert.equal(typeof init.register, 'function')
+      assert.equal(typeof init.run, 'function')
+
+      init.register(commander)
     })
 
     beforeEach(() => {
@@ -45,8 +50,9 @@ describe('actions', () => {
 
     it('should throw if user not logged in', (done) => {
       UserSettings.getInstance().getSession().token = null
+      const init = new InitAction()
       try {
-        init()
+        init.run()
       } catch (err) {
         assert.equal(err.message, 'not logged in')
         done()
@@ -63,9 +69,11 @@ describe('actions', () => {
       appSettings.setId(appId).save().init()
       AppSettings.setInstance(appSettings)
 
+      const init = new InitAction()
+
       let wasCatched = false
       try {
-        init()
+        init.run()
       } catch (err) {
         wasCatched = true
         assert.equal(err.message, `The current folder is already initialized for application ${appId}`)
@@ -82,7 +90,9 @@ describe('actions', () => {
       process.env.APP_PATH = appPath
       UserSettings.getInstance().getSession().token = {}
 
-      init({appId: 'test'}, () => {
+      const init = new InitAction()
+
+      init.run({appId: 'test'}, () => {
         delete process.env.APP_PATH
         AppSettings.setInstance()
         rimraf(appPath, done)

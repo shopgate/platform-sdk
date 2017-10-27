@@ -3,7 +3,7 @@ const path = require('path')
 const rimraf = require('rimraf')
 const nock = require('nock')
 
-const action = require('../../lib/actions/login')
+const LoginAction = require('../../lib/actions/LoginAction')
 const Settings = require('../../lib/user/UserSettings')
 
 const settingsFolder = path.join(__dirname, 'sgcloud-test')
@@ -34,7 +34,8 @@ describe('login', () => {
       .reply(200, {accessToken: 'token'})
 
     const options = {username: 'foo', password: 'bar'}
-    action(options, err => {
+    const login = new LoginAction()
+    login.run(options, err => {
       assert.ifError(err)
       api.done()
       assert.equal(Settings.getInstance().getSession().token, 'token')
@@ -47,7 +48,8 @@ describe('login', () => {
       .post('/login', {username: 'foo', password: 'bar'})
       .reply(200, {accessToken: 'token2'})
 
-    action({}, err => {
+    const login = new LoginAction()
+    login.run({}, err => {
       assert.ifError(err)
       api.done()
       assert.equal(Settings.getInstance().getSession().token, 'token2')
@@ -66,7 +68,8 @@ describe('login', () => {
       .post('/login', {username: 'foo', password: 'bar'})
       .reply(200, {accessToken: 'token3'})
 
-    action({}, err => {
+    const login = new LoginAction()
+    login.run({}, err => {
       assert.ifError(err)
       api.done()
       assert.equal(Settings.getInstance().getSession().token, 'token3')
@@ -82,7 +85,8 @@ describe('login', () => {
       .reply(200, {accessToken: 'token4'})
 
     const options = {password: 'bar'}
-    action(options, err => {
+    const login = new LoginAction()
+    login.run(options, err => {
       assert.ifError(err)
       api.done()
       assert.equal(Settings.getInstance().getSession().token, 'token4')
@@ -98,7 +102,8 @@ describe('login', () => {
       .reply(400)
 
     const options = {username: 'foo', password: 'bar'}
-    action(options, err => {
+    const login = new LoginAction()
+    login.run(options, err => {
       assert.ok(err)
       assert.equal(err.message, 'Login failed')
       api.done()
