@@ -1,17 +1,16 @@
-const main = require('../')
-const glob = require('glob')
+const index = require('../')
 const path = require('path')
+const glob = require('glob')
 const assert = require('assert')
 
-describe('main', () => {
-  it('should export each action', () => {
-    const actionFiles = glob.sync('../lib/actions/**/*.js', {cwd: __dirname, strict: true})
+describe('index', () => {
+  it('should export all actions', () => {
+    const actionFiles = glob.sync('../lib/actions/*.js', {cwd: __dirname, strict: true})
     const actions = {}
     actionFiles.forEach((actionFile) => {
-      const actionName = path.basename(actionFile).split('.')[0]
-      actions[actionName] = require(actionFile)
+      actions[path.basename(actionFile).split('.')[0].split('Action')[0]] = require(actionFile)
     })
 
-    assert.deepEqual(main, actions)
+    assert.deepEqual(index, actions)
   })
 })
