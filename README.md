@@ -1,4 +1,4 @@
-# cloud-sdk
+# Cloud SDK
 
 [![npm](https://img.shields.io/npm/v/@shopgate/cloud-sdk.svg)](https://www.npmjs.com/package/@shopgate/cloud-sdk)
 [![Travis CI Build](https://travis-ci.org/shopgate/cloud-sdk.svg?branch=master)](https://travis-ci.org/shopgate/cloud-sdk)
@@ -21,6 +21,6 @@ apps and mobile websites for the iPhone, iPad, Android smartphones and tablets.
 
 ## License
 
-Shopgate's cloud-sdk is available under the Apache License, Version 2.0.
+Shopgate's Cloud SDK is available under the Apache License, Version 2.0.
 
 See the [LICENSE](./LICENSE) file for more information.
