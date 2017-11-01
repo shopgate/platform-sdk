@@ -60,7 +60,7 @@
   },
   "devDependencies": {
     "coveralls": "^3.0.0",
-    "istanbul": "^0.4.5",
+    "istanbul": "1.1.0-alpha.1",
     "lint-staged": "^4.3.0",
     "mocha": "^4.0.1",
     "mock-stdin": "^0.3.1",
@@ -68,8 +68,8 @@
     "nsp": "^2.8.1",
     "pre-commit": "^1.2.2",
     "rimraf": "^2.6.2",
-    "socket.io": "^2.0.4",
     "sinon": "^4.0.2",
+    "socket.io": "^2.0.4",
     "standard": "^10.0.3"
   },
   "engines": {
