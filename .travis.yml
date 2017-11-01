@@ -7,7 +7,6 @@ dist: trusty
 language: node_js
 
 node_js:
-  - 8     # just so we know whether or not it works
   - lts/* # latest LTS release
   - node  # latest stable release
 
@@ -29,4 +28,4 @@ notifications:
 
 branches:
   only:
-  - master
+    - master
