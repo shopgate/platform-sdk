@@ -15,7 +15,7 @@ install:
 
 script:
   - npm run lint
-  - npm run test
+  - npm t
   - npm run check
 
 # Generate coverage report and send report to coveralls.io
