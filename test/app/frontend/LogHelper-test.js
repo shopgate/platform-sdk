@@ -10,50 +10,70 @@ const assert = require('assert')
 const sinon = require('sinon')
 const LogHelper = require('../../../lib/app/frontend/LogHelper')
 
-const consoleLogSpy = sinon.spy(console, 'log')
-const logHelper = LogHelper.getInstance()
+const logHelper = new LogHelper()
 
 describe('LogHelper', () => {
+  beforeEach(() => {
+    logHelper.log = () => {}
+  })
+
   it('should return the divider', () => {
-    const divider = logHelper.getDivider()
-    assert.equal(divider, logHelper.getDivider())
+    assert.equal(logHelper.divider, logHelper.getDivider())
   })
 
   it('should return the prefix', () => {
-    const prefix = logHelper.getPrefix()
-    assert.equal(prefix, logHelper.getPrefix())
+    assert.equal(logHelper.prefix, logHelper.getPrefix())
   })
 
   it('should log the silent mode information', () => {
-    process.env.silent = true
+    const spy = sinon.spy(logHelper, 'log')
 
+    process.env.silent = true
     logHelper.logSilentMode()
-    assert(consoleLogSpy.withArgs(bold('  SILENT MODE: logs will be suppressed.\n')).calledOnce)
+
+    assert(spy.withArgs(bold('  SILENT MODE: logs will be suppressed.\n')).calledOnce)
+
     process.env.silent = false
-    consoleLogSpy.restore()
+    spy.restore()
   })
 
   it('should log the dev server logo', () => {
+    const spy = sinon.spy(logHelper, 'log')
+
     logHelper.logLogo()
-    assert.ok(consoleLogSpy.called)
-    consoleLogSpy.restore()
+
+    assert.ok(spy.called)
+
+    spy.restore()
   })
 
   it('should log the setup logo', () => {
+    const spy = sinon.spy(logHelper, 'log')
+
     logHelper.logSetupLogo()
-    assert.ok(consoleLogSpy.called)
-    consoleLogSpy.restore()
+
+    assert.ok(spy.called)
+
+    spy.restore()
   })
 
   it('should log the setup needed logo', () => {
+    const spy = sinon.spy(logHelper, 'log')
+
     logHelper.logSetupNeeded()
-    assert.ok(consoleLogSpy.called)
-    consoleLogSpy.restore()
+
+    assert.ok(spy.called)
+
+    spy.restore()
   })
 
   it('should show a start up log', () => {
+    const spy = sinon.spy(logHelper, 'log')
+
     logHelper.logStartUp()
-    assert.ok(consoleLogSpy.called)
-    consoleLogSpy.restore()
+
+    assert.ok(spy.called)
+
+    spy.restore()
   })
 })
