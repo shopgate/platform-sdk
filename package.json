@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "mocha --recursive test",
-    "cover": "istanbul cover --dir build --include-all-sources true _mocha -- --recursive test",
+    "cover": "nyc mocha --recursive test",
     "lint": "standard",
     "lint-staged": "lint-staged",
     "check": "nsp check"
@@ -48,12 +48,12 @@
     "glob": "^7.1.2",
     "inquirer": "^3.3.0",
     "mkdirp": "^0.5.1",
+    "nyc": "^11.3.0",
     "request": "^2.83.0",
     "socket.io-client": "^2.0.4"
   },
   "devDependencies": {
     "coveralls": "^3.0.0",
-    "istanbul": "^0.4.5",
     "lint-staged": "^4.3.0",
     "mocha": "^4.0.1",
     "mock-require": "^2.0.2",
@@ -73,5 +73,20 @@
   "pre-commit": [
     "lint-staged",
     "test"
-  ]
+  ],
+  "nyc": {
+    "include": [
+      "**/*.js"
+    ],
+    "exclude": [
+      "build",
+      "test"
+    ],
+    "reporter": [
+      "lcov",
+      "text-summary"
+    ],
+    "all": true,
+    "report-dir": "build"
+  }
 }
