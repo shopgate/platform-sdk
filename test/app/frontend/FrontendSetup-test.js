@@ -46,7 +46,6 @@ describe('FrontendSetup', () => {
     frontendSetup.defaultConfig = defaultConfig
     frontendSetup.logHelper.logSetupLogo = () => {}
 
-    frontendSetup.registerSettings = () => {}
     frontendSetup.save = () => {}
     frontendSetup.prompt = (questions = []) =>
       questions
@@ -63,6 +62,10 @@ describe('FrontendSetup', () => {
   })
 
   describe('FrontendSetup.run()', () => {
+    beforeEach(() => {
+      frontendSetup.registerSettings = () => {}
+    })
+
     it('should throw an error if something goes wrong', async () => {
       try {
         const spy = sinon.spy(frontendSetup, 'run')
@@ -110,20 +113,20 @@ describe('FrontendSetup', () => {
   })
 
   describe('FrontendSetup.registerSettings()', () => {
-    it('should throw an error if settings not confirmed', async () => {
-      try {
-        frontendSetup.prompt = (questions = []) =>
-          questions
-            ? Promise.resolve({ ...defaultConfig, confirmed: false })
-            : Promise.reject(runError)
+    it('should throw an error if settings not confirmed', (done) => {
+      frontendSetup.prompt = (questions = []) =>
+        questions
+          ? Promise.resolve({ ...defaultConfig, confirmed: false })
+          : Promise.reject(runError)
 
-        const spy = sinon.spy(frontendSetup, 'registerSettings')
-
-        await frontendSetup.run()
-        assert.ok(spy.calledOnce)
-        assert.ok(spy.threw('Sorry, you canceled the setup! Please try again.'))
-        spy.restore()
-      } catch (error) {}
+      frontendSetup.run()
+        .then(() => {
+          done('did not throw!')
+        })
+        .catch((error) => {
+          assert.equal(error.message, 'Sorry, you canceled the setup! Please try again.')
+          done()
+        })
     })
   })
 })
