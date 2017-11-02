@@ -5,7 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-const Logger = require('../../../lib/app/frontend/Logger')
+const Logger = require('../../../lib/app/frontend/LogHelper')
 const assert = require('assert')
 
 const logger = new Logger()

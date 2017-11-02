@@ -30,7 +30,8 @@
     "Metin Kul <metinkul@outlook.com> (https://github.com/daddy-cool)",
     "Michael Freund <michael.freund@shopgate.com> (https://github.com/xFragger)",
     "Florian Müller <florian.mueller81@gmx.de> (https://github.com/devbucket)",
-    "Daniel Huth <daniel.huth@shopgate.com> (https://github.com/Agreon)"
+    "Daniel Huth <daniel.huth@shopgate.com> (https://github.com/Agreon)",
+    "Richard Gorman <richardgorman@outlook.com> (https://github.com/richardgorman)"
   ],
   "license": "Apache-2.0",
   "bugs": {
@@ -43,19 +44,30 @@
     ]
   },
   "dependencies": {
+    "babel-core": "^6.26.0",
+    "babel-loader": "^7.1.2",
     "bunyan": "^1.8.12",
     "bunyan-format": "^0.2.1",
+    "cache-loader": "^1.1.0",
     "chalk": "^2.3.0",
     "commander": "^2.11.0",
+    "css-loader": "^0.28.7",
+    "ejs-loader": "^0.3.0",
     "fs-extra": "^4.0.2",
     "glob": "^7.1.2",
     "inquirer": "^3.3.0",
+    "json-loader": "^0.5.7",
     "mkdirp": "^0.5.1",
-    "request": "^2.83.0",
-    "socket.io-client": "^2.0.4",
     "morgan": "^1.9.0",
     "neo-async": "^2.5.0",
-    "restify": "^6.2.3"
+    "os": "^0.1.1",
+    "request": "^2.83.0",
+    "restify": "^6.2.3",
+    "socket.io-client": "^2.0.4",
+    "string-replace-webpack-plugin": "^0.1.3",
+    "style-loader": "^0.19.0",
+    "webpack": "^3.8.1",
+    "webpack-dev-server": "^2.9.3"
   },
   "devDependencies": {
     "coveralls": "^3.0.0",
@@ -66,18 +78,17 @@
     "mock-stdin": "^0.3.1",
     "nock": "^9.0.25",
     "nsp": "^2.8.1",
+    "offline-plugin": "^4.8.4",
     "pre-commit": "^1.2.2",
+    "progress-bar-webpack-plugin": "^1.10.0",
     "rimraf": "^2.6.2",
     "sinon": "^4.0.2",
     "socket.io": "^2.0.4",
-    "standard": "^10.0.3"
+    "standard": "^10.0.3",
+    "webpack-merge": "^4.1.0"
   },
   "engines": {
     "node": ">= 8.0.0",
     "npm": ">= 5.0.0"
-  },
-  "pre-commit": [
-    "lint-staged",
-    "test"
-  ]
+  }
 }
