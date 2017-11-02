@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "JUNIT_REPORT_PATH=build/mocha.xml JUNIT_REPORT_STACK=1 mocha --recursive test",
+    "test:watch": "npm run test -- --watch",
     "cover": "istanbul cover --dir build --include-all-sources true _mocha -- --recursive test",
     "lint": "standard",
     "lint-staged": "lint-staged",
@@ -28,6 +29,7 @@
   "contributors": [
     "Metin Kul <metinkul@outlook.com> (https://github.com/daddy-cool)",
     "Michael Freund <michael.freund@shopgate.com> (https://github.com/xFragger)",
+    "Florian Müller <florian.mueller81@gmx.de> (https://github.com/devbucket)",
     "Daniel Huth <daniel.huth@shopgate.com> (https://github.com/Agreon)"
   ],
   "license": "Apache-2.0",
@@ -43,13 +45,17 @@
   "dependencies": {
     "bunyan": "^1.8.12",
     "bunyan-format": "^0.2.1",
+    "chalk": "^2.3.0",
     "commander": "^2.11.0",
     "fs-extra": "^4.0.2",
     "glob": "^7.1.2",
     "inquirer": "^3.3.0",
     "mkdirp": "^0.5.1",
     "request": "^2.83.0",
-    "socket.io-client": "^2.0.4"
+    "socket.io-client": "^2.0.4",
+    "morgan": "^1.9.0",
+    "neo-async": "^2.5.0",
+    "restify": "^6.2.3"
   },
   "devDependencies": {
     "coveralls": "^3.0.0",
