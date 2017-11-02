@@ -45,10 +45,10 @@ describe('FrontendProcess', () => {
     beforeEach(() => {
       frontendProcess.frontendSetup.run = () => Promise.resolve()
       frontendProcess.logHelper.logSetupNeeded = () => {}
+      frontendProcess.rapidDevServer = () => {}
     })
 
     it('should run the frontend setup if nothing is set', () => {
-      frontendProcess.rapidDevServer = () => {}
       const runSpy = sinon.spy(frontendProcess.frontendSetup, 'run')
 
       frontendProcess.init({ rapid: {} })
@@ -57,7 +57,6 @@ describe('FrontendProcess', () => {
     })
 
     it('it should skip the setup if variables are set', () => {
-      frontendProcess.rapidDevServer = () => {}
       const runSpy = sinon.spy(frontendProcess.frontendSetup, 'run')
 
       frontendProcess.ip = true
@@ -68,9 +67,16 @@ describe('FrontendProcess', () => {
       sinon.assert.notCalled(runSpy)
       runSpy.restore()
     })
+  })
+
+  describe('FrontendProcess.rapidDevServer()', () => {
+    beforeEach(() => {
+      frontendProcess.frontendSetup.run = () => Promise.resolve()
+      frontendProcess.logHelper.logSetupNeeded = () => {}
+      frontendProcess.rapidDevServer = () => {}
+    })
 
     it('should not start the rapid dev server if no variables are set', () => {
-      frontendProcess.rapidDevServer = () => {}
       const rapidDevServerSpy = sinon.spy(frontendProcess, 'rapidDevServer')
 
       frontendProcess.init({ rapid: {} })
@@ -78,7 +84,6 @@ describe('FrontendProcess', () => {
     })
 
     it('should start the call the rapid dev server if all is set', () => {
-      frontendProcess.rapidDevServer = () => {}
       const rapidDevServerSpy = sinon.spy(frontendProcess, 'rapidDevServer')
 
       frontendProcess.ip = true
