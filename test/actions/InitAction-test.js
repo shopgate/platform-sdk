@@ -97,5 +97,23 @@ describe('InitAction', () => {
         done()
       })
     })
+
+    it('should use prompt for appId if not set in options', (done) => {
+      const init = new InitAction()
+      const appId = 'test'
+      init.options = {}
+
+      function prompt (questions) {
+        assert.equal(questions.length, 1)
+        assert.deepEqual(questions[0], {type: 'input', name: 'appId', message: 'Enter your Application ID:'})
+        return Promise.resolve({appId})
+      }
+
+      init.getAppId(prompt, (err, id) => {
+        assert.ifError(err)
+        assert.equal(id, appId)
+        done()
+      })
+    })
   })
 })

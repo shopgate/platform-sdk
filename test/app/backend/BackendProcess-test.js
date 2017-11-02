@@ -47,5 +47,15 @@ describe('BackendProcess', () => {
         done()
       })
     })
+
+    it('should fail if socket is not open', (done) => {
+      backendProccess.socket = null
+      backendProccess.selectApplication('shop_10006', err => {
+        backendProccess.socket = socket
+        assert.ok(err)
+        assert.equal(err.message, 'Connection not established')
+        done()
+      })
+    })
   })
 })
