@@ -71,7 +71,7 @@
   },
   "devDependencies": {
     "coveralls": "^3.0.0",
-    "istanbul": "^0.4.5",
+    "istanbul": "1.1.0-alpha.1",
     "lint-staged": "^4.3.0",
     "mocha": "^4.0.1",
     "mock-require": "^2.0.2",
