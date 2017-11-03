@@ -1,12 +1,12 @@
 {
   "name": "@shopgate/cloud-sdk",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Shopgate's Cloud SDK",
   "main": "index.js",
   "scripts": {
-    "test": "JUNIT_REPORT_PATH=build/mocha.xml JUNIT_REPORT_STACK=1 mocha --recursive test",
+    "test": "mocha --recursive test",
     "test:watch": "npm run test -- --watch",
-    "cover": "istanbul cover --dir build --include-all-sources true _mocha -- --recursive test",
+    "cover": "nyc mocha --recursive test",
     "lint": "standard",
     "lint-staged": "lint-staged",
     "check": "nsp check"
@@ -76,13 +76,13 @@
   },
   "devDependencies": {
     "coveralls": "^3.0.0",
-    "istanbul": "1.1.0-alpha.1",
     "lint-staged": "^4.3.0",
     "mocha": "^4.0.1",
     "mock-require": "^2.0.2",
     "mock-stdin": "^0.3.1",
     "nock": "^9.0.25",
     "nsp": "^2.8.1",
+    "nyc": "^11.3.0",
     "offline-plugin": "^4.8.4",
     "pre-commit": "^1.2.2",
     "progress-bar-webpack-plugin": "^1.10.0",
@@ -95,5 +95,24 @@
   "engines": {
     "node": ">= 8.0.0",
     "npm": ">= 5.0.0"
+  },
+  "pre-commit": [
+    "lint-staged",
+    "test"
+  ],
+  "nyc": {
+    "include": [
+      "**/*.js"
+    ],
+    "exclude": [
+      "build",
+      "test"
+    ],
+    "reporter": [
+      "lcov",
+      "text-summary"
+    ],
+    "all": true,
+    "report-dir": "build"
   }
 }
