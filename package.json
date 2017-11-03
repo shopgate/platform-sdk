@@ -64,6 +64,7 @@
     "morgan": "^1.9.0",
     "neo-async": "^2.5.0",
     "os": "^0.1.1",
+    "preload-webpack-plugin": "^2.0.0",
     "request": "^2.83.0",
     "restify": "^6.2.3",
     "socket.io-client": "^2.0.4",
