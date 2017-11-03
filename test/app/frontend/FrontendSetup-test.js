@@ -121,7 +121,7 @@ describe('FrontendSetup', () => {
 
       frontendSetup.run()
         .then(() => {
-          done('did not throw!')
+          done('Did not throw!')
         })
         .catch((error) => {
           assert.equal(error.message, 'Sorry, you canceled the setup! Please try again.')

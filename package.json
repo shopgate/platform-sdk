@@ -85,6 +85,7 @@
     "offline-plugin": "^4.8.4",
     "pre-commit": "^1.2.2",
     "progress-bar-webpack-plugin": "^1.10.0",
+    "proxyquire": "^1.8.0",
     "rimraf": "^2.6.2",
     "sinon": "^4.0.2",
     "socket.io": "^2.0.4",
