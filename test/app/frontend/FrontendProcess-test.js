@@ -17,6 +17,7 @@ const proxyquire = require('proxyquire')
 const forkFailError = 'Fork failed!'
 let forkFail = false
 let forkSpy
+const logSetupNeededSpy = sinon.spy()
 
 const userSettingsPath = join('test', 'usersettings')
 const appSettingsPath = join('test', 'appsettings')
@@ -42,6 +43,9 @@ describe('FrontendProcess', () => {
             throw new Error(forkFailError)
           }
         })
+      },
+      './LogHelper': {
+        logSetupNeeded: logSetupNeededSpy
       }
     })
 
@@ -64,7 +68,6 @@ describe('FrontendProcess', () => {
   describe('FrontendProcess.init()', () => {
     beforeEach(() => {
       frontendProcess.frontendSetup.run = () => Promise.resolve()
-      frontendProcess.logHelper.logSetupNeeded = () => {}
       frontendProcess.rapidDevServer = () => {}
       frontendProcess.webpackDevServer = () => {}
     })
@@ -93,7 +96,6 @@ describe('FrontendProcess', () => {
   describe('FrontendProcess.rapidDevServer()', () => {
     beforeEach(() => {
       frontendProcess.frontendSetup.run = () => Promise.resolve()
-      frontendProcess.logHelper.logSetupNeeded = () => {}
       frontendProcess.webpackDevServer = () => {}
     })
 
@@ -144,7 +146,6 @@ describe('FrontendProcess', () => {
   describe('FrontendProcess.webpackDevServer()', () => {
     beforeEach(() => {
       frontendProcess.frontendSetup.run = () => Promise.resolve()
-      frontendProcess.logHelper.logSetupNeeded = () => {}
       frontendProcess.rapidDevServer = () => {}
     })
 

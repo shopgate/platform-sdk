@@ -27,11 +27,25 @@ const request = sinon.spy(function (url, callback) {
 })
 const loggerSpy = sinon.spy()
 
+const setPromptBody = (confirmed = true) => (questions = []) =>
+  questions
+    ? Promise.resolve({ ...defaultConfig, confirmed })
+    : Promise.reject(runError)
+
+const inquirer = {
+  prompt: setPromptBody()
+}
+
 const FrontendSetup = proxyquire('../../../lib/app/frontend/FrontendSetup', {
   request,
+  './LogHelper': {
+    logSetupLogo: () => {},
+    getPrefix: () => {}
+  },
   '../../logger': {
     plain: loggerSpy
-  }
+  },
+  inquirer
 })
 
 const userSettingsPath = join('test', 'usersettings')
@@ -49,11 +63,6 @@ const defaultConfig = {
 }
 const runError = 'Had an error'
 
-const setPromptBody = (confirmed = true) => (questions = []) =>
-  questions
-    ? Promise.resolve({ ...defaultConfig, confirmed })
-    : Promise.reject(runError)
-
 let frontendSetup
 
 describe('FrontendSetup', () => {
@@ -70,9 +79,8 @@ describe('FrontendSetup', () => {
 
     frontendSetup = new FrontendSetup()
     frontendSetup.defaultConfig = defaultConfig
-    frontendSetup.logHelper.logSetupLogo = () => {}
 
-    frontendSetup.prompt = setPromptBody()
+    inquirer.prompt = setPromptBody()
   })
 
   afterEach((done) => {
@@ -118,7 +126,7 @@ describe('FrontendSetup', () => {
     })
 
     it('should inquire the answers', (done) => {
-      const spy = sinon.spy(frontendSetup, 'prompt')
+      const spy = sinon.spy(inquirer, 'prompt')
       frontendSetup.run()
         .then(() => {
           assert.ok(spy.calledOnce)
@@ -158,7 +166,6 @@ describe('FrontendSetup', () => {
 
     it('should call the createRequestUrl()', (done) => {
       const requestUrlSpy = sinon.spy(frontendSetup, 'createRequestUrl')
-      frontendSetup.prompt = setPromptBody()
       frontendSetup.run()
         .then(() => {
           sinon.assert.calledOnce(requestUrlSpy)
@@ -172,7 +179,6 @@ describe('FrontendSetup', () => {
     })
 
     it('should process a request to trigger the jenkins job', (done) => {
-      frontendSetup.prompt = setPromptBody()
       frontendSetup.run()
         .then(() => {
           sinon.assert.calledOnce(request)
@@ -185,7 +191,7 @@ describe('FrontendSetup', () => {
     })
 
     it('should throw an error if settings not confirmed', (done) => {
-      frontendSetup.prompt = setPromptBody(false)
+      inquirer.prompt = setPromptBody(false)
       frontendSetup.run()
         .then(() => {
           done('Did not throw!')
@@ -207,7 +213,6 @@ describe('FrontendSetup', () => {
     it('should not throw an error if all is good', (done) => {
       const handlerSpy = sinon.spy(frontendSetup, 'handleRequestResponse')
 
-      frontendSetup.prompt = setPromptBody()
       frontendSetup.run()
         .then(() => {
           assert.ok(handlerSpy.calledOnce)
@@ -226,7 +231,6 @@ describe('FrontendSetup', () => {
       const handlerSpy = sinon.spy(frontendSetup, 'handleRequestResponse')
       requestSpyFail = true
 
-      frontendSetup.prompt = setPromptBody()
       frontendSetup.run()
         .then(() => {
           handlerSpy.reset()
@@ -247,7 +251,6 @@ describe('FrontendSetup', () => {
       const handlerSpy = sinon.spy(frontendSetup, 'handleRequestResponse')
       requestStatusCode = 300
 
-      frontendSetup.prompt = setPromptBody()
       frontendSetup.run()
         .then(() => {
           handlerSpy.reset()
