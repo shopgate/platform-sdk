@@ -52,6 +52,7 @@
     "cache-loader": "^1.1.0",
     "chalk": "^2.3.0",
     "commander": "^2.11.0",
+    "compression-webpack-plugin": "^1.0.1",
     "css-loader": "^0.28.7",
     "ejs-loader": "^0.3.0",
     "fs-extra": "^4.0.2",
