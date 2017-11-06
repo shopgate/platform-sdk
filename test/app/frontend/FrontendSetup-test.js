@@ -91,7 +91,7 @@ describe('FrontendSetup', () => {
     })
   })
 
-  describe('FrontendSetup.run()', () => {
+  describe('run()', () => {
     beforeEach(() => {
       frontendSetup.registerSettings = () => {}
       frontendSetup.save = () => {}
@@ -159,7 +159,7 @@ describe('FrontendSetup', () => {
     })
   })
 
-  describe('FrontendSetup.registerSettings()', () => {
+  describe('registerSettings()', () => {
     beforeEach(() => {
       frontendSetup.save = () => {}
     })
@@ -205,7 +205,7 @@ describe('FrontendSetup', () => {
     })
   })
 
-  describe('FrontendSetup.handleRequestResponse()', () => {
+  describe('handleRequestResponse()', () => {
     beforeEach(() => {
       frontendSetup.save = () => {}
     })
@@ -268,7 +268,7 @@ describe('FrontendSetup', () => {
     })
   })
 
-  describe('FrontendSetup.createRequestUrl()', () => {
+  describe('createRequestUrl()', () => {
     beforeEach(() => {
       frontendSetup.save = () => {}
     })
@@ -285,7 +285,7 @@ describe('FrontendSetup', () => {
     })
   })
 
-  describe('FrontendSetup.save()', () => {
+  describe('save()', () => {
     let saveSpy
 
     beforeEach(() => {

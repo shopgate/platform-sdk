@@ -65,7 +65,7 @@ describe('FrontendProcess', () => {
     })
   })
 
-  describe('FrontendProcess.init()', () => {
+  describe('init()', () => {
     beforeEach(() => {
       frontendProcess.frontendSetup.run = () => Promise.resolve()
       frontendProcess.rapidDevServer = () => {}
@@ -93,7 +93,7 @@ describe('FrontendProcess', () => {
     })
   })
 
-  describe('FrontendProcess.rapidDevServer()', () => {
+  describe('rapidDevServer()', () => {
     beforeEach(() => {
       frontendProcess.frontendSetup.run = () => Promise.resolve()
       frontendProcess.webpackDevServer = () => {}
@@ -143,7 +143,7 @@ describe('FrontendProcess', () => {
     })
   })
 
-  describe('FrontendProcess.webpackDevServer()', () => {
+  describe('webpackDevServer()', () => {
     beforeEach(() => {
       frontendProcess.frontendSetup.run = () => Promise.resolve()
       frontendProcess.rapidDevServer = () => {}
