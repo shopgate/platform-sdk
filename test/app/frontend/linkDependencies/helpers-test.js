@@ -15,9 +15,9 @@ const {
   exec,
   getSubDirectories,
   findSubDirectories
-} = require('../../../../lib/app/frontend/linkDependencies/helpers')
+} = require('../../../../lib/app/frontend/dependencyLinking/helpers')
 
-describe('DependencyLinker helpers', () => {
+describe('Dependency linking helpers', () => {
   describe('exec', () => {
     let execSync
 

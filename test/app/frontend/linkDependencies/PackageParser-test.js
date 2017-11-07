@@ -7,8 +7,8 @@
 
 const { join } = require('path')
 const assert = require('assert')
-const PackageCollector = require('../../../../lib/app/frontend/linkDependencies/PackageCollector')
-const PackageParser = require('../../../../lib/app/frontend/linkDependencies/PackageParser')
+const PackageCollector = require('../../../../lib/app/frontend/dependencyLinking/PackageCollector')
+const PackageParser = require('../../../../lib/app/frontend/dependencyLinking/PackageParser')
 const { THEMES_FOLDER, PWA_FOLDER } = require('../../../../lib/app/frontend/FrontendSettings')
 
 describe('PackageParser', () => {

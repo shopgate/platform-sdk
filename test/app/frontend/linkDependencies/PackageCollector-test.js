@@ -10,7 +10,7 @@ const { join } = require('path')
 const assert = require('assert')
 const { red } = require('chalk')
 const logger = require('../../../../lib/logger')
-const PackageCollector = require('../../../../lib/app/frontend/linkDependencies/PackageCollector')
+const PackageCollector = require('../../../../lib/app/frontend/dependencyLinking/PackageCollector')
 const { EXTENSIONS_FOLDER } = require('../../../../lib/app/AppSettings')
 const { PWA_FOLDER } = require('../../../../lib/app/frontend/FrontendSettings')
 

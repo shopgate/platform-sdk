@@ -96,4 +96,8 @@ describe('FrontendProcess', () => {
         })
     })
   })
+
+  describe('FrontendProcess.linkDependencies()', () => {
+
+  })
 })
