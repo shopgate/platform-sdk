@@ -7,64 +7,91 @@
 
 const { join } = require('path')
 const sinon = require('sinon')
-const helpers = require('../../../../lib/app/frontend/dependencyLinking/helpers')
+const proxyquire = require('proxyquire')
 const logger = require('../../../../lib/logger')
-const PackageCollector = require('../../../../lib/app/frontend/dependencyLinking/PackageCollector')
-const DependencyLinker = require('../../../../lib/app/frontend/dependencyLinking/DependencyLinker')
-const { THEMES_FOLDER, PWA_FOLDER } = require('../../../../lib/app/frontend/FrontendSettings')
+const THEMES_FOLDER = join(__dirname, 'mocks/themes')
+const EXTENSIONS_FOLDER = join(__dirname, 'mocks/extensions')
+const PWA_FOLDER = join(__dirname, 'mocks/pwa')
+
+const DependencyLinker = proxyquire('../../../../lib/app/frontend/dependencyLinking/DependencyLinker', {
+  '../../../app/AppSettings': {
+    EXTENSIONS_FOLDER
+  },
+  '../../../app/frontend/FrontendSettings': {
+    THEMES_FOLDER,
+    PWA_FOLDER
+  },
+  'child_process': {
+    // Prevent calling the real execSync
+    execSync: () => {}
+  }
+})
 
 describe('DependencyLinker', () => {
-  let dependencyLinker
-  let execHelperStub
   let loggerStub
 
-  beforeEach(() => {
-    dependencyLinker = new DependencyLinker()
-    execHelperStub = sinon.stub(helpers, 'exec')
+  before(() => {
+    /**
+     * Replace the logger for this test, since logs are not that relevant here.
+     * It's not possible via proxyquire, since the PackageParser within the DependencyLinker
+     * will write a log for an invalid package. This situation is tested within the related test.
+     */
     loggerStub = sinon.stub(logger, 'plain')
   })
 
-  afterEach(() => {
-    execHelperStub.restore()
+  after(() => {
     loggerStub.restore()
   })
 
-  it('should not to anything without packages or linkable dependencies', () => {
-    dependencyLinker.link()
-    sinon.assert.callCount(execHelperStub, 0)
-  })
-
-  it('should not to anything without linkable dependencies', () => {
-    const packages = new PackageCollector().get(join(__dirname, `mocks/${THEMES_FOLDER}`))
+  it('should link everything without options', () => {
+    const dependencyLinker = new DependencyLinker()
+    const execSpy = sinon.spy(dependencyLinker, 'exec')
 
     dependencyLinker
-      .link(packages)
+      .init()
+      .link()
 
-    sinon.assert.callCount(execHelperStub, 0)
-  })
-
-  it('should link dependencies to the packages', () => {
-    const dependenciesFolder = join(__dirname, `mocks/${PWA_FOLDER}`)
-    const themesFolder = join(__dirname, `mocks/${THEMES_FOLDER}`)
-
-    const dependencies = new PackageCollector().get(dependenciesFolder)
-    const packages = new PackageCollector().get(themesFolder)
-
-    dependencyLinker
-      .setLinkableDependencies(dependencies)
-      .link(packages)
-
-    sinon.assert.callCount(execHelperStub, 9)
+    sinon.assert.callCount(execSpy, 17)
     sinon.assert.callOrder(
-      execHelperStub.withArgs('npm link', join(dependenciesFolder, 'pwa-common')),
-      execHelperStub.withArgs('npm link', join(dependenciesFolder, 'pwa-core')),
-      execHelperStub.withArgs('npm link', join(dependenciesFolder, 'eslint-config')),
-      execHelperStub.withArgs('npm link @shopgate/pwa-common', join(themesFolder, 'theme-gmd'), true),
-      execHelperStub.withArgs('npm link @shopgate/pwa-core', join(themesFolder, 'theme-gmd'), true),
-      execHelperStub.withArgs('npm link @shopgate/eslint-config', join(themesFolder, 'theme-gmd'), true),
-      execHelperStub.withArgs('npm link @shopgate/pwa-common', join(themesFolder, 'theme-ios11'), true),
-      execHelperStub.withArgs('npm link @shopgate/pwa-core', join(themesFolder, 'theme-ios11'), true),
-      execHelperStub.withArgs('npm link @shopgate/eslint-config', join(themesFolder, 'theme-ios11'), true)
+      execSpy.withArgs('npm link', join(PWA_FOLDER, 'pwa-common')),
+      execSpy.withArgs('npm link', join(PWA_FOLDER, 'pwa-core')),
+      execSpy.withArgs('npm link', join(PWA_FOLDER, 'eslint-config')),
+      execSpy.withArgs('npm link @shopgate/pwa-common', join(THEMES_FOLDER, 'theme-gmd'), true),
+      execSpy.withArgs('npm link @shopgate/pwa-core', join(THEMES_FOLDER, 'theme-gmd'), true),
+      execSpy.withArgs('npm link @shopgate/eslint-config', join(THEMES_FOLDER, 'theme-gmd'), true),
+      execSpy.withArgs('npm link @shopgate/pwa-common', join(THEMES_FOLDER, 'theme-ios11'), true),
+      execSpy.withArgs('npm link @shopgate/pwa-core', join(THEMES_FOLDER, 'theme-ios11'), true),
+      execSpy.withArgs('npm link @shopgate/eslint-config', join(THEMES_FOLDER, 'theme-ios11'), true),
+      execSpy.withArgs('npm link @shopgate/pwa-common', join(EXTENSIONS_FOLDER, '@customscope/extension-one/frontend'), true),
+      execSpy.withArgs('npm link @shopgate/eslint-config', join(EXTENSIONS_FOLDER, '@shopgate/commerce-widgets/frontend'), true),
+      execSpy.withArgs('npm link @shopgate/pwa-common', join(EXTENSIONS_FOLDER, '@shopgate/commerce-widgets/frontend'), true),
+      execSpy.withArgs('npm link @shopgate/pwa-core', join(EXTENSIONS_FOLDER, '@shopgate/commerce-widgets/frontend'), true),
+      execSpy.withArgs('npm link @shopgate/pwa-common', join(EXTENSIONS_FOLDER, 'custom-extension/frontend'), true),
+      execSpy.withArgs('npm link @shopgate/eslint-config', join(PWA_FOLDER, 'pwa-common'), true),
+      execSpy.withArgs('npm link @shopgate/pwa-core', join(PWA_FOLDER, 'pwa-common'), true),
+      execSpy.withArgs('npm link @shopgate/eslint-config', join(PWA_FOLDER, 'pwa-core'), true)
+    )
+  })
+
+  it('should only link dependencies to the theme when option is set', () => {
+    const options = {
+      theme: 'ios11'
+    }
+    const dependencyLinker = new DependencyLinker(options)
+    const execSpy = sinon.spy(dependencyLinker, 'exec')
+
+    dependencyLinker
+      .init()
+      .link()
+
+    sinon.assert.callCount(execSpy, 6)
+    sinon.assert.callOrder(
+      execSpy.withArgs('npm link', join(PWA_FOLDER, 'pwa-common')),
+      execSpy.withArgs('npm link', join(PWA_FOLDER, 'pwa-core')),
+      execSpy.withArgs('npm link', join(PWA_FOLDER, 'eslint-config')),
+      execSpy.withArgs('npm link @shopgate/pwa-common', join(THEMES_FOLDER, 'theme-ios11'), true),
+      execSpy.withArgs('npm link @shopgate/pwa-core', join(THEMES_FOLDER, 'theme-ios11'), true),
+      execSpy.withArgs('npm link @shopgate/eslint-config', join(THEMES_FOLDER, 'theme-ios11'), true)
     )
   })
 })

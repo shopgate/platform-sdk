@@ -9,14 +9,17 @@ const { join } = require('path')
 const assert = require('assert')
 const PackageCollector = require('../../../../lib/app/frontend/dependencyLinking/PackageCollector')
 const PackageParser = require('../../../../lib/app/frontend/dependencyLinking/PackageParser')
-const { THEMES_FOLDER, PWA_FOLDER } = require('../../../../lib/app/frontend/FrontendSettings')
+
+const THEMES_FOLDER = join(__dirname, 'mocks/themes')
+const PWA_FOLDER = join(__dirname, 'mocks/pwa')
 
 describe('PackageParser', () => {
   let packageParser
 
   describe('defaults', () => {
     beforeEach(() => {
-      packageParser = new PackageParser().parse(join(__dirname, `mocks/${THEMES_FOLDER}/theme-gmd`))
+      packageParser = new PackageParser()
+      packageParser.parse(join(THEMES_FOLDER, 'theme-gmd'))
     })
 
     it('should contain the expected name', () => {
@@ -24,15 +27,15 @@ describe('PackageParser', () => {
     })
 
     it('should return linkable dependencies, if none where set', () => {
-      const dir = join(__dirname, `mocks/${PWA_FOLDER}`)
-      const dependencies = new PackageCollector().get(dir)
+      const packageCollector = new PackageCollector()
+      const dependencies = packageCollector.get(PWA_FOLDER)
 
       packageParser.setLinkableDependencies(dependencies)
 
       assert.deepEqual(packageParser.getLinkableDependencies(), [
-        { name: '@shopgate/pwa-common', path: join(dir, 'pwa-common') },
-        { name: '@shopgate/pwa-core', path: join(dir, 'pwa-core') },
-        { name: '@shopgate/eslint-config', path: join(dir, 'eslint-config') }
+        { name: '@shopgate/pwa-common', path: join(PWA_FOLDER, 'pwa-common') },
+        { name: '@shopgate/pwa-core', path: join(PWA_FOLDER, 'pwa-core') },
+        { name: '@shopgate/eslint-config', path: join(PWA_FOLDER, 'eslint-config') }
       ])
     })
 
