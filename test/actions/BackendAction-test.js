@@ -88,15 +88,4 @@ describe('BackendAction', () => {
       }
     })
   })
-
-  describe('starting', () => {
-    it('should start the connection', (done) => {
-      callbacks.selectApplication = (appId, cb) => {
-        assert.equal(appId, 'foobarTest')
-        assert.equal(typeof cb, 'function')
-        done()
-      }
-      backendAction.run('start')
-    })
-  })
 })
