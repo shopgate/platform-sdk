@@ -4,7 +4,7 @@ const mkdirp = require('mkdirp')
 const AppSettings = require('../../../lib/app/AppSettings')
 const UserSettings = require('../../../lib/user/UserSettings')
 const BackendProcess = require('../../../lib/app/backend/BackendProcess')
-
+const rimraf = require('rimraf')
 const appPath = path.join('test', 'appsettings')
 
 /**
@@ -13,23 +13,16 @@ const appPath = path.join('test', 'appsettings')
  * + first test does not disconnect..
  */
 describe('BackendProcess', () => {
-  let backendProccess
+  let backendProcess
   let mockServer
-  let testFolder
-
-  before(() => {
-    process.env.SGCLOUD_DC_WS_ADDRESS = 'http://localhost:12223'
-    testFolder = path.join('test', 'appsettings')
-    process.env.APP_PATH = testFolder
-  })
-
-  after(() => {
-    delete process.env.SGCLOUD_DC_WS_ADDRESS
-  })
+  let appTestFolder
 
   beforeEach(() => {
+    process.env.SGCLOUD_DC_WS_ADDRESS = 'http://localhost:12223'
+    appTestFolder = path.join('test', 'appsettings')
+    process.env.APP_PATH = appTestFolder
     mockServer = require('socket.io').listen(12223)
-    backendProccess = new BackendProcess()
+    backendProcess = new BackendProcess()
     const appSettings = new AppSettings()
     mkdirp.sync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
     appSettings.setId('shop_10006').setAttachedExtensions({}).save().init()
@@ -38,15 +31,19 @@ describe('BackendProcess', () => {
   })
 
   afterEach((done) => {
-    /*backendProccess.disconnect((err) => {
+    backendProcess.extensionWatcher.close((err) => {
       if (err) return done(err)
-      mockServer.close(() => {
-        console.log("Mockserver closed")
-        done()
+      backendProcess.disconnect((err) => {
+        if (err) return done(err)
+        mockServer.close((err) => {
+          if (err) return done(err)
+          delete process.env.SGCLOUD_DC_WS_ADDRESS
+          delete process.env.APP_PATH
+          delete process.env.USER_PATH
+          rimraf(appTestFolder, done)
+        })
       })
-    })*/
-    backendProccess.disconnect((err) => { assert.ifError(err) })
-    setTimeout(() => mockServer.close(done), 5) // Client has to disconnect first
+    })
   })
 
   describe('select application', () => {
@@ -57,7 +54,7 @@ describe('BackendProcess', () => {
           cb()
         })
       })
-      backendProccess.connect(done)
+      backendProcess.connect(done)
     })
 
     it('should fail if socket sends error', (done) => {
@@ -69,7 +66,7 @@ describe('BackendProcess', () => {
         })
       })
 
-      backendProccess.connect((err) => {
+      backendProcess.connect((err) => {
         assert.ok(err)
         assert.equal(err.code, 403)
         done()
@@ -77,8 +74,8 @@ describe('BackendProcess', () => {
     })
 
     it('should fail if socket is not open', (done) => {
-      backendProccess.socket = null
-      backendProccess.selectApplication('shop_10006', err => {
+      backendProcess.socket = null
+      backendProcess.selectApplication('shop_10006', err => {
         assert.ok(err)
         assert.equal(err.message, 'Connection not established')
         done()
@@ -97,10 +94,9 @@ describe('BackendProcess', () => {
           cb()
           done()
         })
-
       })
-      backendProccess.connect(() => {
-        backendProccess.extensionWatcher.onAttach('ext1')
+      backendProcess.connect(() => {
+        backendProcess.extensionWatcher.onAttach('ext1')
       })
     })
 
@@ -116,10 +112,9 @@ describe('BackendProcess', () => {
           cb()
           done()
         })
-
       })
-      backendProccess.connect(() => {
-        backendProccess.extensionWatcher.onDetach('ext1')
+      backendProcess.connect(() => {
+        backendProcess.extensionWatcher.onDetach('ext1')
       })
     })
   })
