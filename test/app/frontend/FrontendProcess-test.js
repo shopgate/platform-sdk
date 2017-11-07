@@ -9,9 +9,15 @@ const { join } = require('path')
 const rimraf = require('rimraf')
 const mkdirp = require('mkdirp')
 const sinon = require('sinon')
+const assert = require('assert')
 const UserSettings = require('../../../lib/user/UserSettings')
 const AppSettings = require('../../../lib/app/AppSettings')
-const FrontendProcess = require('../../../lib/app/frontend/FrontendProcess')
+const proxyquire = require('proxyquire')
+
+const forkFailError = 'Fork failed!'
+let forkFail = false
+let forkSpy
+const logSetupNeededSpy = sinon.spy()
 
 const userSettingsPath = join('test', 'usersettings')
 const appSettingsPath = join('test', 'appsettings')
@@ -30,28 +36,46 @@ describe('FrontendProcess', () => {
     AppSettings.setInstance(appSettings)
     UserSettings.getInstance().getSession().token = {}
 
-    frontendProcess = new FrontendProcess()
+    const FrontendProcess = proxyquire('../../../lib/app/frontend/FrontendProcess', {
+      child_process: {
+        fork: forkSpy = sinon.spy(() => {
+          if (forkFail) {
+            throw new Error(forkFailError)
+          }
+        })
+      },
+      './LogHelper': {
+        logSetupNeeded: logSetupNeededSpy
+      }
+    })
+
+    frontendProcess = new FrontendProcess({
+      theme: null
+    })
   })
 
   afterEach((done) => {
     UserSettings.setInstance()
+
     delete process.env.USER_PATH
+    delete process.env.APP_PATH
+
     rimraf(userSettingsPath, () => {
       rimraf(appSettingsPath, done)
     })
   })
 
-  describe('FrontendProcess.init()', () => {
+  describe('init()', () => {
     beforeEach(() => {
       frontendProcess.frontendSetup.run = () => Promise.resolve()
-      frontendProcess.logHelper.logSetupNeeded = () => {}
       frontendProcess.rapidDevServer = () => {}
+      frontendProcess.webpackDevServer = () => {}
     })
 
     it('should run the frontend setup if nothing is set', () => {
       const runSpy = sinon.spy(frontendProcess.frontendSetup, 'run')
 
-      frontendProcess.init({ rapid: {} })
+      frontendProcess.init()
       sinon.assert.calledOnce(runSpy)
       runSpy.restore()
     })
@@ -63,36 +87,108 @@ describe('FrontendProcess', () => {
       frontendProcess.port = true
       frontendProcess.apiPort = true
 
-      frontendProcess.init({ rapid: {} })
+      frontendProcess.init()
       sinon.assert.notCalled(runSpy)
       runSpy.restore()
     })
   })
 
-  describe('FrontendProcess.rapidDevServer()', () => {
+  describe('rapidDevServer()', () => {
     beforeEach(() => {
       frontendProcess.frontendSetup.run = () => Promise.resolve()
-      frontendProcess.logHelper.logSetupNeeded = () => {}
-      frontendProcess.rapidDevServer = () => {}
+      frontendProcess.webpackDevServer = () => {}
     })
 
     it('should not start the rapid dev server if no variables are set', () => {
       const rapidDevServerSpy = sinon.spy(frontendProcess, 'rapidDevServer')
 
-      frontendProcess.init({ rapid: {} })
+      frontendProcess.init()
       sinon.assert.notCalled(rapidDevServerSpy)
     })
 
-    it('should start the call the rapid dev server if all is set', () => {
+    it('should start the call the rapid dev server if all is set', (done) => {
       const rapidDevServerSpy = sinon.spy(frontendProcess, 'rapidDevServer')
 
       frontendProcess.ip = true
       frontendProcess.port = true
       frontendProcess.apiPort = true
 
-      frontendProcess.init({ rapid: {} })
+      frontendProcess.init()
         .then(() => {
           sinon.assert.calledOnce(rapidDevServerSpy)
+          sinon.assert.calledOnce(forkSpy)
+          done()
+        })
+        .catch((error) => {
+          done(error)
+        })
+    })
+
+    it('should throw a error if something went wrong', (done) => {
+      frontendProcess.ip = true
+      frontendProcess.port = true
+      frontendProcess.apiPort = true
+      forkFail = true
+
+      frontendProcess.init()
+        .then(() => {
+          forkFail = false
+          done('Did not throw!')
+        })
+        .catch((error) => {
+          forkFail = false
+          assert.equal(error.message, forkFailError)
+          done()
+        })
+    })
+  })
+
+  describe('webpackDevServer()', () => {
+    beforeEach(() => {
+      frontendProcess.frontendSetup.run = () => Promise.resolve()
+      frontendProcess.rapidDevServer = () => {}
+    })
+
+    it('should not start the webpack dev server if no variables are set', () => {
+      const rapidDevServerSpy = sinon.spy(frontendProcess, 'webpackDevServer')
+
+      frontendProcess.init()
+      sinon.assert.notCalled(rapidDevServerSpy)
+    })
+
+    it('should start the call the webpack dev server if all is set', (done) => {
+      const rapidDevServerSpy = sinon.spy(frontendProcess, 'webpackDevServer')
+
+      frontendProcess.ip = true
+      frontendProcess.port = true
+      frontendProcess.apiPort = true
+
+      frontendProcess.init()
+        .then(() => {
+          sinon.assert.calledOnce(rapidDevServerSpy)
+          sinon.assert.calledOnce(forkSpy)
+          done()
+        })
+        .catch((error) => {
+          done(error)
+        })
+    })
+
+    it('should throw a error if something went wrong', (done) => {
+      frontendProcess.ip = true
+      frontendProcess.port = true
+      frontendProcess.apiPort = true
+      forkFail = true
+
+      frontendProcess.init()
+        .then(() => {
+          forkFail = false
+          done('Did not throw!')
+        })
+        .catch((error) => {
+          forkFail = false
+          assert.equal(error.message, forkFailError)
+          done()
         })
     })
   })
