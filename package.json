@@ -73,8 +73,7 @@
     "npm": ">= 5.0.0"
   },
   "pre-commit": [
-    "lint-staged",
-    "test"
+    "lint-staged"
   ],
   "nyc": {
     "include": [

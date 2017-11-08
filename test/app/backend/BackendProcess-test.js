@@ -7,11 +7,6 @@ const BackendProcess = require('../../../lib/app/backend/BackendProcess')
 const rimraf = require('rimraf')
 const appPath = path.join('test', 'appsettings')
 
-/**
- * TODO:
- * + full selectApplication test - even though it will be removed?
- * + first test does not disconnect..
- */
 describe('BackendProcess', () => {
   let backendProcess
   let mockServer
