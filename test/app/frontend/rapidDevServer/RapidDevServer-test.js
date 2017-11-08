@@ -38,7 +38,8 @@ const server = {
   }),
   on: sinon.spy(),
   use: sinon.spy(),
-  post: sinon.spy()
+  post: sinon.spy(),
+  opts: sinon.spy()
 }
 
 let serverNull = false
