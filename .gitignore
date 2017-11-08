@@ -4,5 +4,4 @@ node_modules
 npm-debug.log*
 build
 .nyc_output
-package-lock.json
 .vscode/settings.json
