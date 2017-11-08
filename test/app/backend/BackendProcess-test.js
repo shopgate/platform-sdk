@@ -82,7 +82,7 @@ describe('BackendProcess', () => {
         })
       })
       backendProcess.connect(() => {
-        backendProcess.extensionWatcher.eventEmitter.emit('attach', 'ext1')
+        backendProcess.extensionWatcher.emit('attach', 'ext1')
       })
     })
 
@@ -100,7 +100,7 @@ describe('BackendProcess', () => {
         })
       })
       backendProcess.connect(() => {
-        backendProcess.extensionWatcher.eventEmitter.emit('detach', 'ext1')
+        backendProcess.extensionWatcher.emit('detach', 'ext1')
       })
     })
   })
