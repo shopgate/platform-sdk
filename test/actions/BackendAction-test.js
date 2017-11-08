@@ -87,5 +87,13 @@ describe('BackendAction', () => {
         assert.equal(err.message, 'unknown action "invalid"')
       }
     })
+
+    it('shold work', () => {
+      try {
+        backendAction.run('start')
+      } catch (err) {
+        assert.ifError(err)
+      }
+    })
   })
 })
