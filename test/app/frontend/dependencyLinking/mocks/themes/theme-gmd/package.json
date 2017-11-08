@@ -1,12 +1,5 @@
 {
   "name": "@shopgate/theme-gmd",
-  "version": "0.1.18",
-  "description": "Shopgate's Google Material app theme.",
-  "main": "index.jsx",
-  "repository": "shopgate/theme-gmd",
-  "bugs": "https://github.com/shopgate/theme-gmd/issues",
-  "homepage": "https://github.com/shopgate/theme-gmd",
-  "license": "Apache-2.0",
   "dependencies": {
     "@shopgate/pwa-common": "^0.1.8",
     "@shopgate/pwa-common-commerce": "^0.1.14",

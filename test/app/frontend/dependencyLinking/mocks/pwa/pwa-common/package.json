@@ -1,9 +1,5 @@
 {
   "name": "@shopgate/pwa-common",
-  "version": "0.1.9",
-  "description": "Shopgate's common library for PWAs",
-  "repository": "shopgate/pwa-common",
-  "license": "Apache-2.0",
   "devDependencies": {
     "@shopgate/eslint-config": "^1.0.2",
     "@shopgate/pwa-core": "^0.1.3",

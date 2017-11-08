@@ -1,12 +1,5 @@
 {
   "name": "@shopgate/theme-ios11",
-  "version": "0.1.16",
-  "description": "Shopgate's Google Material app theme.",
-  "main": "index.jsx",
-  "repository": "shopgate/theme-ios11",
-  "bugs": "https://github.com/shopgate/theme-ios11/issues",
-  "homepage": "https://github.com/shopgate/theme-ios11",
-  "license": "Apache-2.0",
   "dependencies": {
     "@shopgate/pwa-common": "^0.1.8",
     "@shopgate/pwa-common-commerce": "^0.1.14",

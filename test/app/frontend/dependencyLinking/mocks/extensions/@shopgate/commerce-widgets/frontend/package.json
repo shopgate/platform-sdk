@@ -1,11 +1,5 @@
 {
   "name": "@shopgate/commerce-widgets",
-  "version": "0.1.11",
-  "description": "Shopgate Commerce Widgets Extension.",
-  "repository": "github:shopgate/commerce-widgets",
-  "bugs": "https://github.com/shopgate/commerce-widgets/issues",
-  "homepage": "https://github.com/shopgate/commerce-widgets",
-  "license": "Apache-2.0",
   "dependencies": {
     "babel-core": "^6.26.0"
   },

@@ -13,7 +13,7 @@ const THEMES_FOLDER = join(__dirname, 'mocks/themes')
 const EXTENSIONS_FOLDER = join(__dirname, 'mocks/extensions')
 const PWA_FOLDER = join(__dirname, 'mocks/pwa')
 
-const DependencyLinker = proxyquire('../../../../lib/app/frontend/dependencyLinking/DependencyLinker', {
+const dependencyLinker = proxyquire('../../../../lib/app/frontend/dependencyLinking/DependencyLinker', {
   '../../../app/AppSettings': {
     EXTENSIONS_FOLDER
   },
@@ -29,6 +29,7 @@ const DependencyLinker = proxyquire('../../../../lib/app/frontend/dependencyLink
 
 describe('DependencyLinker', () => {
   let loggerStub
+  let execSpy
 
   before(() => {
     /**
@@ -43,10 +44,15 @@ describe('DependencyLinker', () => {
     loggerStub.restore()
   })
 
-  it('should link everything without options', () => {
-    const dependencyLinker = new DependencyLinker()
-    const execSpy = sinon.spy(dependencyLinker, 'exec')
+  beforeEach(() => {
+    execSpy = sinon.spy(dependencyLinker, 'exec')
+  })
 
+  afterEach(() => {
+    execSpy.restore()
+  })
+
+  it('should link everything without options', () => {
     dependencyLinker
       .init()
       .link()
@@ -77,11 +83,9 @@ describe('DependencyLinker', () => {
     const options = {
       theme: 'ios11'
     }
-    const dependencyLinker = new DependencyLinker(options)
-    const execSpy = sinon.spy(dependencyLinker, 'exec')
 
     dependencyLinker
-      .init()
+      .init(options)
       .link()
 
     sinon.assert.callCount(execSpy, 6)
@@ -93,5 +97,13 @@ describe('DependencyLinker', () => {
       execSpy.withArgs('npm link @shopgate/pwa-core', join(THEMES_FOLDER, 'theme-ios11'), true),
       execSpy.withArgs('npm link @shopgate/eslint-config', join(THEMES_FOLDER, 'theme-ios11'), true)
     )
+  })
+
+  it('should link nothing if no packages are set', () => {
+    dependencyLinker
+      .reset()
+      .link()
+
+    sinon.assert.callCount(execSpy, 0)
   })
 })

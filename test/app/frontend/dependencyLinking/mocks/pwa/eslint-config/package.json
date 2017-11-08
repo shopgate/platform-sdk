@@ -1,14 +1,5 @@
 {
   "name": "@shopgate/eslint-config",
-  "version": "1.0.2",
-  "description": "The eslint rules for all projects at Shopgate.",
-  "author": "Shopgate <support@shopgate.com>",
-  "license": "Apache-2.0",
-  "main": "./ruleset/index.js",
-  "repository": {
-    "type": "git",
-    "url": "git@github.com:shopgate/eslint-config-shopgate.git"
-  },
   "dependencies": {
     "babel-eslint": "7.2.3",
     "eslint": "3.19.0",
