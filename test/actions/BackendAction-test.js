@@ -87,16 +87,13 @@ describe('BackendAction', () => {
         assert.equal(err.message, 'unknown action "invalid"')
       }
     })
-  })
 
-  describe('starting', () => {
-    it('should start the connection', (done) => {
-      callbacks.selectApplication = (appId, cb) => {
-        assert.equal(appId, 'foobarTest')
-        assert.equal(typeof cb, 'function')
-        done()
+    it('shold work', () => {
+      try {
+        backendAction.run('start')
+      } catch (err) {
+        assert.ifError(err)
       }
-      backendAction.run('start')
     })
   })
 })

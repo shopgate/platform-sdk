@@ -43,11 +43,13 @@
   "dependencies": {
     "bunyan": "^1.8.12",
     "bunyan-format": "^0.2.1",
+    "chokidar": "^1.7.0",
     "commander": "^2.11.0",
     "fs-extra": "^4.0.2",
     "glob": "^7.1.2",
     "inquirer": "^3.3.0",
     "mkdirp": "^0.5.1",
+    "neo-async": "^2.5.0",
     "request": "^2.83.0",
     "socket.io-client": "^2.0.4"
   },

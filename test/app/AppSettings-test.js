@@ -27,6 +27,7 @@ describe('AppSettings', () => {
     const appSettings = new AppSettings()
     mkdirp.sync(appSettings.settingsFolder)
     fs.writeFileSync(appSettings.settingsFile, JSON.stringify({}))
+    fs.writeFileSync(appSettings.attachedExtensionsFile, JSON.stringify({}))
     try {
       appSettings.init()
     } catch (err) {
