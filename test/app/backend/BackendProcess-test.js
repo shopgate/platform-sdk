@@ -1,6 +1,7 @@
 const assert = require('assert')
 const path = require('path')
 const mkdirp = require('mkdirp')
+const fsEx = require('fs-extra')
 const AppSettings = require('../../../lib/app/AppSettings')
 const UserSettings = require('../../../lib/user/UserSettings')
 const BackendProcess = require('../../../lib/app/backend/BackendProcess')
@@ -76,13 +77,19 @@ describe('BackendProcess', () => {
         })
 
         sock.on('registerExtension', (data, cb) => {
-          assert.equal(data, 'ext1')
+          assert.equal(data, 'testExt')
           cb()
           done()
         })
       })
       backendProcess.connect(() => {
-        backendProcess.extensionWatcher.emit('attach', 'ext1')
+        fsEx.writeJSONSync(backendProcess.extensionWatcher.configPath, {
+          'attachedExtensions': {
+            'testExt': {
+              'id': 'testExt'
+            }
+          }
+        })
       })
     })
 
@@ -94,13 +101,26 @@ describe('BackendProcess', () => {
         })
 
         sock.on('deregisterExtension', (data, cb) => {
-          assert.equal(data, 'ext1')
+          assert.equal(data, 'testExt')
           cb()
           done()
         })
       })
       backendProcess.connect(() => {
-        backendProcess.extensionWatcher.emit('detach', 'ext1')
+        backendProcess.extensionWatcher.watcher.interval = 1
+
+        fsEx.writeJSONSync(backendProcess.extensionWatcher.configPath, {
+          'attachedExtensions': {
+            'testExt': {
+              'id': 'testExt'
+            }
+          }
+        })
+        setTimeout(() => {
+          fsEx.writeJSONSync(backendProcess.extensionWatcher.configPath, {
+            'attachedExtensions': {}
+          })
+        }, 5) // Because of Filewatcher-interval
       })
     })
   })
