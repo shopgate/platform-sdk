@@ -68,15 +68,6 @@ describe('BackendProcess', () => {
       })
     })
 
-    it('should fail if socket is not open', (done) => {
-      backendProcess.socket = null
-      backendProcess.selectApplication('shop_10006', err => {
-        assert.ok(err)
-        assert.equal(err.message, 'Connection not established')
-        done()
-      })
-    })
-
     it('should forward on extensions attach', (done) => {
       mockServer.on('connection', (sock) => {
         sock.on('selectApplication', (data, cb) => {
@@ -91,7 +82,7 @@ describe('BackendProcess', () => {
         })
       })
       backendProcess.connect(() => {
-        backendProcess.extensionWatcher.onAttach('ext1')
+        backendProcess.extensionWatcher.eventEmitter.emit('attach', 'ext1')
       })
     })
 
@@ -109,7 +100,7 @@ describe('BackendProcess', () => {
         })
       })
       backendProcess.connect(() => {
-        backendProcess.extensionWatcher.onDetach('ext1')
+        backendProcess.extensionWatcher.eventEmitter.emit('detach', 'ext1')
       })
     })
   })
