@@ -38,7 +38,8 @@ const server = {
   }),
   on: sinon.spy(),
   use: sinon.spy(),
-  post: sinon.spy()
+  post: sinon.spy(),
+  opts: sinon.spy()
 }
 
 let serverNull = false
@@ -307,18 +308,6 @@ describe('RapidDevServer', () => {
       rapidDevServer.setContentTypeHeaders(req, {}, spy)
       sinon.assert.calledOnce(spy)
       assert.equal(JSON.stringify(req), JSON.stringify(after))
-    })
-  })
-
-  describe('setCrossOriginHeaders()', () => {
-    it('should set two headers', () => {
-      const spy = sinon.spy()
-      const res = {
-        header: sinon.spy()
-      }
-      rapidDevServer.setCrossOriginHeaders({}, res, spy)
-      sinon.assert.calledTwice(res.header)
-      sinon.assert.calledOnce(spy)
     })
   })
 })
