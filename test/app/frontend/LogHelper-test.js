@@ -8,13 +8,21 @@
 const { bold } = require('chalk')
 const assert = require('assert')
 const sinon = require('sinon')
-const LogHelper = require('../../../lib/app/frontend/LogHelper')
+const proxyquire = require('proxyquire')
 
-const logHelper = new LogHelper()
+const logger = {
+  plain: sinon.spy()
+}
+
+const logHelper = proxyquire('../../../lib/app/frontend/LogHelper', {
+  '../../logger': logger
+})
+
+process.env.silent = false
 
 describe('LogHelper', () => {
-  beforeEach(() => {
-    logHelper.log = () => {}
+  afterEach(() => {
+    logger.plain.reset()
   })
 
   it('should return the divider', () => {
@@ -26,54 +34,31 @@ describe('LogHelper', () => {
   })
 
   it('should log the silent mode information', () => {
-    const spy = sinon.spy(logHelper, 'log')
-
     process.env.silent = true
-    logHelper.logSilentMode()
 
-    assert(spy.withArgs(bold('  SILENT MODE: logs will be suppressed.\n')).calledOnce)
+    logHelper.logSilentMode()
+    sinon.assert.calledWith(logger.plain, bold('  SILENT MODE: logs will be suppressed.\n'))
 
     process.env.silent = false
-    spy.restore()
   })
 
   it('should log the dev server logo', () => {
-    const spy = sinon.spy(logHelper, 'log')
-
     logHelper.logLogo()
-
-    assert.ok(spy.called)
-
-    spy.restore()
+    sinon.assert.called(logger.plain)
   })
 
   it('should log the setup logo', () => {
-    const spy = sinon.spy(logHelper, 'log')
-
     logHelper.logSetupLogo()
-
-    assert.ok(spy.called)
-
-    spy.restore()
+    sinon.assert.called(logger.plain)
   })
 
   it('should log the setup needed logo', () => {
-    const spy = sinon.spy(logHelper, 'log')
-
     logHelper.logSetupNeeded()
-
-    assert.ok(spy.called)
-
-    spy.restore()
+    sinon.assert.called(logger.plain)
   })
 
   it('should show a start up log', () => {
-    const spy = sinon.spy(logHelper, 'log')
-
     logHelper.logStartUp()
-
-    assert.ok(spy.called)
-
-    spy.restore()
+    sinon.assert.called(logger.plain)
   })
 })

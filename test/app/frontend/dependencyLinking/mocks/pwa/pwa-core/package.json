@@ -1,0 +1,11 @@
+{
+  "name": "@shopgate/pwa-core",
+  "dependencies": {
+    "crypto-js": "3.1.9-1",
+    "isomorphic-fetch": "^2.2.1"
+  },
+  "devDependencies": {
+    "@shopgate/eslint-config": "^1.0.2",
+    "babel-core": "^6.26.0"
+  }
+}
