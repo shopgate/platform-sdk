@@ -1,6 +1,6 @@
 {
   "name": "@shopgate/cloud-sdk",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "Shopgate's Cloud SDK",
   "main": "index.js",
   "scripts": {
@@ -59,12 +59,12 @@
     "mocha": "^4.0.1",
     "mock-require": "^2.0.2",
     "mock-stdin": "^0.3.1",
-    "nock": "^9.0.25",
-    "nsp": "^2.8.1",
+    "nock": "^9.1.0",
+    "nsp": "^3.1.0",
     "nyc": "^11.3.0",
     "pre-commit": "^1.2.2",
     "rimraf": "^2.6.2",
-    "sinon": "^4.0.2",
+    "sinon": "^4.1.2",
     "socket.io": "^2.0.4",
     "standard": "^10.0.3"
   },
