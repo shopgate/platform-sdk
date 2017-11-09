@@ -1,0 +1,6 @@
+{
+  "name": "@customscope/extension-one",
+  "devDependencies": {
+    "@shopgate/pwa-common": "^0.1.9"
+  }
+}

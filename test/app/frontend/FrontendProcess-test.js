@@ -26,6 +26,9 @@ const appId = 'foobarTest'
 let frontendProcess
 
 describe('FrontendProcess', () => {
+  const linkerInitSpy = sinon.spy()
+  const linkerLinkSpy = sinon.spy()
+
   beforeEach(() => {
     process.env.USER_PATH = userSettingsPath
     process.env.APP_PATH = appSettingsPath
@@ -46,6 +49,10 @@ describe('FrontendProcess', () => {
       },
       './LogHelper': {
         logSetupNeeded: logSetupNeededSpy
+      },
+      './dependencyLinking/DependencyLinker': {
+        init: linkerInitSpy,
+        link: linkerLinkSpy
       }
     })
 
@@ -190,6 +197,22 @@ describe('FrontendProcess', () => {
           assert.equal(error.message, forkFailError)
           done()
         })
+    })
+  })
+
+  describe('linkDependencies()', () => {
+    afterEach(() => {
+      linkerInitSpy.reset()
+      linkerLinkSpy.reset()
+    })
+
+    it('should call methods in the right order', () => {
+      frontendProcess.linkDependencies()
+
+      sinon.assert.calledOnce(linkerInitSpy)
+      sinon.assert.calledOnce(linkerLinkSpy)
+
+      sinon.assert.callOrder(linkerInitSpy, linkerLinkSpy)
     })
   })
 })
