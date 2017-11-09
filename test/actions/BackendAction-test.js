@@ -97,6 +97,56 @@ describe('BackendAction', () => {
       }
     })
 
+    it('should call dcClient if pipelines were updated', (done) => {
+      backendAction.dcClient = {
+        updatePipeline: (pipeline, id, userSession, cb) => {
+          done()
+          cb()
+        }
+      }
+      backendAction.backendProcess = {
+        connect: (cb) => { cb() }
+      }
+      backendAction.pipelineWatcher = {
+        start: () => { return backendAction.pipelineWatcher },
+        stop: (cb) => { cb() },
+        on: (name, cb) => {
+          cb({
+            pipeline: {pipeline: {id: 'testPipeline'}}
+          })
+        }
+      }
+
+      backendAction._startSubProcess()
+    })
+
+    it('should throw error if dcClient is not reachable', (done) => {
+      backendAction.dcClient = {
+        updatePipeline: (pipeline, id, userSession, cb) => {
+          cb({message: 'EUNKNOWN'})
+        }
+      }
+      backendAction.backendProcess = {
+        connect: (cb) => { cb() }
+      }
+      backendAction.pipelineWatcher = {
+        start: () => { return backendAction.pipelineWatcher },
+        stop: (cb) => { cb() },
+        on: (name, cb) => {
+          cb({
+            pipeline: {pipeline: {id: 'testPipeline'}}
+          })
+        }
+      }
+      try {
+        backendAction._startSubProcess()
+      } catch (err) {
+        assert.ok(err)
+        assert.equal(err.message, `Could not update pipeline 'undefined' (EUNKNOWN)`)
+        done()
+      }
+    })
+
     it('shold work', () => {
       try {
         backendAction.run('start')
