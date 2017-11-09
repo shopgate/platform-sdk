@@ -13,7 +13,7 @@ describe('BackendProcess', () => {
   let appTestFolder
 
   beforeEach(() => {
-    process.env.SGCLOUD_DC_WS_ADDRESS = 'http://localhost:12223'
+    process.env.SGCLOUD_DC_ADDRESS = 'http://localhost:12223'
     appTestFolder = path.join('test', 'appsettings')
     process.env.APP_PATH = appTestFolder
     mockServer = require('socket.io').listen(12223)
@@ -32,7 +32,7 @@ describe('BackendProcess', () => {
         if (err) return done(err)
         mockServer.close((err) => {
           if (err) return done(err)
-          delete process.env.SGCLOUD_DC_WS_ADDRESS
+          delete process.env.SGCLOUD_DC_ADDRESS
           delete process.env.APP_PATH
           delete process.env.USER_PATH
           rimraf(appTestFolder, done)

@@ -52,9 +52,18 @@ describe('BackendAction', () => {
   afterEach((done) => {
     UserSettings.setInstance()
     delete process.env.USER_PATH
-    rimraf(userSettingsFolder, () => {
-      rimraf(path.join('extensions'), done)
-    })
+    if (backendAction.pipelineWatcher) {
+      backendAction.pipelineWatcher.stop((err) => {
+        if (err) return done(err)
+        rimraf(userSettingsFolder, () => {
+          rimraf(path.join('extensions'), done)
+        })
+      })
+    } else {
+      rimraf(userSettingsFolder, () => {
+        rimraf(path.join('extensions'), done)
+      })
+    }
   })
 
   describe('general', () => {
