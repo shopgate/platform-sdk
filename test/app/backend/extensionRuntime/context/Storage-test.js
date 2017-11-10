@@ -19,19 +19,15 @@ describe('Storage', () => {
     rimraf(storagePath, done)
   })
 
-  it('getInstance should give me the same instance', () => {
-    const storage = Storage.getInstance()
-    storage.foobar = 'barfoo'
-    assert.equal(Storage.getInstance(), storage)
-  })
-
   describe('constructor', () => {
     it('should construct with default path', () => {
       delete process.env.STORAGE_PATH
-      storage = new Storage()
+      const log = {log: true}
+      storage = new Storage(log)
       assert.equal(storage.path, path.join(AppSettings.SETTINGS_FOLDER, 'storage.json'))
       assert.equal(storage.saveQueued, undefined)
       assert.equal(storage.saving, undefined)
+      assert.equal(storage.log, log)
     })
 
     it('should construct empty', () => {
@@ -39,16 +35,19 @@ describe('Storage', () => {
       assert.deepEqual(storage.data, {})
       assert.equal(storage.saveQueued, undefined)
       assert.equal(storage.saving, undefined)
+      assert.equal(storage.log, undefined)
     })
 
     it('should construct with data', () => {
       const data = {foo: 'bar', bar: 'foo'}
+      const log = {log: true}
       fsExtra.writeJsonSync(storagePath, data)
-      storage = new Storage()
+      storage = new Storage(log)
       assert.equal(storage.path, storagePath)
       assert.deepEqual(storage.data, data)
       assert.equal(storage.saveQueued, undefined)
       assert.equal(storage.saving, undefined)
+      assert.equal(storage.log, log)
     })
   })
 
@@ -159,6 +158,15 @@ describe('Storage', () => {
         done()
       }
       storage.saveCb()
+    })
+
+    it('should log errors', done => {
+      const error = new Error()
+      storage = new Storage({error: (err) => {
+        assert.equal(err, error)
+        done()
+      }})
+      storage.saveCb(error)
     })
   })
 })

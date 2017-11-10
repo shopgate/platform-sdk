@@ -90,6 +90,7 @@
       "text-summary"
     ],
     "all": true,
-    "report-dir": "build"
+    "report-dir": "build",
+    "cache": false
   }
 }
