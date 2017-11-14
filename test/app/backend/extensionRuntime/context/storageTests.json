@@ -1,0 +1,116 @@
+[
+  {
+     "should":"get extension value",
+     "extensionId":"foo.get.extension",
+     "type":"extension",
+     "method":"get",
+     "key":"extensionGet",
+     "path":"foo.get.extension/storage/extensionGet",
+     "value":"extensionGetValue"
+  },
+  {
+     "should":"set extension value",
+     "extensionId":"foo.set.extension",
+     "type":"extension",
+     "method":"set",
+     "key":"extensionSet",
+     "path":"foo.set.extension/storage/extensionSet",
+     "value":"extensionSetValue"
+  },
+  {
+     "should":"del extension value",
+     "extensionId":"foo.del.extension",
+     "type":"extension",
+     "method":"del",
+     "key":"extensionDel",
+     "path":"foo.del.extension/storage/extensionDel"
+  },
+  {
+     "should":"get device value",
+     "extensionId":"foo.get.device",
+     "type":"device",
+     "method":"get",
+     "key":"deviceGet",
+     "path":"foo.get.device/devices/deviceFooGet/deviceGet",
+     "value":"deviceGetValue",
+     "meta":{
+        "deviceId":"deviceFooGet"
+     }
+  },
+  {
+     "should":"set device value",
+     "extensionId":"foo.set.device",
+     "type":"device",
+     "method":"set",
+     "key":"deviceSet",
+     "path":"foo.set.device/devices/deviceFooSet/deviceSet",
+     "value":"deviceSetValue",
+     "meta":{
+        "deviceId":"deviceFooSet"
+     }
+  },
+  {
+     "should":"del device value",
+     "extensionId":"foo.del.device",
+     "type":"device",
+     "method":"del",
+     "key":"deviceDel",
+     "path":"foo.del.device/devices/deviceFooDel/deviceDel",
+     "meta":{
+        "deviceId":"deviceFooDel"
+     }
+  },
+  {
+     "should":"get user value",
+     "extensionId":"foo.get.user",
+     "type":"user",
+     "method":"get",
+     "key":"userGet",
+     "path":"foo.get.user/users/userFooGet/userGet",
+     "value":"userGetValue",
+     "meta":{
+        "userId":"userFooGet"
+     }
+  },
+  {
+     "should":"set user value",
+     "extensionId":"foo.set.user",
+     "type":"user",
+     "method":"set",
+     "key":"userSet",
+     "path":"foo.set.user/users/userFooSet/userSet",
+     "value":"userSetValue",
+     "meta":{
+        "userId":"userFooSet"
+     }
+  },
+  {
+     "should":"del user value",
+     "extensionId":"foo.del.user",
+     "type":"user",
+     "method":"del",
+     "key":"userDel",
+     "path":"foo.del.user/users/userFooDel/userDel",
+     "meta":{
+        "userId":"userFooDel"
+     }
+  },
+  {
+     "should":"get user value",
+     "type":"user",
+     "method":"get",
+     "err":"user not logged in"
+  },
+  {
+     "should":"set user value",
+     "type":"user",
+     "method":"set",
+     "err":"user not logged in"
+  },
+  {
+     "should":"del user value",
+     "type":"user",
+     "method":"del",
+     "err":"user not logged in"
+  }
+]
