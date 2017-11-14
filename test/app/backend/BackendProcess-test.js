@@ -120,7 +120,7 @@ describe('BackendProcess', () => {
           fsEx.writeJSONSync(backendProcess.extensionWatcher.configPath, {
             'attachedExtensions': {}
           })
-        }, 5) // Because of Filewatcher-interval
+        }, 15) // Because of Filewatcher-interval
       })
     })
   })
