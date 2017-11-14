@@ -50,23 +50,21 @@ describe('PipelineWatcher', () => {
     let counter = 0
 
     pipelineWatcher.on('pipelineChanged', (pipeline) => {
-      assert.deepEqual(pipeline, writtenPipeline)
+      if (counter === 0) {
+        assert.deepEqual(pipeline, writtenPipeline)
+        fsEx.outputFileSync(path.join(pipelineWatcher.pipelineFolder, 'somePipeline.json'), '{someMalformedJson')
+        setTimeout(() => {
+          assert.equal(counter, 1)
+          done()
+        }, 20)
+      }
       counter++
     })
 
     pipelineWatcher.start()
     pipelineWatcher.watcher.interval = 1
 
-    setTimeout(() => {
-      fsEx.writeJsonSync(path.join(pipelineWatcher.pipelineFolder, 'somePipeline.json'), writtenPipeline)
-      setTimeout(() => {
-        fsEx.outputFileSync(path.join(pipelineWatcher.pipelineFolder, 'somePipeline.json'), '{someMalformed')
-        setTimeout(() => {
-          assert.equal(counter, 1)
-          done()
-        }, 5)
-      }, 5)
-    }, 5)
+    fsEx.writeJsonSync(path.join(pipelineWatcher.pipelineFolder, 'somePipeline.json'), writtenPipeline)
   })
 
   it('should stop watching on command', (done) => {
