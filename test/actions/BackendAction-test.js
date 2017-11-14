@@ -1,3 +1,4 @@
+/* eslint-disable standard/no-callback-literal */
 const assert = require('assert')
 const mock = require('mock-require')
 const sinon = require('sinon')

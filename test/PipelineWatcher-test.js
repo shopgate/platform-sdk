@@ -8,7 +8,6 @@ const PipelineWatcher = require('../lib/PipelineWatcher')
 const appPath = path.join('test', 'appsettings')
 
 describe('PipelineWatcher', () => {
-
   let pipelineWatcher
 
   beforeEach(() => {
@@ -44,7 +43,6 @@ describe('PipelineWatcher', () => {
   })
 
   it('should not emit malformed pipeline', (done) => {
-
     let writtenPipeline = {
       someAttribtue: '2'
     }
