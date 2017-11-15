@@ -86,25 +86,27 @@ describe('Context', () => {
   })
 
   it('should have app info', (done) => {
-    const meta = {deviceId: 'foobarDeviceId'}
-    const ics = {getInfos: (infoType, deviceId, cb) => {
+    const meta = {deviceId: 'foobarDeviceId', appId: 'foobarAppId'}
+    const dcHttpClient = {getInfos: (infoType, appId, deviceId, cb) => {
       assert.equal(infoType, 'appinfos')
+      assert.equal(appId, meta.appId)
       assert.equal(deviceId, meta.deviceId)
       cb()
     }}
-    const context = new Context(null, ics, null, null, meta)
+    const context = new Context(null, dcHttpClient, null, null, meta)
     assert.equal(Object.keys(context.app), 'getInfo')
     context.app.getInfo(done)
   })
 
   it('should have device info', (done) => {
-    const meta = {deviceId: 'foobarDeviceId'}
-    const ics = {getInfos: (infoType, deviceId, cb) => {
+    const meta = {deviceId: 'foobarDeviceId', appId: 'foobarAppId'}
+    const dcHttpClient = {getInfos: (infoType, appId, deviceId, cb) => {
       assert.equal(infoType, 'deviceinfos')
+      assert.equal(appId, meta.appId)
       assert.equal(deviceId, meta.deviceId)
       cb()
     }}
-    const context = new Context(null, ics, null, null, meta)
+    const context = new Context(null, dcHttpClient, null, null, meta)
     assert.equal(Object.keys(context.device), 'getInfo')
     context.device.getInfo(done)
   })
