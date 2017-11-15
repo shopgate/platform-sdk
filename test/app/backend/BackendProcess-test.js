@@ -77,7 +77,7 @@ describe('BackendProcess', () => {
         })
 
         sock.on('registerExtension', (data, cb) => {
-          assert.equal(data, 'testExt')
+          assert.deepEqual(data, {extensionId: 'testExt'})
           cb()
           done()
         })
@@ -101,7 +101,7 @@ describe('BackendProcess', () => {
         })
 
         sock.on('deregisterExtension', (data, cb) => {
-          assert.equal(data, 'testExt')
+          assert.deepEqual(data, {extensionId: 'testExt'})
           cb()
           done()
         })
