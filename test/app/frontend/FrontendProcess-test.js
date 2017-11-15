@@ -17,6 +17,7 @@ const proxyquire = require('proxyquire')
 const forkFailError = 'Fork failed!'
 let forkFail = false
 let forkSpy
+let sdkWebpackSpy
 const logSetupNeededSpy = sinon.spy()
 
 const userSettingsPath = join('test', 'usersettings')
@@ -53,8 +54,15 @@ describe('FrontendProcess', () => {
       './dependencyLinking/DependencyLinker': {
         init: linkerInitSpy,
         link: linkerLinkSpy
-      }
+      },
+      '@shopgate/cloud-sdk-webpack': sdkWebpackSpy = sinon.spy(() => {
+        if (forkFail) {
+          throw new Error(forkFailError)
+        }
+      })
     })
+
+    sdkWebpackSpy.reset()
 
     frontendProcess = new FrontendProcess({
       theme: null
@@ -173,7 +181,7 @@ describe('FrontendProcess', () => {
       frontendProcess.init()
         .then(() => {
           sinon.assert.calledOnce(rapidDevServerSpy)
-          sinon.assert.calledOnce(forkSpy)
+          sinon.assert.calledOnce(sdkWebpackSpy)
           done()
         })
         .catch((error) => {
