@@ -1,116 +1,131 @@
 [
   {
-     "should":"get extension value",
-     "extensionId":"foo.get.extension",
-     "type":"extension",
-     "method":"get",
-     "key":"extensionGet",
-     "path":"foo.get.extension/storage/extensionGet",
-     "value":"extensionGetValue"
+    "should": "get extension value",
+    "extensionId": "foo.get.extension",
+    "type": "extension",
+    "method": "get",
+    "key": "extensionGet",
+    "path": "extensionAppFooGet/foo.get.extension/storage/extensionGet",
+    "value": "extensionGetValue",
+    "meta": {
+      "appId": "extensionAppFooGet"
+    }
   },
   {
-     "should":"set extension value",
-     "extensionId":"foo.set.extension",
-     "type":"extension",
-     "method":"set",
-     "key":"extensionSet",
-     "path":"foo.set.extension/storage/extensionSet",
-     "value":"extensionSetValue"
+    "should": "set extension value",
+    "extensionId": "foo.set.extension",
+    "type": "extension",
+    "method": "set",
+    "key": "extensionSet",
+    "path": "extensionAppFooSet/foo.set.extension/storage/extensionSet",
+    "value": "extensionSetValue",
+    "meta": {
+      "appId": "extensionAppFooSet"
+    }
   },
   {
-     "should":"del extension value",
-     "extensionId":"foo.del.extension",
-     "type":"extension",
-     "method":"del",
-     "key":"extensionDel",
-     "path":"foo.del.extension/storage/extensionDel"
+    "should": "del extension value",
+    "extensionId": "foo.del.extension",
+    "type": "extension",
+    "method": "del",
+    "key": "extensionDel",
+    "path": "extensionAppFooDel/foo.del.extension/storage/extensionDel",
+    "meta": {
+      "appId": "extensionAppFooDel"
+    }
   },
   {
-     "should":"get device value",
-     "extensionId":"foo.get.device",
-     "type":"device",
-     "method":"get",
-     "key":"deviceGet",
-     "path":"foo.get.device/devices/deviceFooGet/deviceGet",
-     "value":"deviceGetValue",
-     "meta":{
-        "deviceId":"deviceFooGet"
-     }
+    "should": "get device value",
+    "extensionId": "foo.get.device",
+    "type": "device",
+    "method": "get",
+    "key": "deviceGet",
+    "path": "deviceAppFooGet/foo.get.device/devices/deviceFooGet/deviceGet",
+    "value": "deviceGetValue",
+    "meta": {
+      "appId": "deviceAppFooGet",
+      "deviceId": "deviceFooGet"
+    }
   },
   {
-     "should":"set device value",
-     "extensionId":"foo.set.device",
-     "type":"device",
-     "method":"set",
-     "key":"deviceSet",
-     "path":"foo.set.device/devices/deviceFooSet/deviceSet",
-     "value":"deviceSetValue",
-     "meta":{
-        "deviceId":"deviceFooSet"
-     }
+    "should": "set device value",
+    "extensionId": "foo.set.device",
+    "type": "device",
+    "method": "set",
+    "key": "deviceSet",
+    "path": "deviceAppFooSet/foo.set.device/devices/deviceFooSet/deviceSet",
+    "value": "deviceSetValue",
+    "meta": {
+      "appId": "deviceAppFooSet",
+      "deviceId": "deviceFooSet"
+    }
   },
   {
-     "should":"del device value",
-     "extensionId":"foo.del.device",
-     "type":"device",
-     "method":"del",
-     "key":"deviceDel",
-     "path":"foo.del.device/devices/deviceFooDel/deviceDel",
-     "meta":{
-        "deviceId":"deviceFooDel"
-     }
+    "should": "del device value",
+    "extensionId": "foo.del.device",
+    "type": "device",
+    "method": "del",
+    "key": "deviceDel",
+    "path": "deviceAppFooDel/foo.del.device/devices/deviceFooDel/deviceDel",
+    "meta": {
+      "appId": "deviceAppFooDel",
+      "deviceId": "deviceFooDel"
+    }
   },
   {
-     "should":"get user value",
-     "extensionId":"foo.get.user",
-     "type":"user",
-     "method":"get",
-     "key":"userGet",
-     "path":"foo.get.user/users/userFooGet/userGet",
-     "value":"userGetValue",
-     "meta":{
-        "userId":"userFooGet"
-     }
+    "should": "get user value",
+    "extensionId": "foo.get.user",
+    "type": "user",
+    "method": "get",
+    "key": "userGet",
+    "path": "userAppFooGet/foo.get.user/users/userFooGet/userGet",
+    "value": "userGetValue",
+    "meta": {
+      "appId": "userAppFooGet",
+      "userId": "userFooGet"
+    }
   },
   {
-     "should":"set user value",
-     "extensionId":"foo.set.user",
-     "type":"user",
-     "method":"set",
-     "key":"userSet",
-     "path":"foo.set.user/users/userFooSet/userSet",
-     "value":"userSetValue",
-     "meta":{
-        "userId":"userFooSet"
-     }
+    "should": "set user value",
+    "extensionId": "foo.set.user",
+    "type": "user",
+    "method": "set",
+    "key": "userSet",
+    "path": "userAppFooSet/foo.set.user/users/userFooSet/userSet",
+    "value": "userSetValue",
+    "meta": {
+      "appId": "userAppFooSet",
+      "userId": "userFooSet"
+    }
   },
   {
-     "should":"del user value",
-     "extensionId":"foo.del.user",
-     "type":"user",
-     "method":"del",
-     "key":"userDel",
-     "path":"foo.del.user/users/userFooDel/userDel",
-     "meta":{
-        "userId":"userFooDel"
-     }
+    "should": "del user value",
+    "extensionId": "foo.del.user",
+    "type": "user",
+    "method": "del",
+    "key": "userDel",
+    "path": "userAppFooDel/foo.del.user/users/userFooDel/userDel",
+    "meta": {
+      "appId": "userAppFooDel",
+      "userId": "userFooDel"
+    }
   },
   {
-     "should":"get user value",
-     "type":"user",
-     "method":"get",
-     "err":"user not logged in"
+    "should": "get user value",
+    "type": "user",
+    "method": "get",
+    "err": "user not logged in"
   },
   {
-     "should":"set user value",
-     "type":"user",
-     "method":"set",
-     "err":"user not logged in"
+    "should": "set user value",
+    "type": "user",
+    "method": "set",
+    "err": "user not logged in"
   },
   {
-     "should":"del user value",
-     "type":"user",
-     "method":"del",
-     "err":"user not logged in"
+    "should": "del user value",
+    "type": "user",
+    "method": "del",
+    "err": "user not logged in"
   }
 ]

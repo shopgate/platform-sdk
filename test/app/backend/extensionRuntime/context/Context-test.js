@@ -69,12 +69,13 @@ describe('Context', () => {
     const settingsKey = 'settingsValue'
     const settingsValue = 'settingsValue'
     const extensionId = 'settings.extension.get'
+    const appId = 'settingsAppIdGet'
     const storage = {get: (path, cb) => {
-      assert.equal(path, `${extensionId}/settings/${settingsKey}`)
+      assert.equal(path, `${appId}/${extensionId}/settings/${settingsKey}`)
       cb(null, settingsValue)
     }}
 
-    const context = new Context(storage, null, null, extensionId, {})
+    const context = new Context(storage, null, null, extensionId, {appId})
     assert.deepEqual(Object.keys(context.settings), ['get'])
 
     context.settings.get(settingsKey, (err, value) => {
@@ -86,7 +87,8 @@ describe('Context', () => {
 
   it('should have app info', (done) => {
     const meta = {deviceId: 'foobarDeviceId'}
-    const ics = {getAppInfo: (deviceId, cb) => {
+    const ics = {getInfos: (infoType, deviceId, cb) => {
+      assert.equal(infoType, 'appinfos')
       assert.equal(deviceId, meta.deviceId)
       cb()
     }}
@@ -97,7 +99,8 @@ describe('Context', () => {
 
   it('should have device info', (done) => {
     const meta = {deviceId: 'foobarDeviceId'}
-    const ics = {getDeviceInfo: (deviceId, cb) => {
+    const ics = {getInfos: (infoType, deviceId, cb) => {
+      assert.equal(infoType, 'deviceinfos')
       assert.equal(deviceId, meta.deviceId)
       cb()
     }}
