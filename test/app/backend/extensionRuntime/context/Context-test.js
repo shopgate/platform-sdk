@@ -2,6 +2,7 @@ const assert = require('assert')
 const Context = require('../../../../../lib/app/backend/extensionRuntime/context/Context')
 const fsExtra = require('fs-extra')
 const path = require('path')
+const request = require('request')
 
 describe('Context', () => {
   it('should have meta', () => {
@@ -93,7 +94,7 @@ describe('Context', () => {
     assert.equal(Object.keys(context.app), 'getInfo')
     context.app.getInfo(done)
   })
-  
+
   it('should have device info', (done) => {
     const meta = {deviceId: 'foobarDeviceId'}
     const ics = {getDeviceInfo: (deviceId, cb) => {
@@ -108,5 +109,6 @@ describe('Context', () => {
   it('should have tracedRequest', () => {
     const context = new Context(null, null, null, null, {})
     assert.equal(typeof context.tracedRequest, 'function')
+    assert.equal(context.tracedRequest(), request)
   })
 })
