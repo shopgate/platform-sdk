@@ -139,13 +139,11 @@ describe('BackendAction', () => {
           })
         }
       }
-      try {
-        backendAction._startSubProcess()
-      } catch (err) {
+      backendAction._pipelineChanged({pipeline: {id: 'testPipeline'}}, (err) => {
         assert.ok(err)
-        assert.equal(err.message, `Could not update pipeline 'undefined' (EUNKNOWN)`)
+        assert.equal(err.message, `Could not update pipeline 'testPipeline'`)
         done()
-      }
+      })
     })
 
     it('shold work', () => {
