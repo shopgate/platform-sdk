@@ -1,6 +1,0 @@
-{
-  "name": "custom-extension",
-  "devDependencies": {
-    "@shopgate/pwa-common": "^0.1.9"
-  }
-}

@@ -27,9 +27,6 @@ const appId = 'foobarTest'
 let frontendProcess
 
 describe('FrontendProcess', () => {
-  const linkerInitSpy = sinon.spy()
-  const linkerLinkSpy = sinon.spy()
-
   beforeEach(() => {
     process.env.USER_PATH = userSettingsPath
     process.env.APP_PATH = appSettingsPath
@@ -50,10 +47,6 @@ describe('FrontendProcess', () => {
       },
       './LogHelper': {
         logSetupNeeded: logSetupNeededSpy
-      },
-      './dependencyLinking/DependencyLinker': {
-        init: linkerInitSpy,
-        link: linkerLinkSpy
       },
       '@shopgate/cloud-sdk-webpack': sdkWebpackSpy = sinon.spy(() => {
         if (forkFail) {
@@ -80,7 +73,7 @@ describe('FrontendProcess', () => {
     })
   })
 
-  describe('init()', () => {
+  describe('run()', () => {
     beforeEach(() => {
       frontendProcess.frontendSetup.run = () => Promise.resolve()
       frontendProcess.rapidDevServer = () => {}
@@ -90,7 +83,7 @@ describe('FrontendProcess', () => {
     it('should run the frontend setup if nothing is set', () => {
       const runSpy = sinon.spy(frontendProcess.frontendSetup, 'run')
 
-      frontendProcess.init()
+      frontendProcess.run()
       sinon.assert.calledOnce(runSpy)
       runSpy.restore()
     })
@@ -102,7 +95,7 @@ describe('FrontendProcess', () => {
       frontendProcess.port = true
       frontendProcess.apiPort = true
 
-      frontendProcess.init()
+      frontendProcess.run()
       sinon.assert.notCalled(runSpy)
       runSpy.restore()
     })
@@ -117,7 +110,7 @@ describe('FrontendProcess', () => {
     it('should not start the rapid dev server if no variables are set', () => {
       const rapidDevServerSpy = sinon.spy(frontendProcess, 'rapidDevServer')
 
-      frontendProcess.init()
+      frontendProcess.run()
       sinon.assert.notCalled(rapidDevServerSpy)
     })
 
@@ -128,7 +121,7 @@ describe('FrontendProcess', () => {
       frontendProcess.port = true
       frontendProcess.apiPort = true
 
-      frontendProcess.init()
+      frontendProcess.run()
         .then(() => {
           sinon.assert.calledOnce(rapidDevServerSpy)
           sinon.assert.calledOnce(forkSpy)
@@ -145,7 +138,7 @@ describe('FrontendProcess', () => {
       frontendProcess.apiPort = true
       forkFail = true
 
-      frontendProcess.init()
+      frontendProcess.run()
         .then(() => {
           forkFail = false
           done('Did not throw!')
@@ -167,7 +160,7 @@ describe('FrontendProcess', () => {
     it('should not start the webpack dev server if no variables are set', () => {
       const rapidDevServerSpy = sinon.spy(frontendProcess, 'webpackDevServer')
 
-      frontendProcess.init()
+      frontendProcess.run()
       sinon.assert.notCalled(rapidDevServerSpy)
     })
 
@@ -178,7 +171,7 @@ describe('FrontendProcess', () => {
       frontendProcess.port = true
       frontendProcess.apiPort = true
 
-      frontendProcess.init()
+      frontendProcess.run()
         .then(() => {
           sinon.assert.calledOnce(rapidDevServerSpy)
           sinon.assert.calledOnce(sdkWebpackSpy)
@@ -195,7 +188,7 @@ describe('FrontendProcess', () => {
       frontendProcess.apiPort = true
       forkFail = true
 
-      frontendProcess.init()
+      frontendProcess.run()
         .then(() => {
           forkFail = false
           done('Did not throw!')
@@ -205,22 +198,6 @@ describe('FrontendProcess', () => {
           assert.equal(error.message, forkFailError)
           done()
         })
-    })
-  })
-
-  describe('linkDependencies()', () => {
-    afterEach(() => {
-      linkerInitSpy.reset()
-      linkerLinkSpy.reset()
-    })
-
-    it('should call methods in the right order', () => {
-      frontendProcess.linkDependencies()
-
-      sinon.assert.calledOnce(linkerInitSpy)
-      sinon.assert.calledOnce(linkerLinkSpy)
-
-      sinon.assert.callOrder(linkerInitSpy, linkerLinkSpy)
     })
   })
 })

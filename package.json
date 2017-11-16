@@ -1,6 +1,6 @@
 {
   "name": "@shopgate/cloud-sdk",
-  "version": "0.0.8",
+  "version": "0.1.0",
   "description": "Shopgate's Cloud SDK",
   "main": "index.js",
   "scripts": {

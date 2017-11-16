@@ -1,7 +1,0 @@
-{
-  "name": "@customscope/invalid-package",
-  "description": "This package is not valid, since it's JSON is not well-formed",
-  "devDependencies": {
-    "@shopgate/pwa-common": "^0.1.9",
-  }
-}
