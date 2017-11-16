@@ -32,7 +32,7 @@ describe('UserSettings', () => {
     const userSettings = new UserSettings()
     const session = userSettings.getSession()
     assert.equal(session, userSettings.getSession())
-    assert.ok(!session.hasToken())
+    assert.ok(!session.getToken())
   })
 
   it('should return (same) session loaded from file', () => {
@@ -41,7 +41,7 @@ describe('UserSettings', () => {
 
     const session = userSettings.getSession()
     assert.equal(session, userSettings.getSession())
-    assert.ok(session.hasToken())
+    assert.ok(session.getToken())
   })
 
   it('should save all settings', () => {

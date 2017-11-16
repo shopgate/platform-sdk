@@ -6,7 +6,7 @@
   "scripts": {
     "test": "mocha --recursive test",
     "cover": "nyc mocha --recursive test",
-    "lint": "standard",
+    "lint": "standard --fix",
     "lint-staged": "lint-staged",
     "check": "nsp check"
   },

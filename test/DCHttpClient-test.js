@@ -1,52 +1,105 @@
 const assert = require('assert')
 const nock = require('nock')
-const Session = require('../lib/user/Session')
-const DCHttpClient = require('../lib/DCHttpClient')
+const DcHttpClient = require('../lib/DcHttpClient')
 
 describe('DCHttpClient', () => {
   let dcClient
+  let userSettings
+  let session
 
   beforeEach(() => {
-    dcClient = new DCHttpClient()
+    session = {getToken: () => {}}
+    userSettings = {getSession: () => session}
+    dcClient = new DcHttpClient(userSettings)
   })
 
-  it('should get a pipeline', (done) => {
-    nock(dcClient.dcAddress)
-      .get('/applications/shop_10006/pipelines')
-      .reply(200, {pipelines: []})
+  describe('getInfos', () => {
+    const infoType = 'foobarInfoType'
+    const appId = 'foobarAppId'
+    const deviceId = 'foobarDeviceId'
 
-    let session = new Session({token: ''})
+    it('should get infos', (done) => {
+      const data = {foo: {body: {bar: 'foobar'}}}
+      const dcMock = nock(dcClient.dcAddress).get(`/applications/${appId}/${infoType}/${deviceId}`).reply(200, data)
 
-    dcClient.getPipelines('shop_10006', session, (err) => {
-      assert.ifError(err)
-      done()
+      dcClient.getInfos(infoType, appId, deviceId, (err, body) => {
+        assert.ifError(err)
+        assert.deepEqual(body, data)
+        dcMock.done()
+        done()
+      })
+    })
+
+    it('should update the usertoken on jwt-update', (done) => {
+      const newToken = 'foobarTokenNew'
+      const dcMock = nock(dcClient.dcAddress).get(`/applications/${appId}/${infoType}/${deviceId}`).reply(200, null, {'x-jwt': newToken})
+
+      userSettings.save = () => {}
+      let sessionToken
+      session.setToken = (token) => {
+        sessionToken = token
+      }
+
+      dcClient.getInfos(infoType, appId, deviceId, (err) => {
+        assert.ifError(err)
+        assert.equal(sessionToken, newToken)
+        dcMock.done()
+        done()
+      })
+    })
+
+    it('should callback error on dc error', (done) => {
+      const dcMock = nock(dcClient.dcAddress).get(`/applications/${appId}/${infoType}/${deviceId}`).reply(500)
+
+      dcClient.getInfos(infoType, appId, deviceId, (err) => {
+        assert.ok(err)
+        dcMock.done()
+        done()
+      })
     })
   })
 
-  it('should update the usertoken on jwt-update', (done) => {
-    nock(dcClient.dcAddress)
-      .get('/applications/shop_10006/pipelines')
-      .reply(200, {pipelines: []}, {'x-jwt': 'newToken'})
+  describe('getPipelines', () => {
+    const appId = 'foobarAppId'
 
-    let session = new Session({token: ''})
+    it('should get a pipeline', (done) => {
+      const body = {pipelines: ['foo', 'bar']}
+      const dcMock = nock(dcClient.dcAddress).get(`/applications/${appId}/pipelines`).reply(200, body)
 
-    dcClient.getPipelines('shop_10006', session, (err) => {
-      assert.ifError(err)
-      assert.equal(session.token, 'newToken')
-      done()
+      dcClient.getPipelines(appId, (err, pipelines) => {
+        assert.ifError(err)
+        assert.deepEqual(pipelines, body.pipelines)
+        dcMock.done()
+        done()
+      })
     })
-  })
 
-  it('should return an error on dc-error', (done) => {
-    nock(dcClient.dcAddress)
-      .get('/applications/shop_10006/pipelines')
-      .reply(500)
+    it('should update the usertoken on jwt-update', (done) => {
+      const newToken = 'foobarTokenNew'
+      const dcMock = nock(dcClient.dcAddress).get(`/applications/${appId}/pipelines`).reply(200, {}, {'x-jwt': newToken})
 
-    let session = new Session({token: ''})
+      userSettings.save = () => {}
+      let sessionToken
+      session.setToken = (token) => {
+        sessionToken = token
+      }
 
-    dcClient.getPipelines('shop_10006', session, (err) => {
-      assert.ok(err)
-      done()
+      dcClient.getPipelines(appId, (err) => {
+        assert.ifError(err)
+        assert.equal(sessionToken, newToken)
+        dcMock.done()
+        done()
+      })
+    })
+
+    it('should callback error on dc-error', (done) => {
+      const dcMock = nock(dcClient.dcAddress).get(`/applications/${appId}/pipelines`).reply(500)
+
+      dcClient.getPipelines(appId, (err) => {
+        assert.ok(err)
+        dcMock.done()
+        done()
+      })
     })
   })
 })
