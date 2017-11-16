@@ -92,7 +92,7 @@ describe('BackendAction', () => {
     it('should update pipelines', (done) => {
       backendAction.backendProcess = new BackendProcess()
       backendAction.dcClient = {
-        getPipelines: (appId, userSession, cb) => {
+        getPipelines: (appId, cb) => {
           cb(null, [{
             pipeline: {
               id: 'testPipeline'
