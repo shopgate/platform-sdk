@@ -2,6 +2,7 @@ const assert = require('assert')
 const mock = require('mock-require')
 const sinon = require('sinon')
 const path = require('path')
+const fsEx = require('fs-extra')
 const rimraf = require('rimraf')
 const mkdirp = require('mkdirp')
 
@@ -88,7 +89,39 @@ describe('BackendAction', () => {
       }
     })
 
-    it('shold work', () => {
+    it('should update pipelines', (done) => {
+      backendAction.backendProcess = new BackendProcess()
+      backendAction.dcClient = {
+        getPipelines: (appId, cb) => {
+          cb(null, [{
+            pipeline: {
+              id: 'testPipeline'
+            }
+          }])
+        }
+      }
+
+      try {
+        backendAction._startSubProcess()
+      } catch (err) {
+        assert.ifError(err)
+      }
+
+      setTimeout(() => {
+        assert.deepEqual(
+          fsEx.readJsonSync(path.join(process.env.APP_PATH, 'pipelines', 'testPipeline.json')),
+          {
+            pipeline: {
+              id: 'testPipeline'
+            }
+          }
+        )
+        done()
+      }, 50)
+    })
+
+    it('should work', () => {
+      backendAction._startSubProcess = () => {}
       try {
         backendAction.run('start')
       } catch (err) {
