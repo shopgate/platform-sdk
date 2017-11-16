@@ -6,7 +6,7 @@
   "scripts": {
     "test": "mocha --recursive test",
     "cover": "nyc mocha --recursive test",
-    "lint": "standard",
+    "lint": "standard --fix",
     "lint-staged": "lint-staged",
     "check": "nsp check"
   },
@@ -62,6 +62,7 @@
     "nock": "^9.1.0",
     "nsp": "^3.1.0",
     "nyc": "^11.3.0",
+    "portfinder": "^1.0.13",
     "pre-commit": "^1.2.2",
     "rimraf": "^2.6.2",
     "sinon": "^4.1.2",
@@ -89,6 +90,7 @@
       "text-summary"
     ],
     "all": true,
-    "report-dir": "build"
+    "report-dir": "build",
+    "cache": false
   }
 }
