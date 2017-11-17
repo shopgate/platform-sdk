@@ -66,7 +66,6 @@
     "coveralls": "^3.0.0",
     "lint-staged": "^4.3.0",
     "mocha": "^4.0.1",
-    "mock-require": "^2.0.2",
     "mock-stdin": "^0.3.1",
     "nock": "^9.1.0",
     "nsp": "^3.1.0",
