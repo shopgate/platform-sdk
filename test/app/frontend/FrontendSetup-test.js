@@ -36,6 +36,15 @@ const inquirer = {
   prompt: setPromptBody()
 }
 
+let questionSpyFail = false
+const questionSpy = sinon.spy(() => {
+  if (questionSpyFail) {
+    return false
+  }
+
+  return []
+})
+
 const FrontendSetup = proxyquire('../../../lib/app/frontend/FrontendSetup', {
   request,
   './LogHelper': {
@@ -45,7 +54,8 @@ const FrontendSetup = proxyquire('../../../lib/app/frontend/FrontendSetup', {
   '../../logger': {
     plain: loggerSpy
   },
-  inquirer
+  inquirer,
+  './setupQuestions': questionSpy
 })
 
 const userSettingsPath = join('test', 'usersettings')
@@ -81,6 +91,9 @@ describe('FrontendSetup', () => {
     frontendSetup.defaultConfig = defaultConfig
 
     inquirer.prompt = setPromptBody()
+
+    questionSpy.reset()
+    questionSpyFail = false
   })
 
   afterEach((done) => {
@@ -99,7 +112,7 @@ describe('FrontendSetup', () => {
 
     it('should throw an error if something goes wrong', (done) => {
       const spy = sinon.spy(frontendSetup, 'run')
-      frontendSetup.getQuestions = () => false
+      questionSpyFail = true
       frontendSetup.run()
         .then(() => {
           spy.reset()
@@ -107,19 +120,17 @@ describe('FrontendSetup', () => {
         })
         .catch((error) => {
           assert.ok(typeof error === 'string')
-          assert.ok(spy.calledOnce)
+          sinon.assert.calledOnce(spy)
           spy.reset()
           done()
         })
     })
 
     it('should build the questions', (done) => {
-      const spy = sinon.spy(frontendSetup, 'getQuestions')
       frontendSetup.run()
         .then(() => {
-          assert.ok(spy.calledOnce)
-          assert.ok(Array.isArray(spy.returnValues[0]))
-          spy.reset()
+          sinon.assert.calledOnce(questionSpy)
+          assert.ok(Array.isArray(questionSpy.returnValues[0]))
           done()
         })
         .catch(error => done(error))

@@ -17,7 +17,6 @@ const proxyquire = require('proxyquire')
 const forkFailError = 'Fork failed!'
 let forkFail = false
 let forkSpy
-let sdkWebpackSpy
 const logSetupNeededSpy = sinon.spy()
 
 const userSettingsPath = join('test', 'usersettings')
@@ -47,15 +46,8 @@ describe('FrontendProcess', () => {
       },
       './LogHelper': {
         logSetupNeeded: logSetupNeededSpy
-      },
-      '@shopgate/cloud-sdk-webpack': sdkWebpackSpy = sinon.spy(() => {
-        if (forkFail) {
-          throw new Error(forkFailError)
-        }
-      })
+      }
     })
-
-    sdkWebpackSpy.reset()
 
     frontendProcess = new FrontendProcess({
       theme: null
@@ -158,14 +150,14 @@ describe('FrontendProcess', () => {
     })
 
     it('should not start the webpack dev server if no variables are set', () => {
-      const rapidDevServerSpy = sinon.spy(frontendProcess, 'webpackDevServer')
+      const webpackDevServerSpy = sinon.spy(frontendProcess, 'webpackDevServer')
 
       frontendProcess.run()
-      sinon.assert.notCalled(rapidDevServerSpy)
+      sinon.assert.notCalled(webpackDevServerSpy)
     })
 
     it('should start the call the webpack dev server if all is set', (done) => {
-      const rapidDevServerSpy = sinon.spy(frontendProcess, 'webpackDevServer')
+      const webpackDevServerSpy = sinon.spy(frontendProcess, 'webpackDevServer')
 
       frontendProcess.ip = true
       frontendProcess.port = true
@@ -173,8 +165,8 @@ describe('FrontendProcess', () => {
 
       frontendProcess.run()
         .then(() => {
-          sinon.assert.calledOnce(rapidDevServerSpy)
-          sinon.assert.calledOnce(sdkWebpackSpy)
+          sinon.assert.calledOnce(webpackDevServerSpy)
+          sinon.assert.calledOnce(forkSpy)
           done()
         })
         .catch((error) => {
