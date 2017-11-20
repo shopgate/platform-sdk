@@ -22,7 +22,7 @@ describe('BackendProcess', () => {
       process.env.APP_PATH = appTestFolder
       assert.ifError(err)
       mockServer = require('socket.io').listen(port)
-      stepExecutor = {start: () => {}, stop: (cb) => cb()}
+      stepExecutor = {start: () => {}, stop: (cb) => cb(), watch: () => {}}
       backendProcess = new BackendProcess({useFsEvents: false})
       backendProcess.executor = stepExecutor
       const appSettings = new AppSettings()
@@ -35,17 +35,16 @@ describe('BackendProcess', () => {
   })
 
   afterEach((done) => {
-    backendProcess.extensionWatcher.close((err) => {
+    backendProcess.extensionWatcher.close()
+
+    backendProcess.disconnect((err) => {
       if (err) return done(err)
-      backendProcess.disconnect((err) => {
+      mockServer.close((err) => {
         if (err) return done(err)
-        mockServer.close((err) => {
-          if (err) return done(err)
-          delete process.env.SGCLOUD_DC_WS_ADDRESS
-          delete process.env.APP_PATH
-          delete process.env.USER_PATH
-          rimraf(appTestFolder, done)
-        })
+        delete process.env.SGCLOUD_DC_WS_ADDRESS
+        delete process.env.APP_PATH
+        delete process.env.USER_PATH
+        rimraf(appTestFolder, done)
       })
     })
   })
