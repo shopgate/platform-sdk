@@ -42,8 +42,9 @@ describe('StepExecutor', () => {
   after((done) => {
     delete process.env.SGCLOUD_DC_WS_ADDRESS
     delete process.env.APP_PATH
-    executor.stop()
-    rimraf(appTestFolder, done)
+    executor.stop(() => {
+      rimraf(appTestFolder, done)
+    })
   })
 
   it('should call a local step action', (done) => {

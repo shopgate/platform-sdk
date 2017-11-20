@@ -22,8 +22,8 @@ describe('BackendProcess', () => {
       process.env.APP_PATH = appTestFolder
       assert.ifError(err)
       mockServer = require('socket.io').listen(port)
-      stepExecutor = {start: () => {}, stop: () => {}}
-      backendProcess = new BackendProcess()
+      stepExecutor = {start: () => {}, stop: (cb) => cb()}
+      backendProcess = new BackendProcess({useFsEvents: false})
       backendProcess.executor = stepExecutor
       const appSettings = new AppSettings()
       mkdirp.sync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
