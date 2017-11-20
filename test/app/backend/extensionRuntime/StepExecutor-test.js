@@ -86,6 +86,8 @@ describe('StepExecutor', () => {
       assert.ok(!executor.childProcess)
       setTimeout(() => {
         assert.ok(executor.childProcess)
+        assert.equal(Object.keys(executor.openCalls).length, 0)
+        assert.equal(Object.keys(executor.openTimeouts).length, 0)
         done()
       }, 300)
     })
