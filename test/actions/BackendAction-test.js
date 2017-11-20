@@ -1,10 +1,10 @@
 const assert = require('assert')
-const mock = require('mock-require')
 const sinon = require('sinon')
 const path = require('path')
 const fsEx = require('fs-extra')
 const rimraf = require('rimraf')
 const mkdirp = require('mkdirp')
+const proxyquire = require('proxyquire')
 
 const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
@@ -31,13 +31,13 @@ describe('BackendAction', () => {
   let backendAction
 
   before(() => {
-    mock('../../lib/app/backend/BackendProcess', BackendProcess)
-    BackendAction = mock.reRequire('../../lib/actions/BackendAction')
+    BackendAction = proxyquire('../../lib/actions/BackendAction', {
+      '../app/backend/BackendProcess': BackendProcess,
+      '../logger': {
+        info: () => {}
+      }
+    })
     backendAction = new BackendAction()
-  })
-
-  after(() => {
-    mock.stopAll()
   })
 
   beforeEach(() => {
