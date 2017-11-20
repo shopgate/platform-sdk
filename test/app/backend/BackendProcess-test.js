@@ -11,6 +11,7 @@ const portfinder = require('portfinder')
 
 describe('BackendProcess', () => {
   let backendProcess
+  let stepExecutor
   let mockServer
   let appTestFolder
 
@@ -21,7 +22,9 @@ describe('BackendProcess', () => {
       process.env.APP_PATH = appTestFolder
       assert.ifError(err)
       mockServer = require('socket.io').listen(port)
+      stepExecutor = {start: () => {}, stop: () => {}}
       backendProcess = new BackendProcess()
+      backendProcess.executor = stepExecutor
       const appSettings = new AppSettings()
       mkdirp.sync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
       appSettings.setId('shop_10006').setAttachedExtensions({}).save().init()

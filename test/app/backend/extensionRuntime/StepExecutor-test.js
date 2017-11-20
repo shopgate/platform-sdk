@@ -18,8 +18,10 @@ describe('StepExecutor', () => {
     appTestFolder = path.join('test', 'appsettings')
     process.env.SGCLOUD_DC_WS_ADDRESS = `http://nockedDc`
     process.env.APP_PATH = appTestFolder
-    log = {info: () => {}, error: console.error, debug: () => {}}
+    log = {info: () => {}, error: () => {}, debug: () => {}, warn: () => {}}
     executor = new StepExecutor(log)
+    executor.stepTimeout = 1000
+
     const appSettings = new AppSettings()
     mkdirp.sync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
     mkdirp.sync(path.join(appPath, AppSettings.EXTENSIONS_FOLDER, 'foobar', 'extension'))
@@ -30,6 +32,8 @@ describe('StepExecutor', () => {
     const fakeStepDir = path.join(__dirname, 'fakeSteps')
     const extensionDir = path.join(appPath, AppSettings.EXTENSIONS_FOLDER, 'foobar', 'extension')
     fs.copySync(path.join(fakeStepDir, 'simple.js'), path.join(extensionDir, 'simple.js'))
+    fs.copySync(path.join(fakeStepDir, 'crashing.js'), path.join(extensionDir, 'crashing.js'))
+    fs.copySync(path.join(fakeStepDir, 'timeout.js'), path.join(extensionDir, 'timeout.js'))
 
     executor.start()
     done()
@@ -66,6 +70,36 @@ describe('StepExecutor', () => {
     executor.execute(input, stepMeta, (err) => {
       assert.ok(err)
       assert.ok(err.message.endsWith('/appsettings/extensions/foobar/extension/notThere.js" not found'))
+      done()
+    })
+  })
+
+  it('should crash and recover if step crashed', (done) => {
+    const stepMeta = {
+      id: '@foo/bar',
+      path: '@foo/bar/crashing.js',
+      meta: {appId: 'shop_123'}
+    }
+    executor.execute({}, stepMeta, (err) => {
+      assert.ok(err)
+      assert.equal(err.message, 'runtime crashed')
+      assert.ok(!executor.childProcess)
+      setTimeout(() => {
+        assert.ok(executor.childProcess)
+        done()
+      }, 300)
+    })
+  })
+
+  it('should timout', (done) => {
+    const stepMeta = {
+      id: '@foo/bar',
+      path: '@foo/bar/timeout.js',
+      meta: {appId: 'shop_123'}
+    }
+    executor.execute({}, stepMeta, (err) => {
+      assert.ok(err)
+      assert.equal(err.message, 'Step timeout')
       done()
     })
   })
