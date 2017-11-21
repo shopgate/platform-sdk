@@ -177,7 +177,7 @@ describe('BackendAction', () => {
 
     it('should throw error if dcClient is not reachable', (done) => {
       backendAction.dcClient = {
-        updatePipeline: (pipeline, id, userSession, cb) => {
+        updatePipeline: (pipeline, id, cb) => {
           cb({message: 'EUNKNOWN'})
         }
       }
