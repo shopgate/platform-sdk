@@ -11,6 +11,7 @@ const portfinder = require('portfinder')
 
 describe('BackendProcess', () => {
   let backendProcess
+  let stepExecutor
   let mockServer
   let appTestFolder
 
@@ -21,7 +22,9 @@ describe('BackendProcess', () => {
       process.env.APP_PATH = appTestFolder
       assert.ifError(err)
       mockServer = require('socket.io').listen(port)
-      backendProcess = new BackendProcess()
+      stepExecutor = {start: () => {}, stop: (cb) => cb(), watch: () => {}}
+      backendProcess = new BackendProcess({useFsEvents: false})
+      backendProcess.executor = stepExecutor
       const appSettings = new AppSettings()
       mkdirp.sync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
       appSettings.setId('shop_10006').setAttachedExtensions({}).save().init()
@@ -32,17 +35,16 @@ describe('BackendProcess', () => {
   })
 
   afterEach((done) => {
-    backendProcess.extensionWatcher.close((err) => {
+    backendProcess.extensionWatcher.close()
+
+    backendProcess.disconnect((err) => {
       if (err) return done(err)
-      backendProcess.disconnect((err) => {
+      mockServer.close((err) => {
         if (err) return done(err)
-        mockServer.close((err) => {
-          if (err) return done(err)
-          delete process.env.SGCLOUD_DC_ADDRESS
-          delete process.env.APP_PATH
-          delete process.env.USER_PATH
-          rimraf(appTestFolder, done)
-        })
+        delete process.env.SGCLOUD_DC_ADDRESS
+        delete process.env.APP_PATH
+        delete process.env.USER_PATH
+        rimraf(appTestFolder, done)
       })
     })
   })
@@ -82,7 +84,7 @@ describe('BackendProcess', () => {
         })
 
         sock.on('registerExtension', (data, cb) => {
-          assert.equal(data.extensionId, 'testExt')
+          assert.deepEqual(data, {extensionId: 'testExt'})
           cb()
           done()
         })
@@ -106,7 +108,7 @@ describe('BackendProcess', () => {
         })
 
         sock.on('deregisterExtension', (data, cb) => {
-          assert.equal(data.extensionId, 'testExt')
+          assert.deepEqual(data, {extensionId: 'testExt'})
           cb()
           done()
         })

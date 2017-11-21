@@ -72,13 +72,14 @@ describe('ExtensionAction', () => {
   describe('attaching', () => {
     it('should attach if extension exists locally', () => {
       const name = 'existentExtension'
+      const id = 'extId'
 
       const extPath = path.join('extensions', name)
       fsEx.ensureDirSync(extPath)
-      fsEx.writeJSONSync(path.join(extPath, 'extension-config.json'), {id: 'existentExtension'})
+      fsEx.writeJSONSync(path.join(extPath, 'extension-config.json'), {id})
 
       action.run('attach', [name])
-      assert.deepEqual(AppSettings.getInstance().attachedExtensions[name], {id: 'existentExtension'})
+      assert.deepEqual(AppSettings.getInstance().attachedExtensions[id], {path: name})
     })
 
     it('should attach all local extensions if no one is given', () => {
@@ -96,8 +97,8 @@ describe('ExtensionAction', () => {
       action.run('attach')
 
       assert.deepEqual(AppSettings.getInstance().attachedExtensions, {
-        existentExtension1: { id: 'existentExtension1' },
-        existentExtension2: { id: 'existentExtension2' }
+        existentExtension1: { path: 'existentExtension1' },
+        existentExtension2: { path: 'existentExtension2' }
       })
     })
 
@@ -107,7 +108,7 @@ describe('ExtensionAction', () => {
       try {
         action.run('attach', [name])
       } catch (e) {
-        assert.equal(e.message, `Extension '${name}' does not exist locally`)
+        assert.equal(e.message, `Config file of 'notExitstentExtension' is invalid or not existent`)
       }
     })
 
@@ -121,7 +122,7 @@ describe('ExtensionAction', () => {
       try {
         action.run('attach', [name])
       } catch (e) {
-        assert.equal(e.message, `Config file of '${name}' is invalid`)
+        assert.equal(e.message, `Config file of '${name}' is invalid or not existent`)
       }
 
       assert.deepEqual(AppSettings.getInstance().attachedExtensions, {})
@@ -138,7 +139,7 @@ describe('ExtensionAction', () => {
       try {
         action.run('attach', [name])
       } catch (e) {
-        assert.equal(e.message, `Extension '${name} is already attached`)
+        assert.equal(e.message, `Extension 'existentExtension (existentExtension) is already attached`)
       }
     })
   })
@@ -147,13 +148,21 @@ describe('ExtensionAction', () => {
     it('should detach a extension', () => {
       const name = 'existentExtension'
 
-      AppSettings.getInstance().attachExtension(name)
+      const extPath = path.join('extensions', name)
+      fsEx.ensureDirSync(extPath)
+      fsEx.writeJSONSync(path.join(extPath, 'extension-config.json'), {id: name})
+
+      AppSettings.getInstance().attachExtension(name, name)
       action.run('detach', [name])
       assert.deepEqual(AppSettings.getInstance().attachedExtensions, {})
     })
 
     it('should skip if extension was not attached', (done) => {
       const name = 'notExitstentExtension'
+
+      const extPath = path.join('extensions', name)
+      fsEx.ensureDirSync(extPath)
+      fsEx.writeJSONSync(path.join(extPath, 'extension-config.json'), {id: name})
 
       logger.warn = (text) => {
         assert.equal(text, `The extension '${name}' is not attached`)
@@ -164,8 +173,8 @@ describe('ExtensionAction', () => {
     })
 
     it('should detach all extensions if none was specified', () => {
-      AppSettings.getInstance().attachExtension('ext1')
-      AppSettings.getInstance().attachExtension('ext2')
+      AppSettings.getInstance().attachExtension('ext1', 'ext1')
+      AppSettings.getInstance().attachExtension('ext2', 'ext2')
 
       action.run('detach')
       assert.deepEqual(AppSettings.getInstance().attachedExtensions, {})
