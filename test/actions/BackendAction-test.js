@@ -38,10 +38,10 @@ describe('BackendAction', () => {
         info: () => {}
       }
     })
-    backendAction = new BackendAction()
   })
 
   beforeEach(() => {
+    backendAction = new BackendAction()
     process.env.USER_PATH = userSettingsFolder
     process.env.APP_PATH = appPath
     const appSettings = new AppSettings()
@@ -115,6 +115,13 @@ describe('BackendAction', () => {
           })
         }
       }
+
+      backendAction.extensionWatcher = {
+        start: () => { return backendAction.extensionWatcher },
+        stop: (cb) => { cb() },
+        on: (name, cb) => { cb() }
+      }
+
       backendAction.dcClient = {
         getPipelines: (appId, cb) => {
           cb(null, [{
@@ -125,6 +132,7 @@ describe('BackendAction', () => {
         },
         updatePipeline: () => {}
       }
+      backendAction._extensionChanged = (cfg, cb = () => {}) => {}
 
       try {
         backendAction._startSubProcess()
@@ -173,6 +181,24 @@ describe('BackendAction', () => {
       }
 
       backendAction._startSubProcess()
+    })
+
+    it('should write generated extension-config if extension was updated', (done) => {
+      let generated = {id: 'myGeneratedExtension'}
+      backendAction.dcClient = {
+        generateExtensionConfig: (config, appId, cb) => {
+          cb(null, generated)
+        }
+      }
+
+      const cfgPath = path.join(process.env.APP_PATH, 'extensions', 'testExt')
+
+      backendAction._extensionChanged({ file: generated, path: cfgPath }, (err) => {
+        assert.ifError(err)
+        let cfg = fsEx.readJsonSync(path.join(cfgPath, 'extension', 'config.json'))
+        assert.deepEqual(cfg, generated)
+        done()
+      })
     })
 
     it('should throw error if dcClient is not reachable', (done) => {
