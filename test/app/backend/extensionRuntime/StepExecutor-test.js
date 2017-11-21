@@ -67,7 +67,9 @@ describe('StepExecutor', () => {
       })
       const stepExecutor = new StepExecutorMocked({info: () => {}}, opts)
       assert.equal(stepExecutor.watcher, undefined)
-      stepExecutor.stop = (cb) => cb()
+      stepExecutor.stop = (restart) => {
+        assert.equal(restart, true)
+      }
       stepExecutor.start = done
       stepExecutor.watch()
     })
