@@ -1,7 +1,6 @@
 const assert = require('assert')
 const nock = require('nock')
 const DcHttpClient = require('../lib/DcHttpClient')
-const Session = require('../lib/user/Session')
 
 describe('DcHttpClient', () => {
   let dcClient

@@ -1,3 +1,4 @@
+/* eslint-disable standard/no-callback-literal */
 const assert = require('assert')
 const sinon = require('sinon')
 const path = require('path')
@@ -150,11 +151,13 @@ describe('BackendAction', () => {
           done()
           cb()
         },
-        getPipelines: (appId, cb) => {cb(null, [{
-          pipeline: {
-            id: 'testPipeline'
-          }
-        }])}
+        getPipelines: (appId, cb) => {
+          cb(null, [{
+            pipeline: {
+              id: 'testPipeline'
+            }
+          }])
+        }
       }
       backendAction.backendProcess = {
         connect: (cb) => { cb() }
@@ -196,7 +199,6 @@ describe('BackendAction', () => {
         done()
       })
     })
-
 
     it('should work', () => {
       backendAction._startSubProcess = () => {}
