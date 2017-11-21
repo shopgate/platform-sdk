@@ -7,23 +7,28 @@ const UserSettings = require('../../../lib/user/UserSettings')
 const BackendProcess = require('../../../lib/app/backend/BackendProcess')
 const rimraf = require('rimraf')
 const appPath = path.join('test', 'appsettings')
+const portfinder = require('portfinder')
 
 describe('BackendProcess', () => {
   let backendProcess
   let mockServer
   let appTestFolder
 
-  beforeEach(() => {
-    process.env.SGCLOUD_DC_ADDRESS = 'http://localhost:12223'
-    appTestFolder = path.join('test', 'appsettings')
-    process.env.APP_PATH = appTestFolder
-    mockServer = require('socket.io').listen(12223)
-    backendProcess = new BackendProcess()
-    const appSettings = new AppSettings()
-    mkdirp.sync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
-    appSettings.setId('shop_10006').setAttachedExtensions({}).save().init()
-    AppSettings.setInstance(appSettings)
-    UserSettings.getInstance().getSession().token = {}
+  beforeEach((done) => {
+    portfinder.getPort((err, port) => {
+      process.env.SGCLOUD_DC_ADDRESS = `http://localhost:${port}`
+      appTestFolder = path.join('test', 'appsettings')
+      process.env.APP_PATH = appTestFolder
+      assert.ifError(err)
+      mockServer = require('socket.io').listen(port)
+      backendProcess = new BackendProcess()
+      const appSettings = new AppSettings()
+      mkdirp.sync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
+      appSettings.setId('shop_10006').setAttachedExtensions({}).save().init()
+      AppSettings.setInstance(appSettings)
+      UserSettings.getInstance().getSession().token = {}
+      done()
+    })
   })
 
   afterEach((done) => {

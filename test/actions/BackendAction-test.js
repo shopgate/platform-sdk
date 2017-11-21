@@ -1,10 +1,10 @@
-/* eslint-disable standard/no-callback-literal */
 const assert = require('assert')
-const mock = require('mock-require')
 const sinon = require('sinon')
 const path = require('path')
+const fsEx = require('fs-extra')
 const rimraf = require('rimraf')
 const mkdirp = require('mkdirp')
+const proxyquire = require('proxyquire')
 
 const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
@@ -31,13 +31,13 @@ describe('BackendAction', () => {
   let backendAction
 
   before(() => {
-    mock('../../lib/app/backend/BackendProcess', BackendProcess)
-    BackendAction = mock.reRequire('../../lib/actions/BackendAction')
+    BackendAction = proxyquire('../../lib/actions/BackendAction', {
+      '../app/backend/BackendProcess': BackendProcess,
+      '../logger': {
+        info: () => {}
+      }
+    })
     backendAction = new BackendAction()
-  })
-
-  after(() => {
-    mock.stopAll()
   })
 
   beforeEach(() => {
@@ -53,18 +53,9 @@ describe('BackendAction', () => {
   afterEach((done) => {
     UserSettings.setInstance()
     delete process.env.USER_PATH
-    if (backendAction.pipelineWatcher) {
-      backendAction.pipelineWatcher.stop((err) => {
-        if (err) return done(err)
-        rimraf(userSettingsFolder, () => {
-          rimraf(path.join('extensions'), done)
-        })
-      })
-    } else {
-      rimraf(userSettingsFolder, () => {
-        rimraf(path.join('extensions'), done)
-      })
-    }
+    rimraf(userSettingsFolder, () => {
+      rimraf(path.join('extensions'), done)
+    })
   })
 
   describe('general', () => {
@@ -98,55 +89,39 @@ describe('BackendAction', () => {
       }
     })
 
-    it('should call dcClient if pipelines were updated', (done) => {
+    it('should update pipelines', (done) => {
+      backendAction.backendProcess = new BackendProcess()
       backendAction.dcClient = {
-        updatePipeline: (pipeline, id, userSession, cb) => {
-          done()
-          cb()
-        }
-      }
-      backendAction.backendProcess = {
-        connect: (cb) => { cb() }
-      }
-      backendAction.pipelineWatcher = {
-        start: () => { return backendAction.pipelineWatcher },
-        stop: (cb) => { cb() },
-        on: (name, cb) => {
-          cb({
-            pipeline: {pipeline: {id: 'testPipeline'}}
-          })
+        getPipelines: (appId, cb) => {
+          cb(null, [{
+            pipeline: {
+              id: 'testPipeline'
+            }
+          }])
         }
       }
 
-      backendAction._startSubProcess()
-    })
+      try {
+        backendAction._startSubProcess()
+      } catch (err) {
+        assert.ifError(err)
+      }
 
-    it('should throw error if dcClient is not reachable', (done) => {
-      backendAction.dcClient = {
-        updatePipeline: (pipeline, id, userSession, cb) => {
-          cb({message: 'EUNKNOWN'})
-        }
-      }
-      backendAction.backendProcess = {
-        connect: (cb) => { cb() }
-      }
-      backendAction.pipelineWatcher = {
-        start: () => { return backendAction.pipelineWatcher },
-        stop: (cb) => { cb() },
-        on: (name, cb) => {
-          cb({
-            pipeline: {pipeline: {id: 'testPipeline'}}
-          })
-        }
-      }
-      backendAction._pipelineChanged({pipeline: {id: 'testPipeline'}}, (err) => {
-        assert.ok(err)
-        assert.equal(err.message, `Could not update pipeline 'testPipeline'`)
+      setTimeout(() => {
+        assert.deepEqual(
+          fsEx.readJsonSync(path.join(process.env.APP_PATH, 'pipelines', 'testPipeline.json')),
+          {
+            pipeline: {
+              id: 'testPipeline'
+            }
+          }
+        )
         done()
-      })
+      }, 50)
     })
 
-    it('shold work', () => {
+    it('should work', () => {
+      backendAction._startSubProcess = () => {}
       try {
         backendAction.run('start')
       } catch (err) {
