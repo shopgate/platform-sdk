@@ -48,10 +48,15 @@ describe('StepExecutor', () => {
 
   describe('watcher', () => {
     it('should start the watcher', (done) => {
+      let eventCount = 0
       const watcher = {
         on: (event, cb) => {
-          assert.equal(stepExecutor.watcher, watcher)
-          assert.equal(event, 'all')
+          if (eventCount++ === 0) {
+            assert.equal(event, 'ready')
+          } else {
+            assert.equal(stepExecutor.watcher, watcher)
+            assert.equal(event, 'all')
+          }
           cb()
         }
       }
