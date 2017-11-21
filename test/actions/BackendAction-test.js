@@ -53,9 +53,22 @@ describe('BackendAction', () => {
   afterEach((done) => {
     UserSettings.setInstance()
     delete process.env.USER_PATH
-    rimraf(userSettingsFolder, () => {
-      rimraf(path.join('extensions'), done)
-    })
+    if (backendAction.pipelineWatcher) {
+      backendAction.pipelineWatcher.stop((err) => {
+        if (err) return done(err)
+        rimraf(userSettingsFolder, () => {
+          rimraf(path.join('extensions'), () => {
+            rimraf(path.join('pipelines'), done)
+          })
+        })
+      })
+    } else {
+      rimraf(userSettingsFolder, () => {
+        rimraf(path.join('extensions'), () => {
+          rimraf(path.join('pipelines'), done)
+        })
+      })
+    }
   })
 
   describe('general', () => {
@@ -91,6 +104,16 @@ describe('BackendAction', () => {
 
     it('should update pipelines', (done) => {
       backendAction.backendProcess = new BackendProcess()
+
+      backendAction.pipelineWatcher = {
+        start: () => { return backendAction.pipelineWatcher },
+        stop: (cb) => { cb() },
+        on: (name, cb) => {
+          cb({
+            pipeline: {pipeline: {id: 'testPipeline'}}
+          })
+        }
+      }
       backendAction.dcClient = {
         getPipelines: (appId, cb) => {
           cb(null, [{
@@ -98,7 +121,8 @@ describe('BackendAction', () => {
               id: 'testPipeline'
             }
           }])
-        }
+        },
+        updatePipeline: () => {}
       }
 
       try {
@@ -119,6 +143,60 @@ describe('BackendAction', () => {
         done()
       }, 50)
     })
+
+    it('should call dcClient if pipelines were updated', (done) => {
+      backendAction.dcClient = {
+        updatePipeline: (pipeline, id, userSession, cb) => {
+          done()
+          cb()
+        },
+        getPipelines: (appId, cb) => {cb(null, [{
+          pipeline: {
+            id: 'testPipeline'
+          }
+        }])}
+      }
+      backendAction.backendProcess = {
+        connect: (cb) => { cb() }
+      }
+      backendAction.pipelineWatcher = {
+        start: () => { return backendAction.pipelineWatcher },
+        stop: (cb) => { cb() },
+        on: (name, cb) => {
+          cb({
+            pipeline: {pipeline: {id: 'testPipeline'}}
+          })
+        }
+      }
+
+      backendAction._startSubProcess()
+    })
+
+    it('should throw error if dcClient is not reachable', (done) => {
+      backendAction.dcClient = {
+        updatePipeline: (pipeline, id, userSession, cb) => {
+          cb({message: 'EUNKNOWN'})
+        }
+      }
+      backendAction.backendProcess = {
+        connect: (cb) => { cb() }
+      }
+      backendAction.pipelineWatcher = {
+        start: () => { return backendAction.pipelineWatcher },
+        stop: (cb) => { cb() },
+        on: (name, cb) => {
+          cb({
+            pipeline: {pipeline: {id: 'testPipeline'}}
+          })
+        }
+      }
+      backendAction._pipelineChanged({pipeline: {id: 'testPipeline'}}, (err) => {
+        assert.ok(err)
+        assert.equal(err.message, `Could not update pipeline 'testPipeline'`)
+        done()
+      })
+    })
+
 
     it('should work', () => {
       backendAction._startSubProcess = () => {}

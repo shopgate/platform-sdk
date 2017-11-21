@@ -50,13 +50,14 @@ describe('PipelineWatcher', () => {
     let counter = 0
 
     pipelineWatcher.on('pipelineChanged', (pipeline) => {
+      console.log("C", pipeline)
       if (counter === 0) {
         assert.deepEqual(pipeline, writtenPipeline)
         fsEx.outputFileSync(path.join(pipelineWatcher.pipelineFolder, 'somePipeline.json'), '{someMalformedJson')
         setTimeout(() => {
           assert.equal(counter, 1)
           done()
-        }, 20)
+        }, 50)
       }
       counter++
     })
