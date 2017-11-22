@@ -35,11 +35,10 @@ describe('PipelineWatcher', () => {
     })
 
     pipelineWatcher.start()
-    pipelineWatcher.watcher.interval = 1
 
-    setTimeout(() => {
+    pipelineWatcher.watcher.on('ready', () => {
       fsEx.writeJsonSync(path.join(pipelineWatcher.pipelineFolder, 'somePipeline.json'), writtenPipeline)
-    }, 5)
+    })
   })
 
   it('should not emit malformed pipeline', (done) => {
@@ -50,7 +49,6 @@ describe('PipelineWatcher', () => {
     let counter = 0
 
     pipelineWatcher.on('pipelineChanged', (pipeline) => {
-      console.log('C', pipeline)
       if (counter === 0) {
         assert.deepEqual(pipeline, writtenPipeline)
         fsEx.outputFileSync(path.join(pipelineWatcher.pipelineFolder, 'somePipeline.json'), '{someMalformedJson')
@@ -63,9 +61,9 @@ describe('PipelineWatcher', () => {
     })
 
     pipelineWatcher.start()
-    pipelineWatcher.watcher.interval = 1
-
-    fsEx.writeJsonSync(path.join(pipelineWatcher.pipelineFolder, 'somePipeline.json'), writtenPipeline)
+    pipelineWatcher.watcher.on('ready', () => {
+      fsEx.writeJsonSync(path.join(pipelineWatcher.pipelineFolder, 'somePipeline.json'), writtenPipeline)
+    })
   })
 
   it('should stop watching on command', (done) => {

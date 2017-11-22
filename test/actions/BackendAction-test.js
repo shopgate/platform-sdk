@@ -35,7 +35,8 @@ describe('BackendAction', () => {
     BackendAction = proxyquire('../../lib/actions/BackendAction', {
       '../app/backend/BackendProcess': BackendProcess,
       '../logger': {
-        info: () => {}
+        info: () => {},
+        error: () => {}
       }
     })
     backendAction = new BackendAction()
@@ -49,6 +50,17 @@ describe('BackendAction', () => {
     appSettings.setId('foobarTest').setAttachedExtensions({}).save().init()
     AppSettings.setInstance(appSettings)
     UserSettings.getInstance().getSession().token = {}
+
+    backendAction.pipelineWatcher = {
+      start: () => { return backendAction.pipelineWatcher },
+      stop: (cb) => { cb() },
+      on: (name, cb) => {
+        cb({
+          pipeline: {pipeline: {id: 'testPipeline'}}
+        })
+      },
+      options: {ignoreInitial: true, fsEvents: false}
+    }
   })
 
   afterEach((done) => {
@@ -102,19 +114,11 @@ describe('BackendAction', () => {
         assert.equal(err.message, 'unknown action "invalid"')
       }
     })
-
+  })
+  describe('watching', () => {
     it('should update pipelines', (done) => {
       backendAction.backendProcess = new BackendProcess()
 
-      backendAction.pipelineWatcher = {
-        start: () => { return backendAction.pipelineWatcher },
-        stop: (cb) => { cb() },
-        on: (name, cb) => {
-          cb({
-            pipeline: {pipeline: {id: 'testPipeline'}}
-          })
-        }
-      }
       backendAction.dcClient = {
         getPipelines: (appId, cb) => {
           cb(null, [{
@@ -162,15 +166,6 @@ describe('BackendAction', () => {
       backendAction.backendProcess = {
         connect: (cb) => { cb() }
       }
-      backendAction.pipelineWatcher = {
-        start: () => { return backendAction.pipelineWatcher },
-        stop: (cb) => { cb() },
-        on: (name, cb) => {
-          cb({
-            pipeline: {pipeline: {id: 'testPipeline'}}
-          })
-        }
-      }
 
       backendAction._startSubProcess()
     })
@@ -184,15 +179,7 @@ describe('BackendAction', () => {
       backendAction.backendProcess = {
         connect: (cb) => { cb() }
       }
-      backendAction.pipelineWatcher = {
-        start: () => { return backendAction.pipelineWatcher },
-        stop: (cb) => { cb() },
-        on: (name, cb) => {
-          cb({
-            pipeline: {pipeline: {id: 'testPipeline'}}
-          })
-        }
-      }
+
       backendAction._pipelineChanged({pipeline: {id: 'testPipeline'}}, (err) => {
         assert.ok(err)
         assert.equal(err.message, `Could not update pipeline 'testPipeline'`)
