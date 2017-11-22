@@ -143,4 +143,53 @@ describe('DcHttpClient', () => {
       })
     })
   })
+
+  describe('generateConfig', () => {
+    const appId = 'foobarAppId'
+    const extId = 'testExt'
+
+    it('should get a config', (done) => {
+      const body = {id: extId}
+      const dcMock = nock(dcClient.dcAddress).post(`/applications/${appId}/extensions/${extId}/generateConfig`)
+        .reply(200, body)
+
+      dcClient.generateExtensionConfig({id: extId}, appId, (err, config) => {
+        assert.ifError(err)
+        assert.deepEqual(config, body)
+        dcMock.done()
+        done()
+      })
+    })
+
+    it('should update the usertoken on jwt-update', (done) => {
+      const newToken = 'foobarTokenNew'
+      const dcMock = nock(dcClient.dcAddress).post(`/applications/${appId}/extensions/${extId}/generateConfig`)
+        .reply(200, {}, {'x-jwt': newToken})
+
+      userSettings.save = () => {}
+      let sessionToken
+      session.setToken = (token) => {
+        sessionToken = token
+      }
+
+      dcClient.generateExtensionConfig({id: extId}, appId, (err) => {
+        assert.ifError(err)
+        assert.equal(sessionToken, newToken)
+        dcMock.done()
+        done()
+      })
+    })
+
+    it('should callback error on dc-error', (done) => {
+      const dcMock = nock(dcClient.dcAddress).post(`/applications/${appId}/extensions/${extId}/generateConfig`)
+        .reply(500)
+
+      dcClient.generateExtensionConfig({id: extId}, appId, (err) => {
+        assert.ok(err)
+        dcMock.done()
+        done()
+      })
+    })
+  })
+
 })

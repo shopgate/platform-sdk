@@ -18,7 +18,7 @@ describe('ExtensionConfigWatcher', () => {
   })
 
   afterEach((done) => {
-    extensionWatcher.close(() => {
+    extensionWatcher.stop(() => {
       delete process.env.APP_PATH
       rimraf(appPath, done)
     })
@@ -45,6 +45,6 @@ describe('ExtensionConfigWatcher', () => {
 
   it('should stop watching on command', (done) => {
     extensionWatcher.start()
-    extensionWatcher.close(done)
+    extensionWatcher.stop(done)
   })
 })

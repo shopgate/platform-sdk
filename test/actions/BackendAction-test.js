@@ -50,13 +50,28 @@ describe('BackendAction', () => {
     appSettings.setId('foobarTest').setAttachedExtensions({}).save().init()
     AppSettings.setInstance(appSettings)
     UserSettings.getInstance().getSession().token = {}
+
+    backendAction.pipelineWatcher = {
+      start: () => { return backendAction.pipelineWatcher },
+      stop: (cb) => { cb() },
+      on: (name, cb) => {
+        cb({
+          pipeline: {pipeline: {id: 'testPipeline'}}
+        })
+      },
+      options: {ignoreInitial: true, fsEvents: false}
+    }
+    backendAction.extensionWatcher = {
+      stop: (cb) => { cb() }
+    }
   })
 
   afterEach((done) => {
     UserSettings.setInstance()
     delete process.env.USER_PATH
-    if (backendAction.pipelineWatcher) {
-      backendAction.pipelineWatcher.stop((err) => {
+    backendAction.pipelineWatcher.stop((err) => {
+      if (err) return done(err)
+      backendAction.extensionWatcher.stop((err) => {
         if (err) return done(err)
         rimraf(userSettingsFolder, () => {
           rimraf(path.join('extensions'), () => {
@@ -64,13 +79,7 @@ describe('BackendAction', () => {
           })
         })
       })
-    } else {
-      rimraf(userSettingsFolder, () => {
-        rimraf(path.join('extensions'), () => {
-          rimraf(path.join('pipelines'), done)
-        })
-      })
-    }
+    })
   })
 
   describe('general', () => {
@@ -103,19 +112,10 @@ describe('BackendAction', () => {
         assert.equal(err.message, 'unknown action "invalid"')
       }
     })
-
+  })
+  describe('watching', () => {
     it('should update pipelines', (done) => {
       backendAction.backendProcess = new BackendProcess()
-
-      backendAction.pipelineWatcher = {
-        start: () => { return backendAction.pipelineWatcher },
-        stop: (cb) => { cb() },
-        on: (name, cb) => {
-          cb({
-            pipeline: {pipeline: {id: 'testPipeline'}}
-          })
-        }
-      }
 
       backendAction.extensionWatcher = {
         start: () => { return backendAction.extensionWatcher },
@@ -171,15 +171,6 @@ describe('BackendAction', () => {
       backendAction.backendProcess = {
         connect: (cb) => { cb() }
       }
-      backendAction.pipelineWatcher = {
-        start: () => { return backendAction.pipelineWatcher },
-        stop: (cb) => { cb() },
-        on: (name, cb) => {
-          cb({
-            pipeline: {pipeline: {id: 'testPipeline'}}
-          })
-        }
-      }
 
       backendAction._startSubProcess()
     })
@@ -211,18 +202,26 @@ describe('BackendAction', () => {
       backendAction.backendProcess = {
         connect: (cb) => { cb() }
       }
-      backendAction.pipelineWatcher = {
-        start: () => { return backendAction.pipelineWatcher },
-        stop: (cb) => { cb() },
-        on: (name, cb) => {
-          cb({
-            pipeline: {pipeline: {id: 'testPipeline'}}
-          })
-        }
-      }
+
       backendAction._pipelineChanged({pipeline: {id: 'testPipeline'}}, (err) => {
         assert.ok(err)
         assert.equal(err.message, `Could not update pipeline 'testPipeline'`)
+        done()
+      })
+    })
+
+    it('should return if pipeline was changed', (done) => {
+      backendAction.dcClient = {
+        updatePipeline: (pipeline, id, cb) => {
+          cb()
+        }
+      }
+      backendAction.backendProcess = {
+        connect: (cb) => { cb() }
+      }
+
+      backendAction._pipelineChanged({pipeline: {id: 'testPipeline'}}, (err) => {
+        assert.ifError(err)
         done()
       })
     })

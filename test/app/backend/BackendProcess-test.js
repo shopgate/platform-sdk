@@ -35,7 +35,7 @@ describe('BackendProcess', () => {
   })
 
   afterEach((done) => {
-    backendProcess.extensionWatcher.close()
+    backendProcess.extensionWatcher.stop()
 
     backendProcess.disconnect((err) => {
       if (err) return done(err)
