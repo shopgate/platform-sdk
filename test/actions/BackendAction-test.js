@@ -35,7 +35,8 @@ describe('BackendAction', () => {
     BackendAction = proxyquire('../../lib/actions/BackendAction', {
       '../app/backend/BackendProcess': BackendProcess,
       '../logger': {
-        info: () => {}
+        info: () => {},
+        error: () => {}
       }
     })
   })
