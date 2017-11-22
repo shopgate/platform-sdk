@@ -22,7 +22,7 @@ describe('BackendProcess', () => {
       process.env.APP_PATH = appTestFolder
       assert.ifError(err)
       mockServer = require('socket.io').listen(port)
-      stepExecutor = {start: () => {}, stop: (cb) => cb(), watch: () => {}}
+      stepExecutor = {start: () => {}, stop: () => {}, watch: () => {}}
       backendProcess = new BackendProcess({useFsEvents: false})
       backendProcess.executor = stepExecutor
       const appSettings = new AppSettings()
