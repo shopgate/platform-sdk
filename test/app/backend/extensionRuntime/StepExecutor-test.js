@@ -10,7 +10,7 @@ const UserSettings = require('../../../../lib/user/UserSettings')
 const appPath = path.join('test', 'appsettings')
 const proxyquire = require('proxyquire').noPreserveCache()
 
-describe('StepExecutor', () => {
+describe.skip('StepExecutor', () => {
   let executor
   let log
   let appTestFolder
