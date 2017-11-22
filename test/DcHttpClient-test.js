@@ -191,5 +191,4 @@ describe('DcHttpClient', () => {
       })
     })
   })
-
 })
