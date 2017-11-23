@@ -10,12 +10,12 @@ const UserSettings = require('../../../../lib/user/UserSettings')
 const appPath = path.join('test', 'appsettings')
 const proxyquire = require('proxyquire').noPreserveCache()
 
-describe.skip('StepExecutor', () => {
+describe('StepExecutor', () => {
   let executor
   let log
   let appTestFolder
 
-  before(() => {
+  beforeEach((done) => {
     appTestFolder = path.join('test', 'appsettings')
     process.env.SGCLOUD_DC_WS_ADDRESS = `http://nockedDc`
     process.env.APP_PATH = appTestFolder
@@ -36,14 +36,16 @@ describe.skip('StepExecutor', () => {
     fs.copySync(path.join(fakeStepDir, 'crashing.js'), path.join(extensionDir, 'crashing.js'))
     fs.copySync(path.join(fakeStepDir, 'timeout.js'), path.join(extensionDir, 'timeout.js'))
 
-    executor.start()
+    executor.start(done)
   })
 
-  after((done) => {
+  afterEach((done) => {
     delete process.env.SGCLOUD_DC_WS_ADDRESS
     delete process.env.APP_PATH
-    executor.stop()
-    rimraf(appTestFolder, done)
+    rimraf(appTestFolder, (err) => {
+      assert.ifError(err)
+      executor.stop(done)
+    })
   })
 
   describe('watcher', () => {
@@ -72,10 +74,12 @@ describe.skip('StepExecutor', () => {
       })
       const stepExecutor = new StepExecutorMocked({info: () => {}}, opts)
       assert.equal(stepExecutor.watcher, undefined)
-      stepExecutor.stop = (restart) => {
-        assert.equal(restart, true)
+      stepExecutor.stop = (cb) => {
+        cb()
       }
-      stepExecutor.start = done
+      stepExecutor.start = () => {
+        done()
+      }
       stepExecutor.watch()
     })
   })
@@ -114,17 +118,25 @@ describe.skip('StepExecutor', () => {
       path: '@foo/bar/crashing.js',
       meta: {appId: 'shop_123'}
     }
-    executor.execute({}, stepMeta, (err) => {
-      assert.ok(err)
-      assert.equal(err.message, 'runtime stopped')
-      assert.ok(!executor.childProcess)
-      setTimeout(() => {
-        assert.ok(executor.childProcess)
-        assert.equal(Object.keys(executor.openCalls).length, 0)
-        assert.equal(Object.keys(executor.openTimeouts).length, 0)
-        done()
-      }, 300)
-    })
+
+    const start = executor.start.bind(executor)
+    let exitCalled = false
+    executor.start = (cb) => {
+      assert.ok(exitCalled)
+      start(done)
+    }
+
+    const onExit = executor.onExit.bind(executor)
+    executor.onExit = (code, signal) => {
+      if (!exitCalled) {
+        assert.equal(code, 1)
+        assert.equal(signal, null)
+      }
+      exitCalled = true
+      onExit(code, signal)
+    }
+
+    executor.execute({}, stepMeta, assert.ok)
   })
 
   it('should timout', (done) => {
