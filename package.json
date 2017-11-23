@@ -6,7 +6,7 @@
   "scripts": {
     "test": "mocha",
     "cover": "nyc mocha",
-    "lint": "standard --fix",
+    "lint": "standard",
     "lint-staged": "lint-staged",
     "check": "nsp check"
   },
