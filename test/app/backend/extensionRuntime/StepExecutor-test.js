@@ -7,16 +7,19 @@ const fs = require('fs-extra')
 const StepExecutor = require('../../../../lib/app/backend/extensionRuntime/StepExecutor')
 const AppSettings = require('../../../../lib/app/AppSettings')
 const UserSettings = require('../../../../lib/user/UserSettings')
-const appPath = path.join('test', 'appsettings')
+const appPath = path.join('build', 'appsettings')
 const proxyquire = require('proxyquire').noPreserveCache()
 
 describe('StepExecutor', () => {
   let executor
   let log
   let appTestFolder
+  let userTestFolder
 
   beforeEach((done) => {
-    appTestFolder = path.join('test', 'appsettings')
+    userTestFolder = path.join('build', 'usersettings')
+    process.env.USER_PATH = userTestFolder
+    appTestFolder = path.join('build', 'appsettings')
     process.env.SGCLOUD_DC_WS_ADDRESS = `http://nockedDc`
     process.env.APP_PATH = appTestFolder
     log = {info: () => {}, error: () => {}, debug: () => {}, warn: () => {}}
@@ -40,26 +43,28 @@ describe('StepExecutor', () => {
   })
 
   afterEach((done) => {
+    UserSettings.setInstance()
+    AppSettings.setInstance()
     delete process.env.SGCLOUD_DC_WS_ADDRESS
     delete process.env.APP_PATH
-    rimraf(appTestFolder, (err) => {
-      assert.ifError(err)
-      executor.stop(done)
-    })
+    delete process.env.USER_PATH
+    rimraf.sync(appTestFolder)
+    rimraf.sync(userTestFolder)
+    executor.stop(done)
   })
 
   describe('watcher', () => {
     it('should start the watcher', (done) => {
       let eventCount = 0
       const watcher = {
-        on: (event, cb) => {
+        on: (event, fn) => {
           if (eventCount++ === 0) {
             assert.equal(event, 'ready')
           } else {
             assert.equal(stepExecutor.watcher, watcher)
             assert.equal(event, 'all')
           }
-          cb()
+          fn()
         }
       }
       const opts = {}

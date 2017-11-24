@@ -6,46 +6,53 @@ const AppSettings = require('../../../lib/app/AppSettings')
 const UserSettings = require('../../../lib/user/UserSettings')
 const BackendProcess = require('../../../lib/app/backend/BackendProcess')
 const rimraf = require('rimraf')
-const appPath = path.join('test', 'appsettings')
 const portfinder = require('portfinder')
 
 describe('BackendProcess', () => {
   let backendProcess
   let stepExecutor
   let mockServer
+  let userTestFolder
   let appTestFolder
 
   beforeEach((done) => {
+    appTestFolder = path.join('build', 'appsettings')
+    process.env.APP_PATH = appTestFolder
+    mkdirp.sync(path.join(appTestFolder, AppSettings.SETTINGS_FOLDER))
+    const appSettings = new AppSettings()
+    appSettings.setId('shop_10006').setAttachedExtensions({}).save().init()
+    AppSettings.setInstance(appSettings)
+
+    userTestFolder = path.join('build', 'usersettings')
+    process.env.USER_PATH = userTestFolder
+    UserSettings.getInstance().getSession().token = {}
+
+    stepExecutor = {start: (cb) => cb(), stop: (cb) => cb(), watch: () => {}}
+
     portfinder.getPort((err, port) => {
-      process.env.SGCLOUD_DC_ADDRESS = `http://localhost:${port}`
-      appTestFolder = path.join('test', 'appsettings')
-      process.env.APP_PATH = appTestFolder
       assert.ifError(err)
-      mockServer = require('socket.io').listen(port)
-      stepExecutor = {start: (cb) => cb(), stop: (cb) => cb(), watch: () => {}}
+
+      process.env.SGCLOUD_DC_ADDRESS = `http://localhost:${port}`
       backendProcess = new BackendProcess({useFsEvents: false})
       backendProcess.executor = stepExecutor
-      const appSettings = new AppSettings()
-      mkdirp.sync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
-      appSettings.setId('shop_10006').setAttachedExtensions({}).save().init()
-      AppSettings.setInstance(appSettings)
-      UserSettings.getInstance().getSession().token = {}
+      mockServer = require('socket.io').listen(port)
       done()
     })
   })
 
   afterEach((done) => {
+    UserSettings.setInstance()
+    AppSettings.setInstance()
     backendProcess.extensionWatcher.close()
+    rimraf.sync(appTestFolder)
+    rimraf.sync(userTestFolder)
+    delete process.env.SGCLOUD_DC_ADDRESS
+    delete process.env.APP_PATH
+    delete process.env.USER_PATH
 
     backendProcess.disconnect((err) => {
-      if (err) return done(err)
-      mockServer.close((err) => {
-        if (err) return done(err)
-        delete process.env.SGCLOUD_DC_ADDRESS
-        delete process.env.APP_PATH
-        delete process.env.USER_PATH
-        rimraf(appTestFolder, done)
-      })
+      assert.ifError(err)
+      mockServer.close(done)
     })
   })
 

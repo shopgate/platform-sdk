@@ -8,7 +8,7 @@ describe('UserSettings', () => {
   let testFolder
 
   beforeEach(() => {
-    testFolder = path.join('test', 'usersettings')
+    testFolder = path.join('build', 'usersettings')
     process.env.USER_PATH = testFolder
   })
 
@@ -23,7 +23,7 @@ describe('UserSettings', () => {
   })
 
   it('should accept USER_PATH env as settingsFolder', () => {
-    testFolder = path.join('test', '-testFoobar-')
+    testFolder = path.join('build', '-testFoobar-')
     process.env.USER_PATH = testFolder
     assert.equal(new UserSettings().settingsFolder, testFolder)
   })
