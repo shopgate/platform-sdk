@@ -87,6 +87,26 @@ describe('StepExecutor', () => {
       }
       stepExecutor.watch()
     })
+
+    it('should stop the watcher', (done) => {
+      const stepExecutor = new StepExecutor()
+      stepExecutor.watcher = {
+        closed: false,
+        close: () => {
+          setTimeout(() => {
+            stepExecutor.watcher.closed = true
+          }, 10)
+        }
+      }
+      stepExecutor.stop(done)
+    })
+  })
+
+  it('should not start another childProcess when one is already running', (done) => {
+    executor.start((err) => {
+      assert.ok(err)
+      done()
+    })
   })
 
   it('should call a local step action', (done) => {
