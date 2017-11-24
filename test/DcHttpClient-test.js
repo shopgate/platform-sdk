@@ -143,4 +143,49 @@ describe('DcHttpClient', () => {
       })
     })
   })
+
+  describe('setStartPageUrl', () => {
+    it('should set the start page url', (done) => {
+      const startPageUrl = 'http://someurl'
+      nock(dcClient.dcAddress)
+        .put('/applications/shop_10006/settings/startpage', {
+          startPageUrl
+        })
+        .reply(204)
+
+      dcClient.setStartPageUrl('shop_10006', startPageUrl, (err) => {
+        assert.ifError(err)
+        done()
+      })
+    })
+
+    it('should update the usertoken on jwt-update', (done) => {
+      nock(dcClient.dcAddress)
+        .put('/applications/shop_10006/settings/startpage')
+        .reply(204, {}, {'x-jwt': 'newToken'})
+
+      userSettings.save = () => {}
+      let sessionToken
+      session.setToken = (token) => {
+        sessionToken = token
+      }
+
+      dcClient.setStartPageUrl('shop_10006', 'http://someurl', (err) => {
+        assert.ifError(err)
+        assert.equal(sessionToken, 'newToken')
+        done()
+      })
+    })
+
+    it('should return an error on dc-error', (done) => {
+      nock(dcClient.dcAddress)
+        .put('/applications/shop_10006/settings/startpage')
+        .reply(500)
+
+      dcClient.setStartPageUrl('shop_10006', 'http://someurl', (err) => {
+        assert.ok(err)
+        done()
+      })
+    })
+  })
 })
