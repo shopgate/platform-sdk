@@ -61,7 +61,7 @@ describe('BackendAction', () => {
       },
       options: {ignoreInitial: true, fsEvents: false}
     }
-    backendAction.extensionWatcher = {
+    backendAction.extensionConfigWatcher = {
       stop: (cb) => { cb() }
     }
   })
@@ -71,7 +71,7 @@ describe('BackendAction', () => {
     delete process.env.USER_PATH
     backendAction.pipelineWatcher.stop((err) => {
       if (err) return done(err)
-      backendAction.extensionWatcher.stop((err) => {
+      backendAction.extensionConfigWatcher.stop((err) => {
         if (err) return done(err)
         rimraf(userSettingsFolder, () => {
           rimraf(path.join('extensions'), () => {
@@ -117,8 +117,8 @@ describe('BackendAction', () => {
     it('should update pipelines', (done) => {
       backendAction.backendProcess = new BackendProcess()
 
-      backendAction.extensionWatcher = {
-        start: () => { return backendAction.extensionWatcher },
+      backendAction.extensionConfigWatcher = {
+        start: () => { return backendAction.extensionConfigWatcher },
         stop: (cb) => { cb() },
         on: (name, cb) => { cb() }
       }
