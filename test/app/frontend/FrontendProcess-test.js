@@ -48,10 +48,13 @@ describe('FrontendProcess', () => {
         logSetupNeeded: logSetupNeededSpy
       }
     })
+    const frontendSetup = {
+      run: () => Promise.resolve()
+    }
 
     frontendProcess = new FrontendProcess({
       theme: null
-    })
+    }, frontendSetup)
   })
 
   afterEach((done) => {
@@ -67,7 +70,6 @@ describe('FrontendProcess', () => {
 
   describe('run()', () => {
     beforeEach(() => {
-      frontendProcess.frontendSetup.run = () => Promise.resolve()
       frontendProcess.rapidDevServer = () => {}
       frontendProcess.webpackDevServer = () => {}
     })

@@ -1,6 +1,6 @@
 {
   "name": "@shopgate/cloud-sdk",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "description": "Shopgate's Cloud SDK",
   "main": "index.js",
   "scripts": {
@@ -45,7 +45,7 @@
     ]
   },
   "dependencies": {
-    "@shopgate/cloud-sdk-webpack": "^1.2.1",
+    "@shopgate/cloud-sdk-webpack": "^1.3.0",
     "bunyan": "^1.8.12",
     "bunyan-format": "^0.2.1",
     "chalk": "^2.3.0",
