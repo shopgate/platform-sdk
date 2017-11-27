@@ -150,11 +150,11 @@ describe('StepExecutor', () => {
       meta: {appId: 'shop_123'}
     }
 
-    const start = executor.start.bind(executor)
     let exitCalled = false
     executor.start = (cb) => {
+      assert.equal(executor.childProcess, undefined)
       assert.ok(exitCalled)
-      start(done)
+      done()
     }
 
     const onExit = executor.onExit.bind(executor)
@@ -163,6 +163,7 @@ describe('StepExecutor', () => {
         assert.equal(code, 1)
         assert.equal(signal, null)
       }
+      assert.ok(executor.childProcess)
       exitCalled = true
       onExit(code, signal)
     }
