@@ -45,8 +45,6 @@ describe('BackendProcess', () => {
     UserSettings.setInstance()
     AppSettings.setInstance()
     backendProcess.extensionWatcher.close()
-    rimraf.sync(appTestFolder)
-    rimraf.sync(userTestFolder)
     delete process.env.SGCLOUD_DC_ADDRESS
     delete process.env.APP_PATH
     delete process.env.USER_PATH

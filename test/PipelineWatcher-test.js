@@ -12,14 +12,13 @@ describe('PipelineWatcher', () => {
 
   beforeEach(() => {
     process.env.APP_PATH = appPath
-
     pipelineWatcher = new PipelineWatcher()
     mkdirp.sync(path.join(appPath, 'pipelines'))
   })
 
   afterEach((done) => {
+    delete process.env.APP_PATH
     pipelineWatcher.stop(() => {
-      delete process.env.APP_PATH
       rimraf(appPath, done)
     })
   })
