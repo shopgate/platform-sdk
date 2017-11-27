@@ -7,6 +7,7 @@ const UserSettings = require('../../../lib/user/UserSettings')
 const BackendProcess = require('../../../lib/app/backend/BackendProcess')
 const rimraf = require('rimraf')
 const portfinder = require('portfinder')
+const async = require('neo-async')
 
 describe('BackendProcess', () => {
   let backendProcess
@@ -50,10 +51,14 @@ describe('BackendProcess', () => {
     delete process.env.APP_PATH
     delete process.env.USER_PATH
 
-    backendProcess.disconnect((err) => {
-      assert.ifError(err)
-      mockServer.close(done)
-    })
+    async.parallel([
+      (cb) => rimraf(appTestFolder, cb),
+      (cb) => rimraf(userTestFolder, cb),
+      (cb) => backendProcess.disconnect((err) => {
+        if (err) return cb(err)
+        mockServer.close(cb)
+      })
+    ], done)
   })
 
   describe('select application', () => {

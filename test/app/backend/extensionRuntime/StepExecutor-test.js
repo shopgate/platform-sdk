@@ -3,6 +3,7 @@ const path = require('path')
 const mkdirp = require('mkdirp')
 const rimraf = require('rimraf')
 const fs = require('fs-extra')
+const async = require('neo-async')
 
 const StepExecutor = require('../../../../lib/app/backend/extensionRuntime/StepExecutor')
 const AppSettings = require('../../../../lib/app/AppSettings')
@@ -48,9 +49,14 @@ describe('StepExecutor', () => {
     delete process.env.SGCLOUD_DC_WS_ADDRESS
     delete process.env.APP_PATH
     delete process.env.USER_PATH
-    rimraf.sync(appTestFolder)
-    rimraf.sync(userTestFolder)
-    executor.stop(done)
+
+    async.parallel([
+      (cb) => rimraf(appTestFolder, cb),
+      (cb) => rimraf(userTestFolder, cb)
+    ], (err) => {
+      assert.ifError(err)
+      executor.stop(done)
+    })
   })
 
   describe('watcher', () => {

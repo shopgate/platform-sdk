@@ -4,6 +4,7 @@ const rimraf = require('rimraf')
 const mkdirp = require('mkdirp')
 const fsEx = require('fs-extra')
 const sinon = require('sinon')
+const async = require('neo-async')
 
 const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
@@ -29,13 +30,15 @@ describe('ExtensionAction', () => {
     UserSettings.getInstance().getSession().token = {}
   })
 
-  afterEach(() => {
+  afterEach((done) => {
     UserSettings.setInstance()
     AppSettings.setInstance()
     delete process.env.USER_PATH
     delete process.env.APP_PATH
-    rimraf.sync(userSettingsFolder)
-    rimraf.sync(appPath)
+    async.parallel([
+      (cb) => rimraf(userSettingsFolder, cb),
+      (cb) => rimraf(appPath, cb)
+    ], done)
   })
 
   describe('general', () => {

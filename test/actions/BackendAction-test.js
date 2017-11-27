@@ -5,6 +5,7 @@ const fsEx = require('fs-extra')
 const rimraf = require('rimraf')
 const mkdirp = require('mkdirp')
 const proxyquire = require('proxyquire')
+const async = require('neo-async')
 
 const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
@@ -59,10 +60,14 @@ describe('BackendAction', () => {
     AppSettings.setInstance()
     delete process.env.USER_PATH
     delete process.env.APP_PATH
-    rimraf.sync(userSettingsFolder)
-    rimraf.sync(appPath)
-    if (!backendAction.pipelineWatcher) return done()
-    backendAction.pipelineWatcher.stop(done)
+    async.parallel([
+      (cb) => rimraf(userSettingsFolder, cb),
+      (cb) => rimraf(appPath, cb)
+    ], (err) => {
+      assert.ifError(err)
+      if (!backendAction.pipelineWatcher) return done()
+      backendAction.pipelineWatcher.stop(done)
+    })
   })
 
   describe('general', () => {

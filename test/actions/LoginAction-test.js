@@ -19,14 +19,14 @@ describe('LoginAction', () => {
     stdin = require('mock-stdin').stdin()
   })
 
-  afterEach(() => {
+  afterEach((done) => {
     delete process.env.USER_PATH
     delete process.env.SGCLOUD_DC_ADDRESS
     delete process.env.SGCLOUD_USER
     delete process.env.SGCLOUD_PASS
     UserSettings.setInstance()
-    rimraf.sync(settingsFolder)
     nock.enableNetConnect()
+    rimraf(settingsFolder, done)
   })
 
   it('should register', () => {
