@@ -15,12 +15,11 @@ install:
 
 script:
   - npm run lint
-  - npm t
   - npm run check
+  - npm run cover
 
 # Generate coverage report and send report to coveralls.io
 after_success:
-  - npm run cover
   - cat ./build/lcov.info | ./node_modules/coveralls/bin/coveralls.js
 
 notifications:
