@@ -17,7 +17,8 @@ describe('StepExecutor', () => {
   let appTestFolder
   let userTestFolder
 
-  beforeEach((done) => {
+  beforeEach(function (done) {
+    this.timeout = 10000
     userTestFolder = path.join('build', 'usersettings')
     process.env.USER_PATH = userTestFolder
     appTestFolder = path.join('build', 'appsettings')
@@ -36,11 +37,12 @@ describe('StepExecutor', () => {
 
     const fakeStepDir = path.join(__dirname, 'fakeSteps')
     const extensionDir = path.join(appPath, AppSettings.EXTENSIONS_FOLDER, 'foobar', 'extension')
-    fs.copySync(path.join(fakeStepDir, 'simple.js'), path.join(extensionDir, 'simple.js'))
-    fs.copySync(path.join(fakeStepDir, 'crashing.js'), path.join(extensionDir, 'crashing.js'))
-    fs.copySync(path.join(fakeStepDir, 'timeout.js'), path.join(extensionDir, 'timeout.js'))
-
-    executor.start(done)
+    async.parallel([
+      cb => fs.copy(path.join(fakeStepDir, 'simple.js'), path.join(extensionDir, 'simple.js'), cb),
+      cb => fs.copy(path.join(fakeStepDir, 'crashing.js'), path.join(extensionDir, 'crashing.js'), cb),
+      cb => fs.copy(path.join(fakeStepDir, 'timeout.js'), path.join(extensionDir, 'timeout.js'), cb),
+      cb => executor.start(cb)
+    ], done)
   })
 
   afterEach((done) => {
@@ -51,12 +53,10 @@ describe('StepExecutor', () => {
     delete process.env.USER_PATH
 
     async.parallel([
+      (cb) => executor.stop(cb),
       (cb) => rimraf(appTestFolder, cb),
       (cb) => rimraf(userTestFolder, cb)
-    ], (err) => {
-      assert.ifError(err)
-      executor.stop(done)
-    })
+    ], done)
   })
 
   describe('watcher', () => {
