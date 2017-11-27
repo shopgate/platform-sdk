@@ -68,8 +68,7 @@ const defaultConfig = {
   apiPort: 9666,
   hmrPort: 3000,
   remotePort: 8000,
-  sourceMapsType: 'cheap-module-eval-source-map',
-  accessToken: 'abcabcabcabc'
+  sourceMapsType: 'cheap-module-eval-source-map'
 }
 const runError = 'Had an error'
 
@@ -175,13 +174,16 @@ describe('FrontendSetup', () => {
       frontendSetup.save = () => {}
     })
 
-    it('should call the createRequestUrl()', (done) => {
-      const requestUrlSpy = sinon.spy(frontendSetup, 'createRequestUrl')
+    it('should set the startPageUrl at the developer connector', (done) => {
+      frontendSetup.dcClient = {
+        setStartPageUrl: (actualAppId, startPageUrl, cb) => {
+          assert.equal(actualAppId, appId)
+          assert.equal(startPageUrl, `http://${defaultConfig.ip}:${defaultConfig.port}/`)
+          cb()
+        }
+      }
       frontendSetup.run()
         .then(() => {
-          sinon.assert.calledOnce(requestUrlSpy)
-          request.reset()
-          requestUrlSpy.reset()
           done()
         })
         .catch((error) => {
@@ -189,16 +191,22 @@ describe('FrontendSetup', () => {
         })
     })
 
-    it('should process a request to trigger the jenkins job', (done) => {
+    it('should throw an error if startPageUrl cant be set at the developer connector', (done) => {
+      frontendSetup.dcClient = {
+        setStartPageUrl: (actualAppId, startPageUrl, cb) => {
+          assert.equal(actualAppId, appId)
+          assert.equal(startPageUrl, `http://${defaultConfig.ip}:${defaultConfig.port}/`)
+          cb(new Error('Something'))
+        }
+      }
       frontendSetup.run()
         .then(() => {
-          sinon.assert.calledOnce(request)
-          request.reset()
-          done()
+          assert.fail('Should throw an error')
         })
-        .catch((error) => {
-          done(error)
+        .catch((err) => {
+          assert.equal(err.message, 'Error while setting the start page url in the dev stack: Something')
         })
+        .then(done, done)
     })
 
     it('should throw an error if settings not confirmed', (done) => {
@@ -213,86 +221,6 @@ describe('FrontendSetup', () => {
           request.reset()
           done()
         })
-    })
-  })
-
-  describe('handleRequestResponse()', () => {
-    beforeEach(() => {
-      frontendSetup.save = () => {}
-    })
-
-    it('should not throw an error if all is good', (done) => {
-      const handlerSpy = sinon.spy(frontendSetup, 'handleRequestResponse')
-
-      frontendSetup.run()
-        .then(() => {
-          assert.ok(handlerSpy.calledOnce)
-          handlerSpy.reset()
-          request.reset()
-          done()
-        })
-        .catch((error) => {
-          handlerSpy.reset()
-          request.reset()
-          done(error)
-        })
-    })
-
-    it('should throw if an error happened', (done) => {
-      const handlerSpy = sinon.spy(frontendSetup, 'handleRequestResponse')
-      requestSpyFail = true
-
-      frontendSetup.run()
-        .then(() => {
-          handlerSpy.reset()
-          request.reset()
-          requestSpyFail = false
-          done('Did not throw!')
-        })
-        .catch((error) => {
-          assert.equal(error.message, requestSpyError)
-          requestSpyFail = false
-          handlerSpy.reset()
-          request.reset()
-          done()
-        })
-    })
-
-    it('should throw if the status code is wrong', (done) => {
-      const handlerSpy = sinon.spy(frontendSetup, 'handleRequestResponse')
-      requestStatusCode = 300
-
-      frontendSetup.run()
-        .then(() => {
-          handlerSpy.reset()
-          request.reset()
-          requestStatusCode = 201
-          done('Did not throw!')
-        })
-        .catch((error) => {
-          assert.equal(error.message, `Wrong statusCode ${requestStatusCode}. Message: ${requestSpyBody}`)
-          handlerSpy.reset()
-          request.reset()
-          requestStatusCode = 201
-          done()
-        })
-    })
-  })
-
-  describe('createRequestUrl()', () => {
-    beforeEach(() => {
-      frontendSetup.save = () => {}
-    })
-
-    it('should create the request url', () => {
-      const ip = '0.0.0.0'
-      const port = 9666
-      const accessToken = 'abcabcabcabc'
-      const appId = 'sometest'
-      const url = frontendSetup.createRequestUrl(ip, port, accessToken, appId)
-
-      assert.equal(url, frontendSetup.createRequestUrl(ip, port, accessToken, appId))
-      assert.ok(typeof url === 'string')
     })
   })
 
@@ -317,7 +245,7 @@ describe('FrontendSetup', () => {
 
     it('should show two console logs on success', () => {
       frontendSetup.save(defaultConfig)
-      sinon.assert.calledTwice(loggerSpy)
+      sinon.assert.calledOnce(loggerSpy)
     })
 
     it('should throw if something went wrong', (done) => {
