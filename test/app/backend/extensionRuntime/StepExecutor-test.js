@@ -18,7 +18,7 @@ describe('StepExecutor', () => {
   let userTestFolder
 
   beforeEach(function (done) {
-    this.timeout = 10000
+    this.timeout(10000)
     userTestFolder = path.join('build', 'usersettings')
     process.env.USER_PATH = userTestFolder
     appTestFolder = path.join('build', 'appsettings')
