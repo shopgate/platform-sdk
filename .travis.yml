@@ -9,6 +9,11 @@ node_js:
   - 8
   - node
 
+matrix:
+  fast_finish: true
+  allow_failures:
+    - os: osx
+
 before_script:
   - if [[ "$TRAVIS_NODE_VERSION" == "8" && "$TRAVIS_OS_NAME" == "linux" ]]; then npm run lint; fi
   - if [[ "$TRAVIS_NODE_VERSION" == "8" && "$TRAVIS_OS_NAME" == "linux" ]]; then npm run check; fi
