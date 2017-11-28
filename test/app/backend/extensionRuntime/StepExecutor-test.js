@@ -27,6 +27,8 @@ describe('StepExecutor', () => {
     log = {info: () => {}, error: () => {}, debug: () => {}, warn: () => {}}
     executor = new StepExecutor(log)
     executor.stepTimeout = 1000
+    executor.watcherOptions.fsEvents = false
+    executor.watcherOptions.polling = 1
 
     const appSettings = new AppSettings()
     mkdirp.sync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
