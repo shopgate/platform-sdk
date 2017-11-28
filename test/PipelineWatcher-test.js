@@ -12,7 +12,7 @@ describe('PipelineWatcher', () => {
 
   beforeEach(() => {
     process.env.APP_PATH = appPath
-    pipelineWatcher = new PipelineWatcher()
+    pipelineWatcher = new PipelineWatcher({useFsEvents: false, interval: 1})
     mkdirp.sync(path.join(appPath, 'pipelines'))
   })
 
