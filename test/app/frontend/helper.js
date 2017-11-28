@@ -11,8 +11,8 @@ const rimraf = require('rimraf')
 const UserSettings = require('../../../lib/user/UserSettings')
 const AppSettings = require('../../../lib/app/AppSettings')
 
-const userSettingsPath = join('test', 'usersettings')
-const appSettingsPath = join('test', 'appsettings')
+const userSettingsPath = join('build', 'usersettings')
+const appSettingsPath = join('build', 'appsettings')
 const appId = 'foobarTest'
 
 /**

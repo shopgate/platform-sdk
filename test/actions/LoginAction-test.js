@@ -4,17 +4,14 @@ const rimraf = require('rimraf')
 const nock = require('nock')
 const sinon = require('sinon')
 const LoginAction = require('../../lib/actions/LoginAction')
-const Settings = require('../../lib/user/UserSettings')
-
-const settingsFolder = path.join(__dirname, 'sgcloud-test')
+const UserSettings = require('../../lib/user/UserSettings')
+const settingsFolder = path.join('build', 'user')
 
 describe('LoginAction', () => {
   let stdin
 
   beforeEach(() => {
-    const set = Settings.getInstance()
-    set.settingsFolder = settingsFolder
-    set.init()
+    process.env.USER_PATH = settingsFolder
     process.env.SGCLOUD_DC_ADDRESS = 'http://dc.shopgate.cloud'
     nock.disableNetConnect()
     process.env.SGCLOUD_USER = ''
@@ -22,10 +19,14 @@ describe('LoginAction', () => {
     stdin = require('mock-stdin').stdin()
   })
 
-  afterEach(() => {
-    Settings.setInstance()
-    rimraf.sync(settingsFolder)
+  afterEach((done) => {
+    delete process.env.USER_PATH
+    delete process.env.SGCLOUD_DC_ADDRESS
+    delete process.env.SGCLOUD_USER
+    delete process.env.SGCLOUD_PASS
+    UserSettings.setInstance()
     nock.enableNetConnect()
+    rimraf(settingsFolder, done)
   })
 
   it('should register', () => {
@@ -54,7 +55,7 @@ describe('LoginAction', () => {
     login.run(options, err => {
       assert.ifError(err)
       api.done()
-      assert.equal(Settings.getInstance().getSession().token, 'token')
+      assert.equal(UserSettings.getInstance().getSession().token, 'token')
       done()
     })
   })
@@ -68,7 +69,7 @@ describe('LoginAction', () => {
     login.run({}, err => {
       assert.ifError(err)
       api.done()
-      assert.equal(Settings.getInstance().getSession().token, 'token2')
+      assert.equal(UserSettings.getInstance().getSession().token, 'token2')
       done()
     })
 
@@ -88,7 +89,7 @@ describe('LoginAction', () => {
     login.run({}, err => {
       assert.ifError(err)
       api.done()
-      assert.equal(Settings.getInstance().getSession().token, 'token3')
+      assert.equal(UserSettings.getInstance().getSession().token, 'token3')
       done()
     })
 
@@ -105,7 +106,7 @@ describe('LoginAction', () => {
     login.run(options, err => {
       assert.ifError(err)
       api.done()
-      assert.equal(Settings.getInstance().getSession().token, 'token4')
+      assert.equal(UserSettings.getInstance().getSession().token, 'token4')
       done()
     })
 
@@ -123,7 +124,7 @@ describe('LoginAction', () => {
       assert.ok(err)
       assert.equal(err.message, 'Login failed')
       api.done()
-      assert.equal(Settings.getInstance().getSession().token, null)
+      assert.equal(UserSettings.getInstance().getSession().token, null)
       done()
     })
   })

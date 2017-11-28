@@ -4,23 +4,24 @@ const rimraf = require('rimraf')
 const mkdirp = require('mkdirp')
 const fsEx = require('fs-extra')
 const sinon = require('sinon')
+const async = require('neo-async')
 
 const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
 const ExtensionAction = require('../../lib/actions/ExtensionAction')
 const logger = require('../../lib/logger')
 
-const userSettingsFolder = path.join('test', 'usersettings')
-const appPath = path.join('test', 'appsettings')
+const userSettingsFolder = path.join('build', 'usersettings')
+const appPath = path.join('build', 'appsettings')
 
 describe('ExtensionAction', () => {
   const action = new ExtensionAction()
 
   beforeEach(() => {
     process.env.USER_PATH = userSettingsFolder
+    process.env.APP_PATH = appPath
     const appId = 'foobarTest'
 
-    process.env.APP_PATH = appPath
     const appSettings = new AppSettings()
     mkdirp.sync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
     appSettings.setId(appId).setAttachedExtensions({}).save().init()
@@ -31,10 +32,13 @@ describe('ExtensionAction', () => {
 
   afterEach((done) => {
     UserSettings.setInstance()
+    AppSettings.setInstance()
     delete process.env.USER_PATH
-    rimraf(userSettingsFolder, () => {
-      rimraf(path.join('extensions'), done)
-    })
+    delete process.env.APP_PATH
+    async.parallel([
+      (cb) => rimraf(userSettingsFolder, cb),
+      (cb) => rimraf(appPath, cb)
+    ], done)
   })
 
   describe('general', () => {
@@ -74,7 +78,7 @@ describe('ExtensionAction', () => {
       const name = 'existentExtension'
       const id = 'extId'
 
-      const extPath = path.join('extensions', name)
+      const extPath = path.join(appPath, 'extensions', name)
       fsEx.ensureDirSync(extPath)
       fsEx.writeJSONSync(path.join(extPath, 'extension-config.json'), {id})
 
@@ -86,8 +90,8 @@ describe('ExtensionAction', () => {
       const name1 = 'existentExtension1'
       const name2 = 'existentExtension2'
 
-      const extPath1 = path.join('extensions', name1)
-      const extPath2 = path.join('extensions', name2)
+      const extPath1 = path.join(appPath, 'extensions', name1)
+      const extPath2 = path.join(appPath, 'extensions', name2)
       fsEx.ensureDirSync(extPath1)
       fsEx.ensureDirSync(extPath2)
       fsEx.writeJSONSync(path.join(extPath1, 'extension-config.json'), {id: 'existentExtension1'})
@@ -115,7 +119,7 @@ describe('ExtensionAction', () => {
     it('should throw an error if extension-config is invalid', () => {
       const name = 'existentExtension'
 
-      const extPath = path.join('extensions', name)
+      const extPath = path.join(appPath, 'extensions', name)
       fsEx.ensureDirSync(extPath)
       fsEx.writeJSONSync(path.join(extPath, 'extension-config.json'), {})
 
@@ -131,7 +135,7 @@ describe('ExtensionAction', () => {
     it('should throw an error if extension is already attached', () => {
       const name = 'existentExtension'
 
-      const extPath = path.join('extensions', name)
+      const extPath = path.join(appPath, 'extensions', name)
       fsEx.ensureDirSync(extPath)
       fsEx.writeJSONSync(path.join(extPath, 'extension-config.json'), {id: name})
 
@@ -148,7 +152,7 @@ describe('ExtensionAction', () => {
     it('should detach a extension', () => {
       const name = 'existentExtension'
 
-      const extPath = path.join('extensions', name)
+      const extPath = path.join(appPath, 'extensions', name)
       fsEx.ensureDirSync(extPath)
       fsEx.writeJSONSync(path.join(extPath, 'extension-config.json'), {id: name})
 
@@ -160,7 +164,7 @@ describe('ExtensionAction', () => {
     it('should skip if extension was not attached', (done) => {
       const name = 'notExitstentExtension'
 
-      const extPath = path.join('extensions', name)
+      const extPath = path.join(appPath, 'extensions', name)
       fsEx.ensureDirSync(extPath)
       fsEx.writeJSONSync(path.join(extPath, 'extension-config.json'), {id: name})
 
