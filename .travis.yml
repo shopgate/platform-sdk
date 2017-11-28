@@ -1,25 +1,22 @@
+os:
+  - linux
+  - osx
+dist: trusty
 sudo: false
 
-# trust dist provides a modern build chain (as opposed to 'precise' dist)
-# which absolves us from having to install compilers and stuff
-dist: trusty
-
 language: node_js
-
 node_js:
-  - lts/* # latest LTS release
-  - node  # latest stable release
+  - lts/* #latest LTS release
+  - node  #latest stable release
 
 install:
   - npm i
-
-script:
+before_script:
   - npm run lint
   - npm run check
+script:
   - npm run cover
-
-# Generate coverage report and send report to coveralls.io
-after_success:
+after_script:
   - cat ./build/lcov.info | ./node_modules/coveralls/bin/coveralls.js
 
 notifications:
