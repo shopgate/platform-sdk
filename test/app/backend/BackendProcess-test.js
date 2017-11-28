@@ -7,37 +7,44 @@ const UserSettings = require('../../../lib/user/UserSettings')
 const BackendProcess = require('../../../lib/app/backend/BackendProcess')
 const rimraf = require('rimraf')
 const appPath = path.join('test', 'appsettings')
+const portfinder = require('portfinder')
 
 describe('BackendProcess', () => {
   let backendProcess
+  let stepExecutor
   let mockServer
   let appTestFolder
 
-  beforeEach(() => {
-    process.env.SGCLOUD_DC_WS_ADDRESS = 'http://localhost:12223'
-    appTestFolder = path.join('test', 'appsettings')
-    process.env.APP_PATH = appTestFolder
-    mockServer = require('socket.io').listen(12223)
-    backendProcess = new BackendProcess()
-    const appSettings = new AppSettings()
-    mkdirp.sync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
-    appSettings.setId('shop_10006').setAttachedExtensions({}).save().init()
-    AppSettings.setInstance(appSettings)
-    UserSettings.getInstance().getSession().token = {}
+  beforeEach((done) => {
+    portfinder.getPort((err, port) => {
+      process.env.SGCLOUD_DC_ADDRESS = `http://localhost:${port}`
+      appTestFolder = path.join('test', 'appsettings')
+      process.env.APP_PATH = appTestFolder
+      assert.ifError(err)
+      mockServer = require('socket.io').listen(port)
+      stepExecutor = {start: () => {}, stop: () => {}, watch: () => {}}
+      backendProcess = new BackendProcess({useFsEvents: false})
+      backendProcess.executor = stepExecutor
+      const appSettings = new AppSettings()
+      mkdirp.sync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
+      appSettings.setId('shop_10006').setAttachedExtensions({}).save().init()
+      AppSettings.setInstance(appSettings)
+      UserSettings.getInstance().getSession().token = {}
+      done()
+    })
   })
 
   afterEach((done) => {
-    backendProcess.extensionWatcher.close((err) => {
+    backendProcess.extensionWatcher.close()
+
+    backendProcess.disconnect((err) => {
       if (err) return done(err)
-      backendProcess.disconnect((err) => {
+      mockServer.close((err) => {
         if (err) return done(err)
-        mockServer.close((err) => {
-          if (err) return done(err)
-          delete process.env.SGCLOUD_DC_WS_ADDRESS
-          delete process.env.APP_PATH
-          delete process.env.USER_PATH
-          rimraf(appTestFolder, done)
-        })
+        delete process.env.SGCLOUD_DC_ADDRESS
+        delete process.env.APP_PATH
+        delete process.env.USER_PATH
+        rimraf(appTestFolder, done)
       })
     })
   })
@@ -77,7 +84,7 @@ describe('BackendProcess', () => {
         })
 
         sock.on('registerExtension', (data, cb) => {
-          assert.equal(data, 'testExt')
+          assert.deepEqual(data, {extensionId: 'testExt'})
           cb()
           done()
         })
@@ -101,7 +108,7 @@ describe('BackendProcess', () => {
         })
 
         sock.on('deregisterExtension', (data, cb) => {
-          assert.equal(data, 'testExt')
+          assert.deepEqual(data, {extensionId: 'testExt'})
           cb()
           done()
         })
@@ -122,6 +129,33 @@ describe('BackendProcess', () => {
           })
         }, 50) // Because of Filewatcher-interval
       })
+    })
+  })
+
+  describe('update token', () => {
+    let oldUserSettingsInstance
+    const token = { foo: 'bar' }
+
+    before((done) => {
+      oldUserSettingsInstance = UserSettings.getInstance()
+      const newUserSettingsInstance = {
+        save: () => {},
+        getSession: () => { return { setToken: (t) => assert.deepEqual(t, token) } },
+        getInstance: function () { return this }
+      }
+
+      UserSettings.setInstance(newUserSettingsInstance)
+      done()
+    })
+
+    after((done) => {
+      UserSettings.setInstance(oldUserSettingsInstance)
+      done()
+    })
+
+    it('should update the token', (done) => {
+      backendProcess.updateToken(token)
+      done()
     })
   })
 })

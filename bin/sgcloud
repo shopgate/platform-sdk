@@ -5,6 +5,7 @@
 const MIN_NODE_VERSION = '8.9.0'
 
 const commander = require('commander')
+const logger = require('../lib/logger')
 
 // set version (includes version command)
 const {version} = require('../package.json')
@@ -22,6 +23,11 @@ if (!hasNeededNodeVersion()) {
 
 // activate argument parsing
 commander.parse(process.argv)
+
+// undefined if no cmd is given on cli, object if a cmd was found, string if not
+const executedCommand = commander.args.pop()
+if (typeof executedCommand === 'string') logger.error(`Unknonwn command ${commander.args.join(' ')} ${executedCommand}`)
+if (!executedCommand || typeof executedCommand === 'string') commander.help()
 
 function hasNeededNodeVersion () {
   const versionParts = process.version.split('.')
