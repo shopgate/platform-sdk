@@ -199,24 +199,6 @@ describe('BackendAction', () => {
       })
     })
 
-    it('should write generated extension-config if theme-config was updated', (done) => {
-      let generated = {id: 'myTheme'}
-      backendAction.dcClient = {
-        generateExtensionConfig: (config, appId, cb) => {
-          cb(null, generated)
-        }
-      }
-
-      const cfgPath = path.join(process.env.APP_PATH, 'extensions', 'testExt')
-
-      backendAction._themeChanged({ file: generated, path: cfgPath }, (err) => {
-        assert.ifError(err)
-        let cfg = fsEx.readJsonSync(path.join(cfgPath, 'config', 'app.json'))
-        assert.deepEqual(cfg, {id: 'myTheme'})
-        done()
-      })
-    })
-
     it('should throw error if dcClient is not reachable', (done) => {
       backendAction.dcClient = {
         updatePipeline: (pipeline, id, cb) => cb(new Error('EUNKNOWN'))
