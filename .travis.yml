@@ -1,23 +1,31 @@
+sudo: false
+dist: trusty
+
+language: node_js
 os:
   - linux
   - osx
-dist: trusty
-sudo: false
-
-language: node_js
 node_js:
-  - lts/* #latest LTS release
-  - node  #latest stable release
+  - 8
+  - node
 
-install:
-  - npm i
+matrix:
+  fast_finish: true
+  include:
+    - os: linux
+      node_js: 8
+      env: COVERAGE=true
+  allow_failures:
+    - os: osx
+    - node_js: node
+
 before_script:
-  - npm run lint
-  - npm run check
-script:
-  - npm run cover
+  - if [[ "$COVERAGE" == true ]] then; npm run lint fi;
+  - if [[ "$COVERAGE" == true ]] then; npm run check fi;
+
 after_script:
-  - cat ./build/lcov.info | ./node_modules/coveralls/bin/coveralls.js
+  - if [[ "$COVERAGE" == true ]] then; npm run cover fi;
+  - if [[ "$COVERAGE" == true ]] then; cat ./build/lcov.info | ./node_modules/coveralls/bin/coveralls.js fi;
 
 notifications:
   email: false
