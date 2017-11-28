@@ -1,26 +1,28 @@
 sudo: false
-
-# trust dist provides a modern build chain (as opposed to 'precise' dist)
-# which absolves us from having to install compilers and stuff
 dist: trusty
 
 language: node_js
-
+os:
+  - linux
+  - osx
 node_js:
-  - lts/* # latest LTS release
-  - node  # latest stable release
+  - 8
+  - node
 
-install:
-  - npm i
+matrix:
+  fast_finish: true
+  allow_failures:
+    - os: osx
+
+before_script:
+  - if [[ "$TRAVIS_NODE_VERSION" == "8" && "$TRAVIS_OS_NAME" == "linux" ]]; then npm run lint; fi
+  - if [[ "$TRAVIS_NODE_VERSION" == "8" && "$TRAVIS_OS_NAME" == "linux" ]]; then npm run check; fi
 
 script:
-  - npm run lint
-  - npm run check
-  - npm run cover
+  - if [[ "$TRAVIS_NODE_VERSION" == "8" && "$TRAVIS_OS_NAME" == "linux" ]]; then npm run cover; else npm t; fi
 
-# Generate coverage report and send report to coveralls.io
-after_success:
-  - cat ./build/lcov.info | ./node_modules/coveralls/bin/coveralls.js
+after_script:
+  - if [[ "$TRAVIS_NODE_VERSION" == "8" && "$TRAVIS_OS_NAME" == "linux" ]]; then cat ./build/lcov.info | ./node_modules/coveralls/bin/coveralls.js; fi
 
 notifications:
   email: false
