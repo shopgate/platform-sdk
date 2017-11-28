@@ -9,7 +9,7 @@ describe('Storage', () => {
   let storagePath
   let storage
   beforeEach(() => {
-    storagePath = path.join('test', 'storage.json')
+    storagePath = path.join('build', 'storage.json')
     process.env.STORAGE_PATH = storagePath
     storage = new Storage()
   })

@@ -9,7 +9,7 @@ describe('AppSettings', () => {
   let testFolder
 
   beforeEach(() => {
-    testFolder = path.join('test', 'appsettings')
+    testFolder = path.join('build', 'appsettings')
     process.env.APP_PATH = testFolder
   })
 

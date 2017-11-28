@@ -58,8 +58,8 @@ const FrontendSetup = proxyquire('../../../lib/app/frontend/FrontendSetup', {
   './setupQuestions': questionSpy
 })
 
-const userSettingsPath = join('test', 'usersettings')
-const appSettingsPath = join('test', 'appsettings')
+const userSettingsPath = join('build', 'usersettings')
+const appSettingsPath = join('build', 'appsettings')
 const appId = 'foobarTest'
 
 const defaultConfig = {

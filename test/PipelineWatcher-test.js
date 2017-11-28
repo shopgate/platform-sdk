@@ -5,21 +5,20 @@ const mkdirp = require('mkdirp')
 const rimraf = require('rimraf')
 const PipelineWatcher = require('../lib/PipelineWatcher')
 
-const appPath = path.join('test', 'appsettings')
+const appPath = path.join('build', 'appsettings')
 
 describe('PipelineWatcher', () => {
   let pipelineWatcher
 
   beforeEach(() => {
     process.env.APP_PATH = appPath
-
     pipelineWatcher = new PipelineWatcher()
     mkdirp.sync(path.join(appPath, 'pipelines'))
   })
 
   afterEach((done) => {
+    delete process.env.APP_PATH
     pipelineWatcher.stop(() => {
-      delete process.env.APP_PATH
       rimraf(appPath, done)
     })
   })

@@ -3,20 +3,25 @@ const path = require('path')
 const mkdirp = require('mkdirp')
 const rimraf = require('rimraf')
 const fs = require('fs-extra')
+const async = require('neo-async')
 
 const StepExecutor = require('../../../../lib/app/backend/extensionRuntime/StepExecutor')
 const AppSettings = require('../../../../lib/app/AppSettings')
 const UserSettings = require('../../../../lib/user/UserSettings')
-const appPath = path.join('test', 'appsettings')
+const appPath = path.join('build', 'appsettings')
 const proxyquire = require('proxyquire').noPreserveCache()
 
-describe.skip('StepExecutor', () => {
+describe('StepExecutor', () => {
   let executor
   let log
   let appTestFolder
+  let userTestFolder
 
-  before(() => {
-    appTestFolder = path.join('test', 'appsettings')
+  beforeEach(function (done) {
+    this.timeout(10000)
+    userTestFolder = path.join('build', 'usersettings')
+    process.env.USER_PATH = userTestFolder
+    appTestFolder = path.join('build', 'appsettings')
     process.env.SGCLOUD_DC_WS_ADDRESS = `http://nockedDc`
     process.env.APP_PATH = appTestFolder
     log = {info: () => {}, error: () => {}, debug: () => {}, warn: () => {}}
@@ -32,32 +37,40 @@ describe.skip('StepExecutor', () => {
 
     const fakeStepDir = path.join(__dirname, 'fakeSteps')
     const extensionDir = path.join(appPath, AppSettings.EXTENSIONS_FOLDER, 'foobar', 'extension')
-    fs.copySync(path.join(fakeStepDir, 'simple.js'), path.join(extensionDir, 'simple.js'))
-    fs.copySync(path.join(fakeStepDir, 'crashing.js'), path.join(extensionDir, 'crashing.js'))
-    fs.copySync(path.join(fakeStepDir, 'timeout.js'), path.join(extensionDir, 'timeout.js'))
-
-    executor.start()
+    async.parallel([
+      cb => fs.copy(path.join(fakeStepDir, 'simple.js'), path.join(extensionDir, 'simple.js'), cb),
+      cb => fs.copy(path.join(fakeStepDir, 'crashing.js'), path.join(extensionDir, 'crashing.js'), cb),
+      cb => fs.copy(path.join(fakeStepDir, 'timeout.js'), path.join(extensionDir, 'timeout.js'), cb),
+      cb => executor.start(cb)
+    ], done)
   })
 
-  after((done) => {
+  afterEach((done) => {
+    UserSettings.setInstance()
+    AppSettings.setInstance()
     delete process.env.SGCLOUD_DC_WS_ADDRESS
     delete process.env.APP_PATH
-    executor.stop()
-    rimraf(appTestFolder, done)
+    delete process.env.USER_PATH
+
+    async.parallel([
+      (cb) => executor.stop(cb),
+      (cb) => rimraf(appTestFolder, cb),
+      (cb) => rimraf(userTestFolder, cb)
+    ], done)
   })
 
   describe('watcher', () => {
     it('should start the watcher', (done) => {
       let eventCount = 0
       const watcher = {
-        on: (event, cb) => {
+        on: (event, fn) => {
           if (eventCount++ === 0) {
             assert.equal(event, 'ready')
           } else {
             assert.equal(stepExecutor.watcher, watcher)
             assert.equal(event, 'all')
           }
-          cb()
+          fn()
         }
       }
       const opts = {}
@@ -72,11 +85,33 @@ describe.skip('StepExecutor', () => {
       })
       const stepExecutor = new StepExecutorMocked({info: () => {}}, opts)
       assert.equal(stepExecutor.watcher, undefined)
-      stepExecutor.stop = (restart) => {
-        assert.equal(restart, true)
+      stepExecutor.stop = (cb) => {
+        cb()
       }
-      stepExecutor.start = done
+      stepExecutor.start = () => {
+        done()
+      }
       stepExecutor.watch()
+    })
+
+    it('should stop the watcher', (done) => {
+      const stepExecutor = new StepExecutor()
+      stepExecutor.watcher = {
+        closed: false,
+        close: () => {
+          setTimeout(() => {
+            stepExecutor.watcher.closed = true
+          }, 10)
+        }
+      }
+      stepExecutor.stop(done)
+    })
+  })
+
+  it('should not start another childProcess when one is already running', (done) => {
+    executor.start((err) => {
+      assert.ok(err)
+      done()
     })
   })
 
@@ -114,17 +149,26 @@ describe.skip('StepExecutor', () => {
       path: '@foo/bar/crashing.js',
       meta: {appId: 'shop_123'}
     }
-    executor.execute({}, stepMeta, (err) => {
-      assert.ok(err)
-      assert.equal(err.message, 'runtime stopped')
-      assert.ok(!executor.childProcess)
-      setTimeout(() => {
-        assert.ok(executor.childProcess)
-        assert.equal(Object.keys(executor.openCalls).length, 0)
-        assert.equal(Object.keys(executor.openTimeouts).length, 0)
-        done()
-      }, 300)
-    })
+
+    let exitCalled = false
+    executor.start = (cb) => {
+      assert.equal(executor.childProcess, undefined)
+      assert.ok(exitCalled)
+      done()
+    }
+
+    const onExit = executor.onExit.bind(executor)
+    executor.onExit = (code, signal) => {
+      if (!exitCalled) {
+        assert.equal(code, 1)
+        assert.equal(signal, null)
+      }
+      assert.ok(executor.childProcess)
+      exitCalled = true
+      onExit(code, signal)
+    }
+
+    executor.execute({}, stepMeta, assert.ok)
   })
 
   it('should timout', (done) => {
