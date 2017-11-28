@@ -157,7 +157,7 @@ describe('BackendAction', () => {
       backendAction._startSubProcess()
     })
 
-    it('should write generated extension-config if extension was updated', (done) => {
+    it('should write generated extension-config if backend-extension was updated', (done) => {
       let generated = { backend: {id: 'myGeneratedExtension'} }
       backendAction.dcClient = {
         generateExtensionConfig: (config, appId, cb) => {
@@ -175,19 +175,20 @@ describe('BackendAction', () => {
       })
     })
 
-    it('should throw error if extension does not contain backend-config', (done) => {
-      let generated = {id: 'myGeneratedExtension'}
+    it('should write generated extension-config if frontend-extension was updated', (done) => {
+      let generated = { frontend: {id: 'myGeneratedExtension'} }
       backendAction.dcClient = {
         generateExtensionConfig: (config, appId, cb) => {
           cb(null, generated)
         }
       }
 
-      const cfgPath = path.join(process.env.APP_PATH, 'extensions', 'testExt')
+      const cfgPath = path.join(process.env.APP_PATH, 'extension', 'testExt')
 
       backendAction._extensionChanged({ file: generated, path: cfgPath }, (err) => {
-        assert.ok(err)
-        assert.equal(err.message, `Backend-part is missing in generated config`)
+        assert.ifError(err)
+        let cfg = fsEx.readJsonSync(path.join(cfgPath, 'frontend', 'config.json'))
+        assert.deepEqual(cfg, {id: 'myGeneratedExtension'})
         done()
       })
     })
