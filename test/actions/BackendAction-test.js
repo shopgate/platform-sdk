@@ -120,12 +120,18 @@ describe('BackendAction', () => {
         stop: (cb) => { cb() },
         on: (name, cb) => { cb() }
       }
+      backendAction.themeConfigWatcher = {
+        start: () => { return backendAction.themeConfigWatcher },
+        stop: (cb) => { cb() },
+        on: (name, cb) => { cb() }
+      }
 
       backendAction.dcClient = {
         getPipelines: (appId, cb) => cb(null, [{pipeline: {id: 'testPipeline'}}]),
         updatePipeline: () => {}
       }
       backendAction._extensionChanged = (cfg, cb = () => {}) => {}
+      backendAction._themeChanged = (cfg, cb = () => {}) => {}
 
       try {
         backendAction._startSubProcess()
@@ -189,6 +195,24 @@ describe('BackendAction', () => {
         assert.ifError(err)
         let cfg = fsEx.readJsonSync(path.join(cfgPath, 'frontend', 'config.json'))
         assert.deepEqual(cfg, {id: 'myGeneratedExtension'})
+        done()
+      })
+    })
+
+    it('should write generated extension-config if theme-config was updated', (done) => {
+      let generated = {id: 'myTheme'}
+      backendAction.dcClient = {
+        generateExtensionConfig: (config, appId, cb) => {
+          cb(null, generated)
+        }
+      }
+
+      const cfgPath = path.join(process.env.APP_PATH, 'extensions', 'testExt')
+
+      backendAction._themeChanged({ file: generated, path: cfgPath }, (err) => {
+        assert.ifError(err)
+        let cfg = fsEx.readJsonSync(path.join(cfgPath, 'config', 'app.json'))
+        assert.deepEqual(cfg, {id: 'myTheme'})
         done()
       })
     })

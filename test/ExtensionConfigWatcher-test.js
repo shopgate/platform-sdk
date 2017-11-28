@@ -38,8 +38,8 @@ describe('ExtensionConfigWatcher', () => {
     extensionWatcher.watcher.interval = 1
 
     setTimeout(() => {
-      fsEx.ensureDirSync(path.join(extensionWatcher.extensionFolder, 'testExt'))
-      fsEx.writeJsonSync(path.join(extensionWatcher.extensionFolder, 'testExt', 'extension-config.json'), writtenConfig)
+      fsEx.ensureDirSync(path.join(extensionWatcher.watchFolder, 'testExt'))
+      fsEx.writeJsonSync(path.join(extensionWatcher.watchFolder, 'testExt', 'extension-config.json'), writtenConfig)
     }, 50)
   })
 
