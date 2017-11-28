@@ -5,6 +5,7 @@ language: node_js
 os:
   - linux
   - osx
+  - windows
 node_js:
   - 8
   - node
@@ -15,12 +16,14 @@ matrix:
     - node_js: node
 
 before_script:
-  - if [[ "$TRAVIS_NODE_VERSION" == "8" && "$TRAVIS_OS_NAME" == "linux" ]]; then npm run lint; fi
-  - if [[ "$TRAVIS_NODE_VERSION" == "8" && "$TRAVIS_OS_NAME" == "linux" ]]; then npm run check; fi
+  - if [[ "$TRAVIS_NODE_VERSION" == "8" && "$TRAVIS_OS_NAME" == "linux" ]]; then npm run lint fi
+  - if [[ "$TRAVIS_NODE_VERSION" == "8" && "$TRAVIS_OS_NAME" == "linux" ]]; then npm run check fi
+
+script:
+  - if [[ "$TRAVIS_NODE_VERSION" == "8" && "$TRAVIS_OS_NAME" == "linux" ]]; then npm run cover else npm t fi
 
 after_script:
-  - if [[ "$TRAVIS_NODE_VERSION" == "8" && "$TRAVIS_OS_NAME" == "linux" ]]; then npm run cover; fi
-  - if [[ "$TRAVIS_NODE_VERSION" == "8" && "$TRAVIS_OS_NAME" == "linux" ]]; then cat ./build/lcov.info | ./node_modules/coveralls/bin/coveralls.js; fi
+  - if [[ "$TRAVIS_NODE_VERSION" == "8" && "$TRAVIS_OS_NAME" == "linux" ]]; then cat ./build/lcov.info | ./node_modules/coveralls/bin/coveralls.js fi
 
 notifications:
   email: false
