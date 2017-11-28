@@ -11,21 +11,16 @@ node_js:
 
 matrix:
   fast_finish: true
-  include:
-    - os: linux
-      node_js: 8
-      env: COVERAGE=true
   allow_failures:
-    - os: osx
     - node_js: node
 
 before_script:
-  - if [[ "$COVERAGE" == true ]] then; npm run lint fi;
-  - if [[ "$COVERAGE" == true ]] then; npm run check fi;
+  - if [[ "$TRAVIS_NODE_VERSION" == "8" && "$TRAVIS_OS_NAME" == "linux" ]]; then npm run lint; fi
+  - if [[ "$TRAVIS_NODE_VERSION" == "8" && "$TRAVIS_OS_NAME" == "linux" ]]; then npm run check; fi
 
 after_script:
-  - if [[ "$COVERAGE" == true ]] then; npm run cover fi;
-  - if [[ "$COVERAGE" == true ]] then; cat ./build/lcov.info | ./node_modules/coveralls/bin/coveralls.js fi;
+  - if [[ "$TRAVIS_NODE_VERSION" == "8" && "$TRAVIS_OS_NAME" == "linux" ]]; then npm run cover; fi
+  - if [[ "$TRAVIS_NODE_VERSION" == "8" && "$TRAVIS_OS_NAME" == "linux" ]]; then cat ./build/lcov.info | ./node_modules/coveralls/bin/coveralls.js; fi
 
 notifications:
   email: false
