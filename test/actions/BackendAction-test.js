@@ -1,3 +1,4 @@
+/* eslint-disable standard/no-callback-literal */
 const assert = require('assert')
 const sinon = require('sinon')
 const path = require('path')
@@ -28,6 +29,7 @@ class BackendProcess {
 }
 
 describe('BackendAction', () => {
+  let backendAction
   const BackendAction = proxyquire('../../lib/actions/BackendAction', {
     '../app/backend/BackendProcess': BackendProcess,
     '../logger': {
@@ -35,7 +37,6 @@ describe('BackendAction', () => {
       error: () => {}
     }
   })
-  let backendAction
 
   beforeEach(() => {
     backendAction = new BackendAction()
@@ -53,6 +54,9 @@ describe('BackendAction', () => {
       on: (name, fn) => fn({pipeline: {pipeline: {id: 'testPipeline'}}}),
       options: {ignoreInitial: true, fsEvents: false}
     }
+    backendAction.extensionConfigWatcher = {
+      stop: (cb) => { cb() }
+    }
   })
 
   afterEach((done) => {
@@ -60,13 +64,19 @@ describe('BackendAction', () => {
     AppSettings.setInstance()
     delete process.env.USER_PATH
     delete process.env.APP_PATH
-    async.parallel([
-      (cb) => rimraf(userSettingsFolder, cb),
-      (cb) => rimraf(appPath, cb)
-    ], (err) => {
-      assert.ifError(err)
-      if (!backendAction.pipelineWatcher) return done()
-      backendAction.pipelineWatcher.stop(done)
+    backendAction.pipelineWatcher.stop((err) => {
+      if (err) return done(err)
+      backendAction.extensionConfigWatcher.stop((err) => {
+        if (err) return done(err)
+        async.parallel([
+          (cb) => rimraf(userSettingsFolder, cb),
+          (cb) => rimraf(appPath, cb)
+        ], (err) => {
+          assert.ifError(err)
+          if (!backendAction.pipelineWatcher) return done()
+          backendAction.pipelineWatcher.stop(done)
+        })
+      })
     })
   })
 
@@ -105,10 +115,17 @@ describe('BackendAction', () => {
     it('should update pipelines', (done) => {
       backendAction.backendProcess = new BackendProcess()
 
+      backendAction.extensionConfigWatcher = {
+        start: () => { return backendAction.extensionConfigWatcher },
+        stop: (cb) => { cb() },
+        on: (name, cb) => { cb() }
+      }
+
       backendAction.dcClient = {
         getPipelines: (appId, cb) => cb(null, [{pipeline: {id: 'testPipeline'}}]),
         updatePipeline: () => {}
       }
+      backendAction._extensionChanged = (cfg, cb = () => {}) => {}
 
       try {
         backendAction._startSubProcess()
@@ -140,6 +157,42 @@ describe('BackendAction', () => {
       backendAction._startSubProcess()
     })
 
+    it('should write generated extension-config if backend-extension was updated', (done) => {
+      let generated = { backend: {id: 'myGeneratedExtension'} }
+      backendAction.dcClient = {
+        generateExtensionConfig: (config, appId, cb) => {
+          cb(null, generated)
+        }
+      }
+
+      const cfgPath = path.join(process.env.APP_PATH, 'extensions', 'testExt')
+
+      backendAction._extensionChanged({ file: generated, path: cfgPath }, (err) => {
+        assert.ifError(err)
+        let cfg = fsEx.readJsonSync(path.join(cfgPath, 'extension', 'config.json'))
+        assert.deepEqual(cfg, {id: 'myGeneratedExtension'})
+        done()
+      })
+    })
+
+    it('should write generated extension-config if frontend-extension was updated', (done) => {
+      let generated = { frontend: {id: 'myGeneratedExtension'} }
+      backendAction.dcClient = {
+        generateExtensionConfig: (config, appId, cb) => {
+          cb(null, generated)
+        }
+      }
+
+      const cfgPath = path.join(process.env.APP_PATH, 'extension', 'testExt')
+
+      backendAction._extensionChanged({ file: generated, path: cfgPath }, (err) => {
+        assert.ifError(err)
+        let cfg = fsEx.readJsonSync(path.join(cfgPath, 'frontend', 'config.json'))
+        assert.deepEqual(cfg, {id: 'myGeneratedExtension'})
+        done()
+      })
+    })
+
     it('should throw error if dcClient is not reachable', (done) => {
       backendAction.dcClient = {
         updatePipeline: (pipeline, id, cb) => cb(new Error('EUNKNOWN'))
@@ -154,6 +207,22 @@ describe('BackendAction', () => {
         done()
       })
     }).timeout(5000)
+
+    it('should return if pipeline was changed', (done) => {
+      backendAction.dcClient = {
+        updatePipeline: (pipeline, id, cb) => {
+          cb()
+        }
+      }
+      backendAction.backendProcess = {
+        connect: (cb) => { cb() }
+      }
+
+      backendAction._pipelineChanged({pipeline: {id: 'testPipeline'}}, (err) => {
+        assert.ifError(err)
+        done()
+      })
+    })
 
     it('should work', () => {
       backendAction._startSubProcess = () => {}

@@ -171,7 +171,7 @@ describe('StepExecutor', () => {
     executor.execute({}, stepMeta, assert.ok)
   })
 
-  it('should timout', (done) => {
+  it('should timeout', (done) => {
     const stepMeta = {
       id: '@foo/bar',
       path: '@foo/bar/timeout.js',

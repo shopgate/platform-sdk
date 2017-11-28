@@ -44,19 +44,21 @@ describe('BackendProcess', () => {
   afterEach((done) => {
     UserSettings.setInstance()
     AppSettings.setInstance()
-    backendProcess.extensionWatcher.close()
-    delete process.env.SGCLOUD_DC_ADDRESS
-    delete process.env.APP_PATH
-    delete process.env.USER_PATH
-
-    async.parallel([
-      (cb) => rimraf(appTestFolder, cb),
-      (cb) => rimraf(userTestFolder, cb),
-      (cb) => backendProcess.disconnect((err) => {
-        if (err) return cb(err)
-        mockServer.close(cb)
+    backendProcess.extensionWatcher.stop(() => {
+      backendProcess.disconnect((err) => {
+        if (err) return done(err)
+        mockServer.close((err) => {
+          if (err) return done(err)
+          delete process.env.SGCLOUD_DC_ADDRESS
+          delete process.env.APP_PATH
+          delete process.env.USER_PATH
+          async.parallel([
+            (cb) => rimraf(appTestFolder, cb),
+            (cb) => rimraf(userTestFolder, cb)
+          ], done)
+        })
       })
-    ], done)
+    })
   })
 
   describe('select application', () => {
