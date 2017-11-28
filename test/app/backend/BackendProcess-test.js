@@ -131,4 +131,31 @@ describe('BackendProcess', () => {
       })
     })
   })
+
+  describe('update token', () => {
+    let oldUserSettingsInstance
+    const token = { foo: 'bar' }
+
+    before((done) => {
+      oldUserSettingsInstance = UserSettings.getInstance()
+      const newUserSettingsInstance = {
+        save: () => {},
+        getSession: () => { return { setToken: (t) => assert.deepEqual(t, token) } },
+        getInstance: function () { return this }
+      }
+
+      UserSettings.setInstance(newUserSettingsInstance)
+      done()
+    })
+
+    after((done) => {
+      UserSettings.setInstance(oldUserSettingsInstance)
+      done()
+    })
+
+    it('should update the token', (done) => {
+      backendProcess.updateToken(token)
+      done()
+    })
+  })
 })

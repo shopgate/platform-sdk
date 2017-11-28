@@ -31,7 +31,8 @@
     "Florian Müller <florian.mueller81@gmx.de> (https://github.com/devbucket)",
     "Daniel Huth <daniel.huth@shopgate.com> (https://github.com/Agreon)",
     "Richard Gorman <richardgorman@outlook.com> (https://github.com/richardgorman)",
-    "Frithjof Klös <frithjof.kloes@shopgate.com> (https://github.com/kernelkiller)"
+    "Frithjof Klös <frithjof.kloes@shopgate.com> (https://github.com/kernelkiller)",
+    "Steffen Zull <steffen.zull@shopgate.com> (https://github.com/szll)"
   ],
   "license": "Apache-2.0",
   "bugs": {
@@ -44,7 +45,7 @@
     ]
   },
   "dependencies": {
-    "@shopgate/cloud-sdk-webpack": "^1.2.1",
+    "@shopgate/cloud-sdk-webpack": "^1.3.0",
     "bunyan": "^1.8.12",
     "bunyan-format": "^0.2.1",
     "chalk": "^2.3.0",

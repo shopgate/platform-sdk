@@ -225,7 +225,7 @@ describe('BackendAction', () => {
         assert.equal(err.message, `Could not update pipeline 'testPipeline'`)
         done()
       })
-    })
+    }).timeout(5000)
 
     it('should return if pipeline was changed', (done) => {
       backendAction.dcClient = {
