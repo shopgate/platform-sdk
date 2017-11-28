@@ -61,6 +61,7 @@
     "request": "^2.83.0",
     "restify": "^6.3.4",
     "restify-cors-middleware": "^1.0.1",
+    "semver": "^5.4.1",
     "socket.io-client": "^2.0.4"
   },
   "devDependencies": {

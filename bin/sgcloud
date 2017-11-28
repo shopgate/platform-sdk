@@ -2,24 +2,24 @@
 
 'use strict'
 
-const MIN_NODE_VERSION = '8.9.0'
-
 const commander = require('commander')
+const semver = require('semver')
 const logger = require('../lib/logger')
 
 // set version (includes version command)
-const {version} = require('../package.json')
+const {version, engines} = require('../package.json')
+
+// check node version
+if (!semver.satisfies(process.version, engines.node)) {
+  console.error(`You have a outdated node version (${process.version}). Please upgrade to the newest version`)
+  process.exit(1)
+}
+
 commander.version(version)
 
 // load all custom actions
 const actions = require('../')
 Object.keys(actions).forEach(a => new actions[a]().register(commander))
-
-// check node version
-if (!hasNeededNodeVersion()) {
-  console.warn(`You have a outdated node version (${process.version}). Please upgrade to the newest version`)
-  process.exit(0)
-}
 
 // activate argument parsing
 commander.parse(process.argv)
@@ -28,16 +28,3 @@ commander.parse(process.argv)
 const executedCommand = commander.args.pop()
 if (typeof executedCommand === 'string') logger.error(`Unknonwn command ${commander.args.join(' ')} ${executedCommand}`)
 if (!executedCommand || typeof executedCommand === 'string') commander.help()
-
-function hasNeededNodeVersion () {
-  const versionParts = process.version.split('.')
-  versionParts[0] = versionParts[0].slice(1)
-
-  const acceptedVersionParts = MIN_NODE_VERSION.split('.')
-
-  for (let i = 0; i < versionParts.length; i++) {
-    if (versionParts[i] < acceptedVersionParts[i]) return false
-  }
-
-  return true
-}
