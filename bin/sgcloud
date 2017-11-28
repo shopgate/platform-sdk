@@ -3,10 +3,18 @@
 'use strict'
 
 const commander = require('commander')
+const semver = require('semver')
 const logger = require('../lib/logger')
 
 // set version (includes version command)
-const {version} = require('../package.json')
+const {version, engines} = require('../package.json')
+
+// check node version
+if (!semver.satisfies(process.version, engines.node)) {
+  console.error(`You have a outdated node version (${process.version}). Please upgrade to the newest version`)
+  process.exit(1)
+}
+
 commander.version(version)
 
 // load all custom actions
