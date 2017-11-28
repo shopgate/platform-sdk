@@ -2,6 +2,8 @@
 
 'use strict'
 
+const MIN_NODE_VERSION = '8.9.0'
+
 const commander = require('commander')
 
 // set version (includes version command)
@@ -12,5 +14,24 @@ commander.version(version)
 const actions = require('../')
 Object.keys(actions).forEach(a => new actions[a]().register(commander))
 
+// check node version
+if (!hasNeededNodeVersion()) {
+  console.warn(`You have a outdated node version (${process.version}). Please upgrade to the newest version`)
+  process.exit(0)
+}
+
 // activate argument parsing
 commander.parse(process.argv)
+
+function hasNeededNodeVersion () {
+  const versionParts = process.version.split('.')
+  versionParts[0] = versionParts[0].slice(1)
+
+  const acceptedVersionParts = MIN_NODE_VERSION.split('.')
+
+  for (let i = 0; i < versionParts.length; i++) {
+    if (versionParts[i] < acceptedVersionParts[i]) return false
+  }
+
+  return true
+}
