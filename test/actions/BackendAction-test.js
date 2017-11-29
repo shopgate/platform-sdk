@@ -1,3 +1,4 @@
+/* eslint-disable standard/no-callback-literal */
 const assert = require('assert')
 const sinon = require('sinon')
 const path = require('path')
@@ -53,7 +54,6 @@ describe('BackendAction', () => {
       on: (name, fn) => fn({pipeline: {pipeline: {id: 'testPipeline'}}}),
       options: {ignoreInitial: true, fsEvents: false}
     }
-
     backendAction.extensionConfigWatcher = {
       stop: (cb) => { cb() }
     }
@@ -111,7 +111,6 @@ describe('BackendAction', () => {
       }
     })
   })
-
   describe('watching', () => {
     it('should update pipelines', (done) => {
       backendAction.backendProcess = new BackendProcess()
@@ -123,8 +122,8 @@ describe('BackendAction', () => {
       }
 
       backendAction.dcClient = {
-        downloadPipelines: (appId, cb) => cb(null, [{pipeline: {id: 'testPipeline'}}]),
-        uploadPipeline: () => {}
+        getPipelines: (appId, cb) => cb(null, [{pipeline: {id: 'testPipeline'}}]),
+        updatePipeline: () => {}
       }
       backendAction._extensionChanged = (cfg, cb = () => {}) => {}
 
@@ -145,11 +144,11 @@ describe('BackendAction', () => {
 
     it('should call dcClient if pipelines were updated', (done) => {
       backendAction.dcClient = {
-        uploadPipeline: (pipeline, id, cb) => {
-          cb()
+        updatePipeline: (pipeline, id, userSession, cb) => {
           done()
+          cb()
         },
-        downloadPipelines: (appId, cb) => cb(null, [{pipeline: {id: 'testPipeline'}}])
+        getPipelines: (appId, cb) => cb(null, [{pipeline: {id: 'testPipeline'}}])
       }
       backendAction.backendProcess = {
         connect: (cb) => cb()
@@ -196,7 +195,7 @@ describe('BackendAction', () => {
 
     it('should throw error if dcClient is not reachable', (done) => {
       backendAction.dcClient = {
-        uploadPipeline: (pipeline, id, cb) => cb(new Error('EUNKNOWN'))
+        updatePipeline: (pipeline, id, cb) => cb(new Error('EUNKNOWN'))
       }
       backendAction.backendProcess = {
         connect: (cb) => cb()
@@ -211,7 +210,7 @@ describe('BackendAction', () => {
 
     it('should return if pipeline was changed', (done) => {
       backendAction.dcClient = {
-        uploadPipeline: (pipeline, id, cb) => {
+        updatePipeline: (pipeline, id, cb) => {
           cb()
         }
       }
