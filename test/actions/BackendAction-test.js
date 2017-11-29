@@ -143,18 +143,19 @@ describe('BackendAction', () => {
     })
 
     it('should call dcClient if pipelines were updated', (done) => {
+      const pipeline = {pipeline: {id: 'plFooBarline'}}
+      const appId = 'foobarAppIdDcTestBackendAction'
+      AppSettings.getInstance().setId(appId)
+
       backendAction.dcClient = {
-        updatePipeline: (pipeline, id, userSession, cb) => {
-          done()
+        updatePipeline: (pl, aId, cb) => {
+          assert.equal(pl, pipeline)
+          assert.equal(aId, appId)
           cb()
-        },
-        getPipelines: (appId, cb) => cb(null, [{pipeline: {id: 'testPipeline'}}])
-      }
-      backendAction.backendProcess = {
-        connect: (cb) => cb()
+        }
       }
 
-      backendAction._startSubProcess()
+      backendAction._pipelineChanged(pipeline, done)
     })
 
     it('should write generated extension-config if backend-extension was updated', (done) => {
