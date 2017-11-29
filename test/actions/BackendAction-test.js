@@ -55,7 +55,12 @@ describe('BackendAction', () => {
       options: {ignoreInitial: true, fsEvents: false}
     }
     backendAction.extensionConfigWatcher = {
-      stop: (cb) => { cb() }
+      start: () => { return backendAction.extensionConfigWatcher },
+      stop: (cb) => cb(),
+      on: (name, cb) => cb()
+    }
+    backendAction.cliProxy = {
+      start: (cb) => cb()
     }
   })
 
@@ -114,12 +119,6 @@ describe('BackendAction', () => {
   describe('watching', () => {
     it('should update pipelines', (done) => {
       backendAction.backendProcess = new BackendProcess()
-
-      backendAction.extensionConfigWatcher = {
-        start: () => { return backendAction.extensionConfigWatcher },
-        stop: (cb) => { cb() },
-        on: (name, cb) => { cb() }
-      }
 
       backendAction.dcClient = {
         getPipelines: (appId, cb) => cb(null, [{pipeline: {id: 'testPipeline'}}]),
