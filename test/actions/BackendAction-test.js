@@ -38,7 +38,8 @@ describe('BackendAction', () => {
     }
   })
 
-  beforeEach((done) => {
+  beforeEach(function (done) {
+    console.log('before - ', this.currentTest.title)
     backendAction = new BackendAction()
 
     process.env.USER_PATH = userSettingsFolder
@@ -64,25 +65,33 @@ describe('BackendAction', () => {
       appSettings.init()
       AppSettings.setInstance(appSettings)
       done()
-    }, 50)
+    }, 500)
   })
 
-  afterEach((done) => {
+  afterEach(function (done) {
     UserSettings.setInstance()
     AppSettings.setInstance()
     delete process.env.USER_PATH
     delete process.env.APP_PATH
+
+    if (backendAction.pipelineWatcher.watcher) backendAction.pipelineWatcher.watcher.removeAllListeners()
     backendAction.pipelineWatcher.stop((err) => {
       if (err) return done(err)
       backendAction.extensionConfigWatcher.stop((err) => {
         if (err) return done(err)
         async.parallel([
-          (cb) => rimraf(userSettingsFolder, cb),
-          (cb) => rimraf(appPath, cb)
+          (cb) => {
+            rimraf(userSettingsFolder, (err) => {
+              cb(err)
+            })
+          },
+          (cb) => {
+            rimraf(appPath, (err) => {
+              cb(err)
+            })
+          }
         ], (err) => {
-          assert.ifError(err)
-          if (!backendAction.pipelineWatcher) return done()
-          backendAction.pipelineWatcher.stop(done)
+          done(err)
         })
       })
     })
