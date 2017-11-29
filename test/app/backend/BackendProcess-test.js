@@ -28,7 +28,7 @@ describe('BackendProcess', () => {
     process.env.USER_PATH = userTestFolder
     UserSettings.getInstance().getSession().token = {}
 
-    stepExecutor = {start: (cb) => cb(), stop: (cb) => cb(), watch: () => {}}
+    stepExecutor = {start: (cb) => cb(), stop: (cb) => cb(), startWatcher: () => {}, stopWatcher: (cb) => { cb(null) }}
 
     portfinder.getPort((err, port) => {
       assert.ifError(err)
