@@ -13,13 +13,14 @@ describe('ExtensionConfigWatcher', () => {
   beforeEach(() => {
     process.env.APP_PATH = appPath
 
-    extensionWatcher = new ExtensionConfigWatcher({useFsEvents: false})
+    extensionWatcher = new ExtensionConfigWatcher({useFsEvents: false, interval: 1})
     mkdirp.sync(path.join(appPath, 'extensions'))
   })
 
   afterEach((done) => {
+    delete process.env.APP_PATH
+
     extensionWatcher.stop(() => {
-      delete process.env.APP_PATH
       rimraf(appPath, done)
     })
   })
@@ -34,13 +35,12 @@ describe('ExtensionConfigWatcher', () => {
       done()
     })
 
-    extensionWatcher.start()
-    extensionWatcher.watcher.interval = 1
-
-    setTimeout(() => {
-      fsEx.ensureDirSync(path.join(extensionWatcher.watchFolder, 'testExt'))
-      fsEx.writeJsonSync(path.join(extensionWatcher.watchFolder, 'testExt', 'extension-config.json'), writtenConfig)
-    }, 50)
+    extensionWatcher.start(() => {
+      fsEx.ensureDir(path.join(extensionWatcher.watchFolder, 'testExt'), (err) => {
+        assert.ifError(err)
+        fsEx.writeJson(path.join(extensionWatcher.watchFolder, 'testExt', 'extension-config.json'), writtenConfig, () => {})
+      })
+    })
   })
 
   it('should stop watching on command', (done) => {
