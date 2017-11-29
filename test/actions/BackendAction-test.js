@@ -173,7 +173,7 @@ describe('BackendAction', () => {
 
       const cfgPath = path.join(process.env.APP_PATH, 'extensions', 'testExt')
 
-      backendAction._extensionChanged({ file: generated, path: cfgPath }, (err) => {
+      backendAction._extensionChanged({ file: generated, path: cfgPath }, false, (err) => {
         assert.ifError(err)
         let cfg = fsEx.readJsonSync(path.join(cfgPath, 'extension', 'config.json'))
         assert.deepEqual(cfg, {id: 'myGeneratedExtension'})
@@ -191,9 +191,27 @@ describe('BackendAction', () => {
 
       const cfgPath = path.join(process.env.APP_PATH, 'extension', 'testExt')
 
-      backendAction._extensionChanged({ file: generated, path: cfgPath }, (err) => {
+      backendAction._extensionChanged({ file: generated, path: cfgPath }, false, (err) => {
         assert.ifError(err)
         let cfg = fsEx.readJsonSync(path.join(cfgPath, 'frontend', 'config.json'))
+        assert.deepEqual(cfg, {id: 'myGeneratedExtension'})
+        done()
+      })
+    })
+
+    it('should write generated extension-config if theme-extension was updated', (done) => {
+      let generated = {id: 'myGeneratedExtension'}
+      backendAction.dcClient = {
+        generateExtensionConfig: (config, appId, cb) => {
+          cb(null, generated)
+        }
+      }
+
+      const cfgPath = path.join(process.env.APP_PATH, 'extension', 'testExt')
+
+      backendAction._extensionChanged({ file: generated, path: cfgPath }, true, (err) => {
+        assert.ifError(err)
+        let cfg = fsEx.readJsonSync(path.join(cfgPath, 'config', 'app.json'))
         assert.deepEqual(cfg, {id: 'myGeneratedExtension'})
         done()
       })
