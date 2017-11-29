@@ -39,16 +39,15 @@ describe('BackendAction', () => {
   })
 
   beforeEach(function (done) {
-    console.log('before - ', this.currentTest.title)
     backendAction = new BackendAction()
 
     process.env.USER_PATH = userSettingsFolder
     UserSettings.getInstance().getSession().token = {}
 
     backendAction.pipelineWatcher = {
-      start: () => backendAction.pipelineWatcher,
-      stop: (cb) => cb(),
-      on: (name, fn) => fn({pipeline: {pipeline: {id: 'testPipeline'}}}),
+      start: (cb) => cb(),
+      close: () => {},
+      on: (event, fn) => fn(event, path.join(process.env.APP_PATH, 'pipelines', 'testPipeline.json')),
       options: {ignoreInitial: true, fsEvents: false}
     }
     backendAction.extensionConfigWatcher = {
@@ -75,24 +74,14 @@ describe('BackendAction', () => {
     delete process.env.APP_PATH
 
     if (backendAction.pipelineWatcher.watcher) backendAction.pipelineWatcher.watcher.removeAllListeners()
-    backendAction.pipelineWatcher.stop((err) => {
+    backendAction.pipelineWatcher.close()
+    backendAction.extensionConfigWatcher.stop((err) => {
       if (err) return done(err)
-      backendAction.extensionConfigWatcher.stop((err) => {
-        if (err) return done(err)
-        async.parallel([
-          (cb) => {
-            rimraf(userSettingsFolder, (err) => {
-              cb(err)
-            })
-          },
-          (cb) => {
-            rimraf(appPath, (err) => {
-              cb(err)
-            })
-          }
-        ], (err) => {
-          done(err)
-        })
+      async.parallel([
+        (cb) => rimraf(userSettingsFolder, cb),
+        (cb) => rimraf(appPath, cb)
+      ], (err) => {
+        done(err)
       })
     })
   })
@@ -160,19 +149,20 @@ describe('BackendAction', () => {
       }, 50)
     })
 
-    it.skip('should call dcClient if pipelines were updated', (done) => {
+    it('should call dcClient if pipelines were updated', (done) => {
+      const pipeline = {pipeline: {id: 'plFooBarline'}}
+      const appId = 'foobarAppIdDcTestBackendAction'
+      AppSettings.getInstance().setId(appId)
+
       backendAction.dcClient = {
-        uploadPipeline: (pipeline, id, cb) => {
-          done()
+        uploadPipeline: (pl, aId, cb) => {
+          assert.equal(pl, pipeline)
+          assert.equal(aId, appId)
           cb()
-        },
-        downloadPipelines: (appId, cb) => cb(null, [{pipeline: {id: 'testPipeline'}}])
-      }
-      backendAction.backendProcess = {
-        connect: (cb) => cb()
+        }
       }
 
-      backendAction._startSubProcess()
+      backendAction._pipelineChanged(pipeline, done)
     })
 
     it('should write generated extension-config if backend-extension was updated', (done) => {

@@ -88,9 +88,10 @@ describe('StepExecutor', () => {
 
       assert.equal(stepExecutor.watcher, undefined)
 
-      stepExecutor.startWatcher()
+      stepExecutor.startWatcher(() => {
+        watcher.emit('all')
+      })
       watcher.emit('ready')
-      watcher.emit('all')
     })
 
     it('should stop the watcher', (done) => {
