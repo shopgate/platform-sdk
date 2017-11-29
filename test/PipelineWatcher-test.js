@@ -10,55 +10,33 @@ const appPath = path.join('build', 'appsettings')
 describe('PipelineWatcher', () => {
   let pipelineWatcher
 
-  beforeEach(() => {
+  beforeEach((done) => {
     process.env.APP_PATH = appPath
-    pipelineWatcher = new PipelineWatcher({useFsEvents: false, interval: 1})
-    mkdirp.sync(path.join(appPath, 'pipelines'))
+    pipelineWatcher = new PipelineWatcher()
+    mkdirp.sync(pipelineWatcher.pipelineFolder)
+    pipelineWatcher.start(done)
   })
 
   afterEach((done) => {
     delete process.env.APP_PATH
-    pipelineWatcher.stop(() => {
-      rimraf(appPath, done)
-    })
+    pipelineWatcher.close()
+    rimraf(appPath, done)
   })
 
   it('should emit changed pipeline', (done) => {
-    const writtenPipeline = {someAttribtue: '2'}
+    const pipelinePath = path.join(pipelineWatcher.pipelineFolder, 'somePipeline.json')
 
-    pipelineWatcher.on('pipelineChanged', (pipeline) => {
-      assert.deepEqual(pipeline, writtenPipeline)
+    pipelineWatcher.on('all', (event, file) => {
+      assert.equal(event, 'add')
+      assert.equal(file, pipelinePath)
       done()
     })
 
-    pipelineWatcher.start(() => {
-      fsEx.writeJson(path.join(pipelineWatcher.pipelineFolder, 'somePipeline.json'), writtenPipeline, () => {})
-    })
+    fsEx.writeJson(pipelinePath, {someAttribtue: '2'}, () => {})
   })
 
-  it('should not emit malformed pipeline', (done) => {
-    const writtenPipeline = {someAttribtue: '2'}
-
-    let counter = 0
-    pipelineWatcher.on('pipelineChanged', (pipeline) => {
-      if (counter++ > 0) return
-
-      assert.deepEqual(pipeline, writtenPipeline)
-      setTimeout(() => {
-        assert.equal(counter, 1)
-        done()
-      }, 1000)
-      fsEx.outputFile(path.join(pipelineWatcher.pipelineFolder, 'somePipeline.json'), '{someMalformedJson', () => {})
-    })
-
-    pipelineWatcher.start(() => {
-      fsEx.writeJsonSync(path.join(pipelineWatcher.pipelineFolder, 'somePipeline.json'), writtenPipeline, () => {})
-    })
-  }).timeout(10000)
-
-  it('should stop watching on command', (done) => {
-    pipelineWatcher.start(() => {
-      pipelineWatcher.stop(done)
-    })
+  it('should stop watching', () => {
+    pipelineWatcher.close()
+    assert.ok(pipelineWatcher.watcher.closed)
   })
 })
