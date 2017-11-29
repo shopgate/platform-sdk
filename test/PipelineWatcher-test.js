@@ -3,7 +3,7 @@ const path = require('path')
 const fsEx = require('fs-extra')
 const mkdirp = require('mkdirp')
 const rimraf = require('rimraf')
-const PipelineWatcher = require('../lib/PipelineWatcher')
+const PipelineWatcher = require('../lib/app/backend/PipelineWatcher')
 
 const appPath = path.join('build', 'appsettings')
 
