@@ -60,17 +60,14 @@ describe('StepExecutor', () => {
   })
 
   describe('watcher', () => {
-    it.skip('should start the watcher', (done) => {
-      let eventCount = 0
+    it('should start the watcher', (done) => {
       const watcher = {
-        on: (event, fn) => {
-          if (eventCount++ === 0) {
-            assert.equal(event, 'ready')
-          } else {
-            assert.equal(stepExecutor.watcher, watcher)
-            assert.equal(event, 'all')
-          }
-          fn()
+        events: {},
+        on: function (event, fn) {
+          this.events[event] = fn
+        },
+        emit: function (event, param1, param2, cb) {
+          this.events[event](param1, param2)
         }
       }
 
@@ -83,22 +80,42 @@ describe('StepExecutor', () => {
         }
       })
       const stepExecutor = new StepExecutorMocked({info: () => {}})
+      stepExecutor.start = (cb) => {
+        done()
+        cb()
+      }
+      stepExecutor.stop = (cb) => cb()
+
       assert.equal(stepExecutor.watcher, undefined)
 
       stepExecutor.startWatcher()
+      watcher.emit('ready')
+      watcher.emit('all')
     })
 
-    it.skip('should stop the watcher', (done) => {
-      const stepExecutor = new StepExecutor()
-      stepExecutor.watcher = {
+    it('should stop the watcher', (done) => {
+      const watcher = {
         closed: false,
-        close: () => {
-          setTimeout(() => {
-            stepExecutor.watcher.closed = true
-          }, 10)
+        close: function () {
+          this.closed = true
         }
       }
-      stepExecutor.stop(done)
+
+      const StepExecutorMocked = proxyquire('../../../../lib/app/backend/extensionRuntime/StepExecutor', {
+        chokidar: {
+          watch: (path, options) => {
+            assert.equal(path, 'extensions')
+            return watcher
+          }
+        }
+      })
+
+      const stepExecutor = new StepExecutorMocked({info: () => {}})
+
+      stepExecutor.stopWatcher((err) => {
+        assert.ifError(err)
+        done()
+      })
     })
   })
 
