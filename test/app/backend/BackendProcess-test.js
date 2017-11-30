@@ -5,7 +5,6 @@ const fsEx = require('fs-extra')
 const AppSettings = require('../../../lib/app/AppSettings')
 const UserSettings = require('../../../lib/user/UserSettings')
 const BackendProcess = require('../../../lib/app/backend/BackendProcess')
-const rimraf = require('rimraf')
 const portfinder = require('portfinder')
 const async = require('neo-async')
 
@@ -53,8 +52,8 @@ describe('BackendProcess', () => {
           delete process.env.APP_PATH
           delete process.env.USER_PATH
           async.parallel([
-            (cb) => rimraf(appTestFolder, cb),
-            (cb) => rimraf(userTestFolder, cb)
+            (cb) => fsEx.remove(appTestFolder, cb),
+            (cb) => fsEx.remove(userTestFolder, cb)
           ], done)
         })
       })

@@ -5,9 +5,9 @@ const AppSettings = require('../../lib/app/AppSettings')
 const path = require('path')
 const userSettingsFolder = path.join('build', 'usersettings')
 const appPath = path.join('build', 'appsettings')
-const rimraf = require('rimraf')
 const mkdirp = require('mkdirp')
 const sinon = require('sinon')
+const fsEx = require('fs-extra')
 
 describe('InitAction', () => {
   it('should register', () => {
@@ -32,7 +32,7 @@ describe('InitAction', () => {
   afterEach((done) => {
     UserSettings.setInstance()
     delete process.env.USER_PATH
-    rimraf(userSettingsFolder, done)
+    fsEx.remove(userSettingsFolder, done)
   })
 
   it('should throw if user not logged in', (done) => {
@@ -69,7 +69,7 @@ describe('InitAction', () => {
     assert.ok(wasCatched)
     delete process.env.APP_PATH
     AppSettings.setInstance()
-    rimraf(appPath, done)
+    fsEx.remove(appPath, done)
   })
 
   it('should create folders, settings file and save appId', (done) => {
@@ -82,7 +82,7 @@ describe('InitAction', () => {
     init.run({appId: 'test'}, () => {
       delete process.env.APP_PATH
       AppSettings.setInstance()
-      rimraf(appPath, done)
+      fsEx.remove(appPath, done)
     })
   })
 
