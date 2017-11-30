@@ -204,7 +204,7 @@ describe('CliProxy', () => {
           json: true
         }, (err, res, body) => {
           assert.ifError(err)
-          assert.deepEqual(body, {'message': 'SomeError'})
+          assert.deepEqual(body, {'error': {'message': 'SomeError'}})
           api.done()
           nock.disableNetConnect()
           server.close(done)
