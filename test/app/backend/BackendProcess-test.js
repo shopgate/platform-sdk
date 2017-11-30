@@ -28,13 +28,13 @@ describe('BackendProcess', () => {
     process.env.USER_PATH = userTestFolder
     UserSettings.getInstance().getSession().token = {}
 
-    stepExecutor = {start: (cb) => cb(), stop: (cb) => cb(), watch: () => {}}
+    stepExecutor = {start: (cb) => cb(), stop: (cb) => cb(), watch: (cb) => cb()}
 
     portfinder.getPort((err, port) => {
       assert.ifError(err)
 
       process.env.SGCLOUD_DC_ADDRESS = `http://localhost:${port}`
-      backendProcess = new BackendProcess({useFsEvents: false})
+      backendProcess = new BackendProcess({useFsEvents: false, interval: 1})
       backendProcess.executor = stepExecutor
       mockServer = require('socket.io').listen(port)
       done()
@@ -102,15 +102,13 @@ describe('BackendProcess', () => {
         })
       })
       backendProcess.connect(() => {
-        fsEx.writeJSONSync(backendProcess.extensionWatcher.configPath, {
-          'attachedExtensions': {
-            'testExt': {
-              'id': 'testExt'
-            }
-          }
-        })
+        fsEx.writeJSON(
+          backendProcess.extensionWatcher.configPath,
+          {attachedExtensions: {testExt: {id: 'testExt'}}},
+          () => {}
+        )
       })
-    })
+    }).timeout(10000)
 
     it('should forward on extensions detach', (done) => {
       mockServer.on('connection', (sock) => {
@@ -125,23 +123,22 @@ describe('BackendProcess', () => {
           done()
         })
       })
-      backendProcess.connect(() => {
-        backendProcess.extensionWatcher.watcher.interval = 1
 
-        fsEx.writeJSONSync(backendProcess.extensionWatcher.configPath, {
-          'attachedExtensions': {
-            'testExt': {
-              'id': 'testExt'
-            }
+      backendProcess.connect(() => {
+        fsEx.writeJSON(
+          backendProcess.extensionWatcher.configPath,
+          {attachedExtensions: {testExt: {id: 'testExt'}}},
+          () => {
+            setTimeout(() => {
+              fsEx.writeJSON(backendProcess.extensionWatcher.configPath,
+                {attachedExtensions: {}},
+                () => {}
+              )
+            }, 2000)
           }
-        })
-        setTimeout(() => {
-          fsEx.writeJSONSync(backendProcess.extensionWatcher.configPath, {
-            'attachedExtensions': {}
-          })
-        }, 50) // Because of Filewatcher-interval
+        )
       })
-    })
+    }).timeout(10000)
   })
 
   describe('update token', () => {

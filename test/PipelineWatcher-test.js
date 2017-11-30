@@ -3,70 +3,40 @@ const path = require('path')
 const fsEx = require('fs-extra')
 const mkdirp = require('mkdirp')
 const rimraf = require('rimraf')
-const PipelineWatcher = require('../lib/PipelineWatcher')
+const PipelineWatcher = require('../lib/app/backend/PipelineWatcher')
 
 const appPath = path.join('build', 'appsettings')
 
 describe('PipelineWatcher', () => {
   let pipelineWatcher
 
-  beforeEach(() => {
+  beforeEach((done) => {
     process.env.APP_PATH = appPath
     pipelineWatcher = new PipelineWatcher()
-    mkdirp.sync(path.join(appPath, 'pipelines'))
+    mkdirp.sync(pipelineWatcher.pipelineFolder)
+    pipelineWatcher.start(done)
   })
 
   afterEach((done) => {
     delete process.env.APP_PATH
-    pipelineWatcher.stop(() => {
-      rimraf(appPath, done)
-    })
+    pipelineWatcher.close()
+    rimraf(appPath, done)
   })
 
   it('should emit changed pipeline', (done) => {
-    let writtenPipeline = {
-      someAttribtue: '2'
-    }
+    const pipelinePath = path.join(pipelineWatcher.pipelineFolder, 'somePipeline.json')
 
-    pipelineWatcher.on('pipelineChanged', (pipeline) => {
-      assert.deepEqual(pipeline, writtenPipeline)
+    pipelineWatcher.on('all', (event, file) => {
+      assert.equal(event, 'add')
+      assert.equal(file, pipelinePath)
       done()
     })
 
-    pipelineWatcher.start()
-
-    pipelineWatcher.watcher.on('ready', () => {
-      fsEx.writeJsonSync(path.join(pipelineWatcher.pipelineFolder, 'somePipeline.json'), writtenPipeline)
-    })
+    fsEx.writeJson(pipelinePath, {someAttribtue: '2'}, () => {})
   })
 
-  it('should not emit malformed pipeline', (done) => {
-    let writtenPipeline = {
-      someAttribtue: '2'
-    }
-
-    let counter = 0
-
-    pipelineWatcher.on('pipelineChanged', (pipeline) => {
-      if (counter === 0) {
-        assert.deepEqual(pipeline, writtenPipeline)
-        fsEx.outputFileSync(path.join(pipelineWatcher.pipelineFolder, 'somePipeline.json'), '{someMalformedJson')
-        setTimeout(() => {
-          assert.equal(counter, 1)
-          done()
-        }, 50)
-      }
-      counter++
-    })
-
-    pipelineWatcher.start()
-    pipelineWatcher.watcher.on('ready', () => {
-      fsEx.writeJsonSync(path.join(pipelineWatcher.pipelineFolder, 'somePipeline.json'), writtenPipeline)
-    })
-  })
-
-  it('should stop watching on command', (done) => {
-    pipelineWatcher.start()
-    pipelineWatcher.stop(done)
+  it('should stop watching', () => {
+    pipelineWatcher.close()
+    assert.ok(pipelineWatcher.watcher.closed)
   })
 })

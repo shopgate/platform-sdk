@@ -53,7 +53,7 @@
     "commander": "^2.12.2",
     "fs-extra": "^4.0.2",
     "glob": "^7.1.2",
-    "inquirer": "^4.0.0",
+    "inquirer": "^4.0.1",
     "mkdirp": "^0.5.1",
     "morgan": "^1.9.0",
     "neo-async": "^2.5.0",
