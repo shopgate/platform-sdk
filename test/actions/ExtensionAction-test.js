@@ -24,7 +24,7 @@ describe('ExtensionAction', () => {
     fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
     appSettings.setId(appId).setAttachedExtensions({}).save().init()
     AppSettings.setInstance(appSettings)
-    
+
     fsEx.emptyDirSync(userSettingsFolder)
     UserSettings.getInstance().getSession().token = {}
   })
