@@ -66,14 +66,6 @@ describe('BackendAction', () => {
         close: (cb) => cb()
       }
     }
-
-    process.env.APP_PATH = appPath
-    const appSettings = new AppSettings()
-    fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
-    appSettings.setId('foobarTest').setAttachedExtensions({}).save()
-
-    appSettings.init()
-    AppSettings.setInstance(appSettings)
     done()
   })
 
