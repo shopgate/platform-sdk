@@ -51,6 +51,7 @@
     "chalk": "^2.3.0",
     "chokidar": "^1.7.0",
     "commander": "^2.12.2",
+    "errio": "^1.2.2",
     "fs-extra": "^4.0.2",
     "glob": "^7.1.2",
     "inquirer": "^4.0.1",
