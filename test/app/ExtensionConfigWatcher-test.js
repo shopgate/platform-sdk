@@ -3,24 +3,24 @@ const path = require('path')
 const fsEx = require('fs-extra')
 const mkdirp = require('mkdirp')
 const rimraf = require('rimraf')
-const ExtensionConfigWatcher = require('../lib/ExtensionConfigWatcher')
+const ExtensionConfigWatcher = require('../../lib/app/ExtensionConfigWatcher')
 
 const appPath = path.join('test', 'appsettings')
 
 describe('ExtensionConfigWatcher', () => {
-  let extensionWatcher
+  let extensionConfigWatcher
 
   beforeEach(() => {
     process.env.APP_PATH = appPath
 
-    extensionWatcher = new ExtensionConfigWatcher({useFsEvents: false, interval: 1})
+    extensionConfigWatcher = new ExtensionConfigWatcher({useFsEvents: false, interval: 1})
     mkdirp.sync(path.join(appPath, 'extensions'))
   })
 
   afterEach((done) => {
     delete process.env.APP_PATH
 
-    extensionWatcher.stop(() => {
+    extensionConfigWatcher.stop(() => {
       rimraf(appPath, done)
     })
   })
@@ -30,21 +30,21 @@ describe('ExtensionConfigWatcher', () => {
       someAttribtue: '2'
     }
 
-    extensionWatcher.on('configChange', (config) => {
+    extensionConfigWatcher.on('configChange', (config) => {
       assert.deepEqual(config.file, writtenConfig)
       done()
     })
 
-    extensionWatcher.start(() => {
-      fsEx.ensureDir(path.join(extensionWatcher.extensionFolder, 'testExt'), (err) => {
+    extensionConfigWatcher.start(() => {
+      fsEx.ensureDir(path.join(extensionConfigWatcher.extensionFolder, 'testExt'), (err) => {
         assert.ifError(err)
-        fsEx.writeJson(path.join(extensionWatcher.extensionFolder, 'testExt', 'extension-config.json'), writtenConfig, () => {})
+        fsEx.writeJson(path.join(extensionConfigWatcher.extensionFolder, 'testExt', 'extension-config.json'), writtenConfig, () => {})
       })
     })
   })
 
   it('should stop watching on command', (done) => {
-    extensionWatcher.start()
-    extensionWatcher.stop(done)
+    extensionConfigWatcher.start()
+    extensionConfigWatcher.stop(done)
   })
 })

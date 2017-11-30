@@ -43,7 +43,7 @@ describe('BackendProcess', () => {
   afterEach((done) => {
     UserSettings.setInstance()
     AppSettings.setInstance()
-    backendProcess.extensionWatcher.stop(() => {
+    backendProcess.attachedExtensionsWatcher.stop(() => {
       backendProcess.disconnect((err) => {
         if (err) return done(err)
         mockServer.close((err) => {
@@ -102,7 +102,7 @@ describe('BackendProcess', () => {
       })
       backendProcess.connect(() => {
         fsEx.writeJSON(
-          backendProcess.extensionWatcher.configPath,
+          backendProcess.attachedExtensionsWatcher.configPath,
           {attachedExtensions: {testExt: {id: 'testExt'}}},
           () => {}
         )
@@ -125,11 +125,11 @@ describe('BackendProcess', () => {
 
       backendProcess.connect(() => {
         fsEx.writeJSON(
-          backendProcess.extensionWatcher.configPath,
+          backendProcess.attachedExtensionsWatcher.configPath,
           {attachedExtensions: {testExt: {id: 'testExt'}}},
           () => {
             setTimeout(() => {
-              fsEx.writeJSON(backendProcess.extensionWatcher.configPath,
+              fsEx.writeJSON(backendProcess.attachedExtensionsWatcher.configPath,
                 {attachedExtensions: {}},
                 () => {}
               )
