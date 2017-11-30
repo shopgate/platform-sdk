@@ -129,12 +129,18 @@ describe('BackendAction', () => {
         stop: (cb) => { cb() },
         on: (name, cb) => { cb() }
       }
+      backendAction.themeConfigWatcher = {
+        start: () => { return backendAction.themeConfigWatcher },
+        stop: (cb) => { cb() },
+        on: (name, cb) => { cb() }
+      }
 
       backendAction.dcClient = {
         downloadPipelines: (appId, cb) => cb(null, [{pipeline: {id: 'testPipeline'}}]),
         uploadPipeline: () => {}
       }
       backendAction._extensionChanged = (cfg, cb = () => {}) => {}
+      backendAction._themeChanged = (cfg, cb = () => {}) => {}
 
       try {
         backendAction._startSubProcess()

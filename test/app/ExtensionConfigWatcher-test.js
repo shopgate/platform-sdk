@@ -34,9 +34,9 @@ describe('ExtensionConfigWatcher', () => {
     })
 
     extensionConfigWatcher.start(() => {
-      fsEx.ensureDir(path.join(extensionConfigWatcher.extensionFolder, 'testExt'), (err) => {
+      fsEx.ensureDir(path.join(extensionConfigWatcher.watchFolder, 'testExt'), (err) => {
         assert.ifError(err)
-        fsEx.writeJson(path.join(extensionConfigWatcher.extensionFolder, 'testExt', 'extension-config.json'), writtenConfig, () => {})
+        fsEx.writeJson(path.join(extensionConfigWatcher.watchFolder, 'testExt', 'extension-config.json'), writtenConfig, () => {})
       })
     })
   })
