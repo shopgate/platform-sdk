@@ -17,6 +17,7 @@ describe('LoginAction', () => {
     process.env.SGCLOUD_USER = ''
     process.env.SGCLOUD_PASS = ''
     stdin = require('mock-stdin').stdin()
+    fsEx.emptyDirSync(settingsFolder)
   })
 
   afterEach((done) => {

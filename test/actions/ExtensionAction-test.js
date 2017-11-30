@@ -1,6 +1,5 @@
 const assert = require('assert')
 const path = require('path')
-const mkdirp = require('mkdirp')
 const fsEx = require('fs-extra')
 const sinon = require('sinon')
 const async = require('neo-async')
@@ -22,10 +21,11 @@ describe('ExtensionAction', () => {
     const appId = 'foobarTest'
 
     const appSettings = new AppSettings()
-    mkdirp.sync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
+    fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
     appSettings.setId(appId).setAttachedExtensions({}).save().init()
     AppSettings.setInstance(appSettings)
-
+    
+    fsEx.emptyDirSync(userSettingsFolder)
     UserSettings.getInstance().getSession().token = {}
   })
 

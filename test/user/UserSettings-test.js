@@ -1,8 +1,7 @@
 const UserSettings = require('../../lib/user/UserSettings')
 const assert = require('assert')
-const rimraf = require('rimraf')
 const path = require('path')
-const fs = require('fs')
+const fsEx = require('fs-extra')
 
 describe('UserSettings', () => {
   let testFolder
@@ -14,7 +13,7 @@ describe('UserSettings', () => {
 
   afterEach((done) => {
     delete process.env.USER_PATH
-    rimraf(testFolder, done)
+    fsEx.remove(testFolder, done)
   })
 
   it('should have default settingsFolder', () => {
@@ -37,7 +36,7 @@ describe('UserSettings', () => {
 
   it('should return (same) session loaded from file', () => {
     const userSettings = new UserSettings()
-    fs.writeFileSync(userSettings.sessionFile, JSON.stringify({token: 'foo'}))
+    fsEx.writeJsonSync(userSettings.sessionFile, {token: 'foo'})
 
     const session = userSettings.getSession()
     assert.equal(session, userSettings.getSession())
@@ -51,6 +50,6 @@ describe('UserSettings', () => {
     userSettings.getSession().setToken(token)
     userSettings.save()
 
-    assert.deepEqual(JSON.parse(fs.readFileSync(userSettings.sessionFile)).token, token)
+    assert.deepEqual(fsEx.readJsonSync(userSettings.sessionFile).token, token)
   })
 })

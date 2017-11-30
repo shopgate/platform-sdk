@@ -6,13 +6,12 @@
  */
 
 const { join } = require('path')
-const rimraf = require('rimraf')
-const mkdirp = require('mkdirp')
 const sinon = require('sinon')
 const assert = require('assert')
 const UserSettings = require('../../../lib/user/UserSettings')
 const AppSettings = require('../../../lib/app/AppSettings')
 const proxyquire = require('proxyquire')
+const fsEx = require('fs-extra')
 
 const forkFailError = 'Fork failed!'
 let forkFail = false
@@ -31,9 +30,10 @@ describe('FrontendProcess', () => {
     process.env.APP_PATH = appSettingsPath
 
     const appSettings = new AppSettings()
-    mkdirp.sync(join(appSettingsPath, AppSettings.SETTINGS_FOLDER))
+    fsEx.emptyDirSync(join(appSettingsPath, AppSettings.SETTINGS_FOLDER))
     appSettings.setId(appId).setAttachedExtensions({}).save().init()
     AppSettings.setInstance(appSettings)
+    fsEx.emptyDirSync(userSettingsPath)
     UserSettings.getInstance().getSession().token = {}
 
     const FrontendProcess = proxyquire('../../../lib/app/frontend/FrontendProcess', {
@@ -63,8 +63,8 @@ describe('FrontendProcess', () => {
     delete process.env.USER_PATH
     delete process.env.APP_PATH
 
-    rimraf(userSettingsPath, () => {
-      rimraf(appSettingsPath, done)
+    fsEx.remove(userSettingsPath, () => {
+      fsEx.remove(appSettingsPath, done)
     })
   })
 

@@ -6,10 +6,9 @@
  */
 
 const { join } = require('path')
-const mkdirp = require('mkdirp')
-const rimraf = require('rimraf')
 const UserSettings = require('../../../lib/user/UserSettings')
 const AppSettings = require('../../../lib/app/AppSettings')
+const fsEx = require('fs-extra')
 
 const userSettingsPath = join('build', 'usersettings')
 const appSettingsPath = join('build', 'appsettings')
@@ -25,7 +24,7 @@ const setupAppEnvironment = (callback = () => {}) => {
   process.env.appId = appId
 
   const appSettings = new AppSettings()
-  mkdirp.sync(join(appSettingsPath, AppSettings.SETTINGS_FOLDER))
+  fsEx.emptyDirSync(join(appSettingsPath, AppSettings.SETTINGS_FOLDER))
   appSettings.setId(appId).setAttachedExtensions({}).save().init()
   AppSettings.setInstance(appSettings)
   UserSettings.getInstance().getSession().token = {}
@@ -44,8 +43,8 @@ const clearAppEnviroment = (callback = () => {}) => {
   delete process.env.APP_PATH
   delete process.env.appId
 
-  rimraf(userSettingsPath, () => {
-    rimraf(appSettingsPath, callback)
+  fsEx.remove(userSettingsPath, () => {
+    fsEx.remove(appSettingsPath, callback)
   })
 }
 

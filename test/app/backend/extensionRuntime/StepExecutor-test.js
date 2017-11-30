@@ -1,6 +1,5 @@
 const assert = require('assert')
 const path = require('path')
-const mkdirp = require('mkdirp')
 const fsEx = require('fs-extra')
 const async = require('neo-async')
 
@@ -28,8 +27,8 @@ describe('StepExecutor', () => {
     executor.stepTimeout = 1000
 
     const appSettings = new AppSettings()
-    mkdirp.sync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
-    mkdirp.sync(path.join(appPath, AppSettings.EXTENSIONS_FOLDER, 'foobar', 'extension'))
+    fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
+    fsEx.emptyDirSync(path.join(appPath, AppSettings.EXTENSIONS_FOLDER, 'foobar', 'extension'))
     appSettings.setId('shop_10006').setAttachedExtensions({'@foo/bar': {path: 'foobar'}}).save().init()
     AppSettings.setInstance(appSettings)
     UserSettings.getInstance().getSession().token = {}

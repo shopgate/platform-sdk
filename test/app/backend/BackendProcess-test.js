@@ -1,6 +1,5 @@
 const assert = require('assert')
 const path = require('path')
-const mkdirp = require('mkdirp')
 const fsEx = require('fs-extra')
 const AppSettings = require('../../../lib/app/AppSettings')
 const UserSettings = require('../../../lib/user/UserSettings')
@@ -18,7 +17,7 @@ describe('BackendProcess', () => {
   beforeEach((done) => {
     appTestFolder = path.join('build', 'appsettings')
     process.env.APP_PATH = appTestFolder
-    mkdirp.sync(path.join(appTestFolder, AppSettings.SETTINGS_FOLDER))
+    fsEx.emptyDirSync(path.join(appTestFolder, AppSettings.SETTINGS_FOLDER))
     const appSettings = new AppSettings()
     appSettings.setId('shop_10006').setAttachedExtensions({}).save().init()
     AppSettings.setInstance(appSettings)

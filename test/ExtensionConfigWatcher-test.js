@@ -1,8 +1,6 @@
 const assert = require('assert')
 const path = require('path')
 const fsEx = require('fs-extra')
-const mkdirp = require('mkdirp')
-const rimraf = require('rimraf')
 const ExtensionConfigWatcher = require('../lib/ExtensionConfigWatcher')
 
 const appPath = path.join('test', 'appsettings')
@@ -10,18 +8,18 @@ const appPath = path.join('test', 'appsettings')
 describe('ExtensionConfigWatcher', () => {
   let extensionWatcher
 
-  beforeEach(() => {
+  beforeEach((done) => {
     process.env.APP_PATH = appPath
 
     extensionWatcher = new ExtensionConfigWatcher({useFsEvents: false, interval: 1})
-    mkdirp.sync(path.join(appPath, 'extensions'))
+    fsEx.emptyDir(path.join(appPath, 'extensions'), done)
   })
 
   afterEach((done) => {
     delete process.env.APP_PATH
 
     extensionWatcher.stop(() => {
-      rimraf(appPath, done)
+      fsEx.remove(appPath, done)
     })
   })
 

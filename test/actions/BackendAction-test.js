@@ -3,7 +3,6 @@ const assert = require('assert')
 const sinon = require('sinon')
 const path = require('path')
 const fsEx = require('fs-extra')
-const mkdirp = require('mkdirp')
 const proxyquire = require('proxyquire')
 const async = require('neo-async')
 
@@ -40,6 +39,7 @@ describe('BackendAction', () => {
   beforeEach(function (done) {
     backendAction = new BackendAction()
 
+    fsEx.emptyDirSync(userSettingsFolder)
     process.env.USER_PATH = userSettingsFolder
     UserSettings.getInstance().getSession().token = {}
 
@@ -54,7 +54,7 @@ describe('BackendAction', () => {
 
     process.env.APP_PATH = appPath
     const appSettings = new AppSettings()
-    mkdirp.sync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
+    fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
     appSettings.setId('foobarTest').setAttachedExtensions({}).save()
 
     appSettings.init()

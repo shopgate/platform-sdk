@@ -2,7 +2,6 @@ const AppSettings = require('../../lib/app/AppSettings')
 const assert = require('assert')
 const path = require('path')
 const fsEx = require('fs-extra')
-const mkdirp = require('mkdirp')
 
 describe('AppSettings', () => {
   let testFolder
@@ -24,7 +23,7 @@ describe('AppSettings', () => {
 
   it('should throw if application data is invalid', (done) => {
     const appSettings = new AppSettings()
-    mkdirp.sync(appSettings.settingsFolder)
+    fsEx.emptyDirSync(appSettings.settingsFolder)
     fsEx.writeJsonSync(appSettings.settingsFile, {})
     fsEx.writeJsonSync(appSettings.attachedExtensionsFile, {})
     try {
