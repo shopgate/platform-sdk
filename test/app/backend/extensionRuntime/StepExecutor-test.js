@@ -2,7 +2,7 @@ const assert = require('assert')
 const path = require('path')
 const fsEx = require('fs-extra')
 const async = require('neo-async')
-
+const glob = require('glob')
 const StepExecutor = require('../../../../lib/app/backend/extensionRuntime/StepExecutor')
 const AppSettings = require('../../../../lib/app/AppSettings')
 const UserSettings = require('../../../../lib/user/UserSettings')
@@ -32,15 +32,15 @@ describe('StepExecutor', () => {
     appSettings.setId('shop_10006').setAttachedExtensions({'@foo/bar': {path: 'foobar'}}).save().init()
     AppSettings.setInstance(appSettings)
     UserSettings.getInstance().getSession().token = {}
-
-    const fakeStepDir = path.join(__dirname, 'fakeSteps')
     const extensionDir = path.join(appPath, AppSettings.EXTENSIONS_FOLDER, 'foobar', 'extension')
-    async.parallel([
-      cb => fsEx.copy(path.join(fakeStepDir, 'simple.js'), path.join(extensionDir, 'simple.js'), cb),
-      cb => fsEx.copy(path.join(fakeStepDir, 'crashing.js'), path.join(extensionDir, 'crashing.js'), cb),
-      cb => fsEx.copy(path.join(fakeStepDir, 'timeout.js'), path.join(extensionDir, 'timeout.js'), cb),
-      cb => executor.start(cb)
-    ], done)
+
+    glob(path.join(__dirname, 'fakeSteps', '*.js'), {}, (err, files) => {
+      assert.ifError(err)
+      async.each(files, (file, eCb) => fsEx.copy(file, path.join(extensionDir, path.basename(file)), eCb), (err) => {
+        assert.ifError(err)
+        executor.start(done)
+      })
+    })
   })
 
   afterEach((done) => {
@@ -135,6 +135,20 @@ describe('StepExecutor', () => {
     executor.execute(input, stepMeta, (err, output) => {
       assert.ifError(err)
       assert.deepEqual(output, input)
+      done()
+    })
+  })
+
+  it('should callback error of step (with all fields)', (done) => {
+    const input = {foo: 'bar', bar: {nestedFoo: 'nestedBar'}}
+    const stepMeta = {
+      id: '@foo/bar',
+      path: '@foo/bar/error.js',
+      meta: {appId: 'shop_123'}
+    }
+    executor.execute(input, stepMeta, (err, output) => {
+      assert.deepEqual(err, Object.assign({name: 'Error', message: 'crashed ' + stepMeta.meta.appId}, input))
+      assert.equal(output, undefined)
       done()
     })
   })
