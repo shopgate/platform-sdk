@@ -103,7 +103,7 @@ describe('InitAction', () => {
 
       function prompt (questions) {
         assert.equal(questions.length, 1)
-        assert.deepEqual(questions[0], {type: 'input', name: 'appId', message: 'Enter your Application ID:'})
+        assert.deepEqual(questions[0], {type: 'input', name: 'appId', message: 'Enter your Sandbox App ID:'})
         return Promise.resolve({appId})
       }
 
