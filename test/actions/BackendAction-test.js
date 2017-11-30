@@ -215,9 +215,6 @@ describe('BackendAction', () => {
       backendAction.dcClient = {
         uploadPipeline: (pipeline, id, cb) => cb(new Error('EUNKNOWN'))
       }
-      backendAction.backendProcess = {
-        connect: (cb) => cb()
-      }
       const file = path.join(backendAction.pipelinesFolder, 'dCPlTest2.json')
       fsEx.writeJson(file, pipeline, (err) => {
         assert.ifError(err)
@@ -236,9 +233,6 @@ describe('BackendAction', () => {
           cb()
         }
       }
-      backendAction.backendProcess = {
-        connect: (cb) => { cb() }
-      }
 
       const file = path.join(backendAction.pipelinesFolder, 'dCPlTest3.json')
       fsEx.writeJson(file, pipeline, (err) => {
@@ -247,6 +241,25 @@ describe('BackendAction', () => {
           assert.ifError(err)
           done()
         })
+      })
+    })
+
+    it('should return if pipeline was removed', (done) => {
+      const pipelineId = 'plFooBarline3'
+      backendAction.dcClient = {
+        removePipeline: (plId, id, cb) => {
+          assert.equal(plId, pipelineId)
+          cb()
+        }
+      }
+
+      const file = path.join(backendAction.pipelinesFolder, 'dCPlTest3.json')
+      backendAction.pipelines[file] = pipelineId
+
+      backendAction._pipelineRemoved(file, (err) => {
+        assert.equal(backendAction.pipelines[file], undefined)
+        assert.ifError(err)
+        done()
       })
     })
 
