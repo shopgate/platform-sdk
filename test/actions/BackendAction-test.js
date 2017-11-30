@@ -59,7 +59,7 @@ describe('BackendAction', () => {
     backendAction.extensionConfigWatcher = {
       stop: (cb) => cb()
     }
-    
+
     backendAction.cliProxy = {
       start: (cb) => cb(),
       server: {
