@@ -38,20 +38,9 @@ describe('BackendAction', () => {
   })
 
   beforeEach(function (done) {
-    backendAction = new BackendAction()
-
     fsEx.emptyDirSync(userSettingsFolder)
     process.env.USER_PATH = userSettingsFolder
     UserSettings.getInstance().getSession().token = {}
-
-    backendAction.pipelineWatcher = {
-      start: (cb) => cb(),
-      close: () => {},
-      on: (event, fn) => fn(event, path.join(process.env.APP_PATH, 'pipelines', 'testPipeline.json'))
-    }
-    backendAction.extensionConfigWatcher = {
-      stop: (cb) => cb()
-    }
 
     process.env.APP_PATH = appPath
     const appSettings = new AppSettings()
@@ -60,6 +49,18 @@ describe('BackendAction', () => {
 
     appSettings.init()
     AppSettings.setInstance(appSettings)
+
+    backendAction = new BackendAction()
+    fsEx.emptyDirSync(backendAction.pipelinesFolder)
+    backendAction.pipelineWatcher = {
+      start: (cb) => cb(),
+      close: () => {},
+      on: (event, fn) => fn(event, path.join(backendAction.pipelinesFolder, 'testPipeline.json'))
+    }
+    backendAction.extensionConfigWatcher = {
+      stop: (cb) => cb()
+    }
+
     done()
   })
 
@@ -145,19 +146,26 @@ describe('BackendAction', () => {
     })
 
     it('should call dcClient if pipelines were updated', (done) => {
-      const pipeline = {pipeline: {id: 'plFooBarline'}}
+      const pipeline = {pipeline: {id: 'plFooBarline1'}}
       const appId = 'foobarAppIdDcTestBackendAction'
       AppSettings.getInstance().setId(appId)
 
+      const file = path.join(backendAction.pipelinesFolder, 'dCPlTest.json')
+      assert.equal(backendAction.pipelines[file], undefined)
+
       backendAction.dcClient = {
-        uploadPipeline: (pl, aId, cb) => {
-          assert.equal(pl, pipeline)
+        uploadPipeline: (f, aId, cb) => {
+          assert.deepEqual(backendAction.pipelines[file], pipeline.pipeline.id)
+          assert.deepEqual(f, pipeline)
           assert.equal(aId, appId)
           cb()
         }
       }
 
-      backendAction._pipelineChanged(pipeline, done)
+      fsEx.writeJson(file, pipeline, (err) => {
+        assert.ifError(err)
+        backendAction._pipelineChanged(file, done)
+      })
     })
 
     it('should write generated extension-config if backend-extension was updated', (done) => {
@@ -197,21 +205,26 @@ describe('BackendAction', () => {
     })
 
     it('should throw error if dcClient is not reachable', (done) => {
+      const pipeline = {pipeline: {id: 'plFooBarline2'}}
       backendAction.dcClient = {
         uploadPipeline: (pipeline, id, cb) => cb(new Error('EUNKNOWN'))
       }
       backendAction.backendProcess = {
         connect: (cb) => cb()
       }
-
-      backendAction._pipelineChanged({pipeline: {id: 'testPipeline'}}, (err) => {
-        assert.ok(err)
-        assert.equal(err.message, `Could not upload pipeline 'testPipeline': EUNKNOWN`)
-        done()
+      const file = path.join(backendAction.pipelinesFolder, 'dCPlTest2.json')
+      fsEx.writeJson(file, pipeline, (err) => {
+        assert.ifError(err)
+        backendAction._pipelineChanged(file, (err) => {
+          assert.ok(err)
+          assert.equal(err.message, `Could not upload pipeline 'plFooBarline2': EUNKNOWN`)
+          done()
+        })
       })
     }).timeout(5000)
 
     it('should return if pipeline was changed', (done) => {
+      const pipeline = {pipeline: {id: 'plFooBarline3'}}
       backendAction.dcClient = {
         uploadPipeline: (pipeline, id, cb) => {
           cb()
@@ -221,9 +234,13 @@ describe('BackendAction', () => {
         connect: (cb) => { cb() }
       }
 
-      backendAction._pipelineChanged({pipeline: {id: 'testPipeline'}}, (err) => {
+      const file = path.join(backendAction.pipelinesFolder, 'dCPlTest3.json')
+      fsEx.writeJson(file, pipeline, (err) => {
         assert.ifError(err)
-        done()
+        backendAction._pipelineChanged(file, (err) => {
+          assert.ifError(err)
+          done()
+        })
       })
     })
 
