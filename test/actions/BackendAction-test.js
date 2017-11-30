@@ -34,7 +34,8 @@ describe('BackendAction', () => {
     '../app/backend/BackendProcess': BackendProcess,
     '../logger': {
       info: () => {},
-      error: () => {}
+      error: () => {},
+      debug: () => {}
     }
   })
 
