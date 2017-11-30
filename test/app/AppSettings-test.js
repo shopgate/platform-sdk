@@ -1,9 +1,7 @@
 const AppSettings = require('../../lib/app/AppSettings')
 const assert = require('assert')
-const rimraf = require('rimraf')
 const path = require('path')
-const fs = require('fs')
-const mkdirp = require('mkdirp')
+const fsEx = require('fs-extra')
 
 describe('AppSettings', () => {
   let testFolder
@@ -15,7 +13,7 @@ describe('AppSettings', () => {
 
   afterEach((done) => {
     delete process.env.APP_PATH
-    rimraf(testFolder, done)
+    fsEx.remove(testFolder, done)
   })
 
   it('should have default settingsFolder', () => {
@@ -25,9 +23,9 @@ describe('AppSettings', () => {
 
   it('should throw if application data is invalid', (done) => {
     const appSettings = new AppSettings()
-    mkdirp.sync(appSettings.settingsFolder)
-    fs.writeFileSync(appSettings.settingsFile, JSON.stringify({}))
-    fs.writeFileSync(appSettings.attachedExtensionsFile, JSON.stringify({}))
+    fsEx.emptyDirSync(appSettings.settingsFolder)
+    fsEx.writeJsonSync(appSettings.settingsFile, {})
+    fsEx.writeJsonSync(appSettings.attachedExtensionsFile, {})
     try {
       appSettings.init()
     } catch (err) {

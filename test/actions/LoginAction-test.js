@@ -1,11 +1,11 @@
 const assert = require('assert')
 const path = require('path')
-const rimraf = require('rimraf')
 const nock = require('nock')
 const sinon = require('sinon')
 const LoginAction = require('../../lib/actions/LoginAction')
 const UserSettings = require('../../lib/user/UserSettings')
 const settingsFolder = path.join('build', 'user')
+const fsEx = require('fs-extra')
 
 describe('LoginAction', () => {
   let stdin
@@ -17,6 +17,7 @@ describe('LoginAction', () => {
     process.env.SGCLOUD_USER = ''
     process.env.SGCLOUD_PASS = ''
     stdin = require('mock-stdin').stdin()
+    fsEx.emptyDirSync(settingsFolder)
   })
 
   afterEach((done) => {
@@ -26,7 +27,7 @@ describe('LoginAction', () => {
     delete process.env.SGCLOUD_PASS
     UserSettings.setInstance()
     nock.enableNetConnect()
-    rimraf(settingsFolder, done)
+    fsEx.remove(settingsFolder, done)
   })
 
   it('should register', () => {

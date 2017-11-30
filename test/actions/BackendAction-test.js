@@ -3,8 +3,6 @@ const assert = require('assert')
 const sinon = require('sinon')
 const path = require('path')
 const fsEx = require('fs-extra')
-const rimraf = require('rimraf')
-const mkdirp = require('mkdirp')
 const proxyquire = require('proxyquire')
 const async = require('neo-async')
 
@@ -34,37 +32,35 @@ describe('BackendAction', () => {
     '../app/backend/BackendProcess': BackendProcess,
     '../logger': {
       info: () => {},
-      error: () => {}
+      error: () => {},
+      debug: () => {}
     }
   })
 
   beforeEach(function (done) {
     backendAction = new BackendAction()
 
+    fsEx.emptyDirSync(userSettingsFolder)
     process.env.USER_PATH = userSettingsFolder
     UserSettings.getInstance().getSession().token = {}
 
     backendAction.pipelineWatcher = {
       start: (cb) => cb(),
       close: () => {},
-      on: (event, fn) => fn(event, path.join(process.env.APP_PATH, 'pipelines', 'testPipeline.json')),
-      options: {ignoreInitial: true, fsEvents: false}
+      on: (event, fn) => fn(event, path.join(process.env.APP_PATH, 'pipelines', 'testPipeline.json'))
     }
     backendAction.extensionConfigWatcher = {
-      stop: (cb) => { cb() }
+      stop: (cb) => cb()
     }
 
     process.env.APP_PATH = appPath
     const appSettings = new AppSettings()
-    mkdirp.sync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
+    fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
     appSettings.setId('foobarTest').setAttachedExtensions({}).save()
 
-    // TODO: thats a workaround for .save().init()
-    setTimeout(() => {
-      appSettings.init()
-      AppSettings.setInstance(appSettings)
-      done()
-    }, 500)
+    appSettings.init()
+    AppSettings.setInstance(appSettings)
+    done()
   })
 
   afterEach(function (done) {
@@ -73,13 +69,12 @@ describe('BackendAction', () => {
     delete process.env.USER_PATH
     delete process.env.APP_PATH
 
-    if (backendAction.pipelineWatcher.watcher) backendAction.pipelineWatcher.watcher.removeAllListeners()
     backendAction.pipelineWatcher.close()
     backendAction.extensionConfigWatcher.stop((err) => {
       if (err) return done(err)
       async.parallel([
-        (cb) => rimraf(userSettingsFolder, cb),
-        (cb) => rimraf(appPath, cb)
+        (cb) => fsEx.remove(userSettingsFolder, cb),
+        (cb) => fsEx.remove(appPath, cb)
       ], (err) => {
         done(err)
       })
