@@ -36,13 +36,13 @@ describe('CliProxy', () => {
   describe('start()', () => {
     it('should run through', (done) => {
       cliProxy._getIdsFromRapid = (rapidUrl, shopNumber, cb) => cb(null, {sessionId: 0, deviceId: 0})
-      cliProxy._startPipelineServer = (rapidPort, rapidUrl, sessionId, deviceId, shopNumber, name, cb) => cb()
+      cliProxy._startPipelineServer = (rapidPort, rapidUrl, sessionId, deviceId, shopNumber, cb) => cb()
       cliProxy.start(done)
     })
 
     it('should return an error', (done) => {
       cliProxy._getIdsFromRapid = (rapidUrl, shopNumber, cb) => cb(new Error())
-      cliProxy._startPipelineServer = (rapidPort, rapidUrl, sessionId, deviceId, shopNumber, name, cb) => cb()
+      cliProxy._startPipelineServer = (rapidPort, rapidUrl, sessionId, deviceId, shopNumber, cb) => cb()
       cliProxy.start((err) => {
         assert.ok(err)
         done()
@@ -75,7 +75,6 @@ describe('CliProxy', () => {
       })
     })
 
-    // TODO: These both crash whole test
     it('should return error on missing body', (done) => {
       const api = nock(rapidUrl)
         .post('/')
@@ -105,7 +104,7 @@ describe('CliProxy', () => {
 
   describe('_startPipelineServer()', () => {
     it('should start server', (done) => {
-      cliProxy._startPipelineServer(1238, 'rapidUrl', 1, 1, 10006, 'Plc', (err, server) => {
+      cliProxy._startPipelineServer(1238, 'rapidUrl', 1, 1, 10006, (err, server) => {
         assert.ifError(err)
         server.close(done)
       })
@@ -114,15 +113,26 @@ describe('CliProxy', () => {
 
   describe('_getPipelineHandlerFunction()', () => {
     it('should start server', (done) => {
-      const port = 1250
-      const result = {someId: 1}
+      const port = 1251
+      const result = {
+        'cmds': [
+          {
+            'c': 'pipelineResponse',
+            'p': {
+              'output': {
+                'someId': 1
+              }
+            }
+          }
+        ]
+      }
       nock.enableNetConnect()
 
       const api = nock(`http://localhost:${port + 1}`)
         .post('/')
         .reply(200, result)
 
-      cliProxy._startPipelineServer(port, `http://localhost:${port + 1}`, 1, 1, 10006, 'Plc', (err, server) => {
+      cliProxy._startPipelineServer(port, `http://localhost:${port + 1}`, 1, 1, 10006, (err, server) => {
         assert.ifError(err)
 
         request({
@@ -131,7 +141,7 @@ describe('CliProxy', () => {
           json: true
         }, (err, res, body) => {
           assert.ifError(err)
-          assert.deepEqual(body, result)
+          assert.deepEqual(body, {someId: 1})
           api.done()
           nock.disableNetConnect()
           server.close(done)
@@ -140,7 +150,7 @@ describe('CliProxy', () => {
     })
 
     it('should return error on rapid error', (done) => {
-      const port = 1261
+      const port = 1262
       const result = {message: 'Custom Error'}
       nock.enableNetConnect()
 
@@ -148,7 +158,7 @@ describe('CliProxy', () => {
         .post('/')
         .reply(403, result)
 
-      cliProxy._startPipelineServer(port, `http://localhost:${port + 1}`, 1, 1, 10006, 'Plc', (err, server) => {
+      cliProxy._startPipelineServer(port, `http://localhost:${port + 1}`, 1, 1, 10006, (err, server) => {
         assert.ifError(err)
 
         request({
@@ -159,6 +169,43 @@ describe('CliProxy', () => {
           assert.ifError(err)
           assert.equal(res.statusCode, 403)
           assert.equal(body, 'Custom Error')
+          api.done()
+          nock.disableNetConnect()
+          server.close(done)
+        })
+      })
+    })
+
+    it('should return error on plc error', (done) => {
+      const port = 1262
+      const result = {
+        'cmds': [
+          {
+            'c': 'pipelineResponse',
+            'p': {
+              'error': {
+                'message': 'SomeError'
+              }
+            }
+          }
+        ]
+      }
+      nock.enableNetConnect()
+
+      const api = nock(`http://localhost:${port + 1}`)
+        .post('/')
+        .reply(200, result)
+
+      cliProxy._startPipelineServer(port, `http://localhost:${port + 1}`, 1, 1, 10006, (err, server) => {
+        assert.ifError(err)
+
+        request({
+          url: `http://localhost:${port}/pipelines/somePipeline`,
+          method: 'POST',
+          json: true
+        }, (err, res, body) => {
+          assert.ifError(err)
+          assert.deepEqual(body, {'message': 'SomeError'})
           api.done()
           nock.disableNetConnect()
           server.close(done)
