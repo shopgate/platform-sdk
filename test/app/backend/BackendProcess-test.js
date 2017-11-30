@@ -28,13 +28,13 @@ describe('BackendProcess', () => {
     process.env.USER_PATH = userTestFolder
     UserSettings.getInstance().getSession().token = {}
 
-    stepExecutor = {start: (cb) => cb(), stop: (cb) => cb(), watch: (cb) => cb()}
+    stepExecutor = { start: (cb) => cb(), stop: (cb) => cb(), startWatcher: (cb) => cb(), stopWatcher: (cb) => cb() }
 
     portfinder.getPort((err, port) => {
       assert.ifError(err)
 
       process.env.SGCLOUD_DC_ADDRESS = `http://localhost:${port}`
-      backendProcess = new BackendProcess({useFsEvents: false, interval: 1})
+      backendProcess = new BackendProcess({useFsEvents: false, interval: 1, ignoreInitial: true})
       backendProcess.executor = stepExecutor
       mockServer = require('socket.io').listen(port)
       done()

@@ -61,50 +61,62 @@ describe('StepExecutor', () => {
 
   describe('watcher', () => {
     it('should start the watcher', (done) => {
-      let eventCount = 0
       const watcher = {
-        on: (event, fn) => {
-          if (eventCount++ === 0) {
-            assert.equal(stepExecutor.watcher, watcher)
-            assert.equal(event, 'all')
-          } else {
-            assert.equal(event, 'ready')
-          }
-          fn()
+        events: {},
+        on: function (event, fn) {
+          this.events[event] = fn
+        },
+        emit: function (event, param1, param2, cb) {
+          this.events[event](param1, param2)
         }
       }
-      const opts = {}
+
       const StepExecutorMocked = proxyquire('../../../../lib/app/backend/extensionRuntime/StepExecutor', {
         chokidar: {
           watch: (path, options) => {
             assert.equal(path, 'extensions')
-            assert.equal(options, opts)
             return watcher
           }
         }
       })
-      const stepExecutor = new StepExecutorMocked({info: () => {}}, opts)
-      assert.equal(stepExecutor.watcher, undefined)
-      stepExecutor.stop = (cb) => {
+      const stepExecutor = new StepExecutorMocked({info: () => {}})
+      stepExecutor.start = (cb) => {
+        done()
         cb()
       }
-      stepExecutor.start = () => {
-        done()
-      }
-      stepExecutor.watch()
+      stepExecutor.stop = (cb) => cb()
+
+      assert.equal(stepExecutor.watcher, undefined)
+
+      stepExecutor.startWatcher(() => {
+        watcher.emit('all')
+      })
+      watcher.emit('ready')
     })
 
     it('should stop the watcher', (done) => {
-      const stepExecutor = new StepExecutor()
-      stepExecutor.watcher = {
+      const watcher = {
         closed: false,
-        close: () => {
-          setTimeout(() => {
-            stepExecutor.watcher.closed = true
-          }, 10)
+        close: function () {
+          this.closed = true
         }
       }
-      stepExecutor.stop(done)
+
+      const StepExecutorMocked = proxyquire('../../../../lib/app/backend/extensionRuntime/StepExecutor', {
+        chokidar: {
+          watch: (path, options) => {
+            assert.equal(path, 'extensions')
+            return watcher
+          }
+        }
+      })
+
+      const stepExecutor = new StepExecutorMocked({info: () => {}})
+
+      stepExecutor.stopWatcher((err) => {
+        assert.ifError(err)
+        done()
+      })
     })
   })
 

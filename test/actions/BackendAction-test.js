@@ -38,14 +38,10 @@ describe('BackendAction', () => {
     }
   })
 
-  beforeEach(() => {
+  beforeEach(function (done) {
     backendAction = new BackendAction()
+
     process.env.USER_PATH = userSettingsFolder
-    process.env.APP_PATH = appPath
-    const appSettings = new AppSettings()
-    mkdirp.sync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
-    appSettings.setId('foobarTest').setAttachedExtensions({}).save().init()
-    AppSettings.setInstance(appSettings)
     UserSettings.getInstance().getSession().token = {}
 
     backendAction.pipelineWatcher = {
@@ -57,19 +53,36 @@ describe('BackendAction', () => {
     backendAction.extensionConfigWatcher = {
       stop: (cb) => { cb() }
     }
+
+    process.env.APP_PATH = appPath
+    const appSettings = new AppSettings()
+    mkdirp.sync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
+    appSettings.setId('foobarTest').setAttachedExtensions({}).save()
+
+    // TODO: thats a workaround for .save().init()
+    setTimeout(() => {
+      appSettings.init()
+      AppSettings.setInstance(appSettings)
+      done()
+    }, 500)
   })
 
-  afterEach((done) => {
+  afterEach(function (done) {
     UserSettings.setInstance()
     AppSettings.setInstance()
     delete process.env.USER_PATH
     delete process.env.APP_PATH
+
+    if (backendAction.pipelineWatcher.watcher) backendAction.pipelineWatcher.watcher.removeAllListeners()
+    backendAction.pipelineWatcher.close()
     backendAction.extensionConfigWatcher.stop((err) => {
       if (err) return done(err)
       async.parallel([
         (cb) => rimraf(userSettingsFolder, cb),
         (cb) => rimraf(appPath, cb)
-      ], done)
+      ], (err) => {
+        done(err)
+      })
     })
   })
 
@@ -104,6 +117,7 @@ describe('BackendAction', () => {
       }
     })
   })
+
   describe('watching', () => {
     it('should update pipelines', (done) => {
       backendAction.backendProcess = new BackendProcess()
@@ -115,8 +129,8 @@ describe('BackendAction', () => {
       }
 
       backendAction.dcClient = {
-        getPipelines: (appId, cb) => cb(null, [{pipeline: {id: 'testPipeline'}}]),
-        updatePipeline: () => {}
+        downloadPipelines: (appId, cb) => cb(null, [{pipeline: {id: 'testPipeline'}}]),
+        uploadPipeline: () => {}
       }
       backendAction._extensionChanged = (cfg, cb = () => {}) => {}
 
@@ -141,7 +155,7 @@ describe('BackendAction', () => {
       AppSettings.getInstance().setId(appId)
 
       backendAction.dcClient = {
-        updatePipeline: (pl, aId, cb) => {
+        uploadPipeline: (pl, aId, cb) => {
           assert.equal(pl, pipeline)
           assert.equal(aId, appId)
           cb()
@@ -189,7 +203,7 @@ describe('BackendAction', () => {
 
     it('should throw error if dcClient is not reachable', (done) => {
       backendAction.dcClient = {
-        updatePipeline: (pipeline, id, cb) => cb(new Error('EUNKNOWN'))
+        uploadPipeline: (pipeline, id, cb) => cb(new Error('EUNKNOWN'))
       }
       backendAction.backendProcess = {
         connect: (cb) => cb()
@@ -197,14 +211,14 @@ describe('BackendAction', () => {
 
       backendAction._pipelineChanged({pipeline: {id: 'testPipeline'}}, (err) => {
         assert.ok(err)
-        assert.equal(err.message, `Could not update pipeline 'testPipeline'`)
+        assert.equal(err.message, `Could not upload pipeline 'testPipeline': EUNKNOWN`)
         done()
       })
     }).timeout(5000)
 
     it('should return if pipeline was changed', (done) => {
       backendAction.dcClient = {
-        updatePipeline: (pipeline, id, cb) => {
+        uploadPipeline: (pipeline, id, cb) => {
           cb()
         }
       }

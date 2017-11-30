@@ -59,14 +59,14 @@ describe('DcHttpClient', () => {
     })
   })
 
-  describe('getPipelines', () => {
+  describe('downloadPipelines', () => {
     const appId = 'foobarAppId'
 
     it('should get a pipeline', (done) => {
       const body = {pipelines: ['foo', 'bar']}
       const dcMock = nock(dcClient.dcAddress).get(`/applications/${appId}/pipelines`).reply(200, body)
 
-      dcClient.getPipelines(appId, (err, pipelines) => {
+      dcClient.downloadPipelines(appId, (err, pipelines) => {
         assert.ifError(err)
         assert.deepEqual(pipelines, body.pipelines)
         dcMock.done()
@@ -84,7 +84,7 @@ describe('DcHttpClient', () => {
         sessionToken = token
       }
 
-      dcClient.getPipelines(appId, (err) => {
+      dcClient.downloadPipelines(appId, (err) => {
         assert.ifError(err)
         assert.equal(sessionToken, newToken)
         dcMock.done()
@@ -95,20 +95,20 @@ describe('DcHttpClient', () => {
     it('should callback error on dc-error', (done) => {
       const dcMock = nock(dcClient.dcAddress).get(`/applications/${appId}/pipelines`).reply(500)
 
-      dcClient.getPipelines(appId, (err) => {
+      dcClient.downloadPipelines(appId, (err) => {
         assert.ok(err)
         dcMock.done()
         done()
       })
     })
   })
-  describe('updatePipeline', () => {
+  describe('uploadPipeline', () => {
     it('should update a pipeline', (done) => {
       nock(dcClient.dcAddress)
         .put('/applications/shop_10006/pipelines/someId')
         .reply(204)
 
-      dcClient.updatePipeline({pipeline: {id: 'someId'}}, 'shop_10006', (err) => {
+      dcClient.uploadPipeline({pipeline: {id: 'someId'}}, 'shop_10006', (err) => {
         assert.ifError(err)
         done()
       })
@@ -125,7 +125,7 @@ describe('DcHttpClient', () => {
         sessionToken = token
       }
 
-      dcClient.updatePipeline({pipeline: {id: 'someId'}}, 'shop_10006', (err) => {
+      dcClient.uploadPipeline({pipeline: {id: 'someId'}}, 'shop_10006', (err) => {
         assert.ifError(err)
         assert.equal(sessionToken, 'newToken')
         done()
@@ -137,7 +137,7 @@ describe('DcHttpClient', () => {
         .put('/applications/shop_10006/pipelines/someId')
         .reply(500)
 
-      dcClient.updatePipeline({pipeline: {id: 'someId'}}, 'shop_10006', (err) => {
+      dcClient.uploadPipeline({pipeline: {id: 'someId'}}, 'shop_10006', (err) => {
         assert.ok(err)
         done()
       })
