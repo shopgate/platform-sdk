@@ -5,9 +5,8 @@ const AppSettings = require('../../lib/app/AppSettings')
 const path = require('path')
 const userSettingsFolder = path.join('build', 'usersettings')
 const appPath = path.join('build', 'appsettings')
-const rimraf = require('rimraf')
-const mkdirp = require('mkdirp')
 const sinon = require('sinon')
+const fsEx = require('fs-extra')
 
 describe('InitAction', () => {
   it('should register', () => {
@@ -27,12 +26,13 @@ describe('InitAction', () => {
 
   beforeEach(() => {
     process.env.USER_PATH = userSettingsFolder
+    fsEx.emptyDirSync(userSettingsFolder)
   })
 
   afterEach((done) => {
     UserSettings.setInstance()
     delete process.env.USER_PATH
-    rimraf(userSettingsFolder, done)
+    fsEx.remove(userSettingsFolder, done)
   })
 
   it('should throw if user not logged in', (done) => {
@@ -52,7 +52,7 @@ describe('InitAction', () => {
 
     process.env.APP_PATH = appPath
     const appSettings = new AppSettings()
-    mkdirp.sync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
+    fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
     appSettings.setId(appId).save().init()
     AppSettings.setInstance(appSettings)
 
@@ -69,7 +69,7 @@ describe('InitAction', () => {
     assert.ok(wasCatched)
     delete process.env.APP_PATH
     AppSettings.setInstance()
-    rimraf(appPath, done)
+    fsEx.remove(appPath, done)
   })
 
   it('should create folders, settings file and save appId', (done) => {
@@ -77,12 +77,10 @@ describe('InitAction', () => {
     process.env.APP_PATH = appPath
     UserSettings.getInstance().getSession().token = {}
 
-    const init = new InitAction()
-
-    init.run({appId: 'test'}, () => {
+    new InitAction().run({appId: 'test'}, () => {
       delete process.env.APP_PATH
       AppSettings.setInstance()
-      rimraf(appPath, done)
+      fsEx.remove(appPath, done)
     })
   })
 

@@ -3,8 +3,6 @@ const assert = require('assert')
 const sinon = require('sinon')
 const path = require('path')
 const fsEx = require('fs-extra')
-const rimraf = require('rimraf')
-const mkdirp = require('mkdirp')
 const proxyquire = require('proxyquire')
 const async = require('neo-async')
 
@@ -34,42 +32,52 @@ describe('BackendAction', () => {
     '../app/backend/BackendProcess': BackendProcess,
     '../logger': {
       info: () => {},
-      error: () => {}
+      error: () => {},
+      debug: () => {}
     }
   })
 
-  beforeEach(() => {
+  beforeEach(function (done) {
     backendAction = new BackendAction()
+
+    fsEx.emptyDirSync(userSettingsFolder)
     process.env.USER_PATH = userSettingsFolder
-    process.env.APP_PATH = appPath
-    const appSettings = new AppSettings()
-    mkdirp.sync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
-    appSettings.setId('foobarTest').setAttachedExtensions({}).save().init()
-    AppSettings.setInstance(appSettings)
     UserSettings.getInstance().getSession().token = {}
 
     backendAction.pipelineWatcher = {
       start: (cb) => cb(),
       close: () => {},
-      on: (event, fn) => fn(event, path.join(process.env.APP_PATH, 'pipelines', 'testPipeline.json')),
-      options: {ignoreInitial: true, fsEvents: false}
+      on: (event, fn) => fn(event, path.join(process.env.APP_PATH, 'pipelines', 'testPipeline.json'))
     }
     backendAction.extensionConfigWatcher = {
-      stop: (cb) => { cb() }
+      stop: (cb) => cb()
     }
+
+    process.env.APP_PATH = appPath
+    const appSettings = new AppSettings()
+    fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
+    appSettings.setId('foobarTest').setAttachedExtensions({}).save()
+
+    appSettings.init()
+    AppSettings.setInstance(appSettings)
+    done()
   })
 
-  afterEach((done) => {
+  afterEach(function (done) {
     UserSettings.setInstance()
     AppSettings.setInstance()
     delete process.env.USER_PATH
     delete process.env.APP_PATH
+
+    backendAction.pipelineWatcher.close()
     backendAction.extensionConfigWatcher.stop((err) => {
       if (err) return done(err)
       async.parallel([
-        (cb) => rimraf(userSettingsFolder, cb),
-        (cb) => rimraf(appPath, cb)
-      ], done)
+        (cb) => fsEx.remove(userSettingsFolder, cb),
+        (cb) => fsEx.remove(appPath, cb)
+      ], (err) => {
+        done(err)
+      })
     })
   })
 
@@ -104,6 +112,7 @@ describe('BackendAction', () => {
       }
     })
   })
+
   describe('watching', () => {
     it('should update pipelines', (done) => {
       backendAction.backendProcess = new BackendProcess()
@@ -115,8 +124,8 @@ describe('BackendAction', () => {
       }
 
       backendAction.dcClient = {
-        getPipelines: (appId, cb) => cb(null, [{pipeline: {id: 'testPipeline'}}]),
-        updatePipeline: () => {}
+        downloadPipelines: (appId, cb) => cb(null, [{pipeline: {id: 'testPipeline'}}]),
+        uploadPipeline: () => {}
       }
       backendAction._extensionChanged = (cfg, cb = () => {}) => {}
 
@@ -141,7 +150,7 @@ describe('BackendAction', () => {
       AppSettings.getInstance().setId(appId)
 
       backendAction.dcClient = {
-        updatePipeline: (pl, aId, cb) => {
+        uploadPipeline: (pl, aId, cb) => {
           assert.equal(pl, pipeline)
           assert.equal(aId, appId)
           cb()
@@ -189,7 +198,7 @@ describe('BackendAction', () => {
 
     it('should throw error if dcClient is not reachable', (done) => {
       backendAction.dcClient = {
-        updatePipeline: (pipeline, id, cb) => cb(new Error('EUNKNOWN'))
+        uploadPipeline: (pipeline, id, cb) => cb(new Error('EUNKNOWN'))
       }
       backendAction.backendProcess = {
         connect: (cb) => cb()
@@ -197,14 +206,14 @@ describe('BackendAction', () => {
 
       backendAction._pipelineChanged({pipeline: {id: 'testPipeline'}}, (err) => {
         assert.ok(err)
-        assert.equal(err.message, `Could not update pipeline 'testPipeline'`)
+        assert.equal(err.message, `Could not upload pipeline 'testPipeline': EUNKNOWN`)
         done()
       })
     }).timeout(5000)
 
     it('should return if pipeline was changed', (done) => {
       backendAction.dcClient = {
-        updatePipeline: (pipeline, id, cb) => {
+        uploadPipeline: (pipeline, id, cb) => {
           cb()
         }
       }

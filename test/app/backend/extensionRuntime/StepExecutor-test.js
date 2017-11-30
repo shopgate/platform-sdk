@@ -1,8 +1,6 @@
 const assert = require('assert')
 const path = require('path')
-const mkdirp = require('mkdirp')
-const rimraf = require('rimraf')
-const fs = require('fs-extra')
+const fsEx = require('fs-extra')
 const async = require('neo-async')
 
 const StepExecutor = require('../../../../lib/app/backend/extensionRuntime/StepExecutor')
@@ -29,8 +27,8 @@ describe('StepExecutor', () => {
     executor.stepTimeout = 1000
 
     const appSettings = new AppSettings()
-    mkdirp.sync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
-    mkdirp.sync(path.join(appPath, AppSettings.EXTENSIONS_FOLDER, 'foobar', 'extension'))
+    fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
+    fsEx.emptyDirSync(path.join(appPath, AppSettings.EXTENSIONS_FOLDER, 'foobar', 'extension'))
     appSettings.setId('shop_10006').setAttachedExtensions({'@foo/bar': {path: 'foobar'}}).save().init()
     AppSettings.setInstance(appSettings)
     UserSettings.getInstance().getSession().token = {}
@@ -38,9 +36,9 @@ describe('StepExecutor', () => {
     const fakeStepDir = path.join(__dirname, 'fakeSteps')
     const extensionDir = path.join(appPath, AppSettings.EXTENSIONS_FOLDER, 'foobar', 'extension')
     async.parallel([
-      cb => fs.copy(path.join(fakeStepDir, 'simple.js'), path.join(extensionDir, 'simple.js'), cb),
-      cb => fs.copy(path.join(fakeStepDir, 'crashing.js'), path.join(extensionDir, 'crashing.js'), cb),
-      cb => fs.copy(path.join(fakeStepDir, 'timeout.js'), path.join(extensionDir, 'timeout.js'), cb),
+      cb => fsEx.copy(path.join(fakeStepDir, 'simple.js'), path.join(extensionDir, 'simple.js'), cb),
+      cb => fsEx.copy(path.join(fakeStepDir, 'crashing.js'), path.join(extensionDir, 'crashing.js'), cb),
+      cb => fsEx.copy(path.join(fakeStepDir, 'timeout.js'), path.join(extensionDir, 'timeout.js'), cb),
       cb => executor.start(cb)
     ], done)
   })
@@ -54,57 +52,69 @@ describe('StepExecutor', () => {
 
     async.parallel([
       (cb) => executor.stop(cb),
-      (cb) => rimraf(appTestFolder, cb),
-      (cb) => rimraf(userTestFolder, cb)
+      (cb) => fsEx.remove(appTestFolder, cb),
+      (cb) => fsEx.remove(userTestFolder, cb)
     ], done)
   })
 
   describe('watcher', () => {
     it('should start the watcher', (done) => {
-      let eventCount = 0
       const watcher = {
-        on: (event, fn) => {
-          if (eventCount++ === 0) {
-            assert.equal(stepExecutor.watcher, watcher)
-            assert.equal(event, 'all')
-          } else {
-            assert.equal(event, 'ready')
-          }
-          fn()
+        events: {},
+        on: function (event, fn) {
+          this.events[event] = fn
+        },
+        emit: function (event, param1, param2, cb) {
+          this.events[event](param1, param2)
         }
       }
-      const opts = {}
+
       const StepExecutorMocked = proxyquire('../../../../lib/app/backend/extensionRuntime/StepExecutor', {
         chokidar: {
           watch: (path, options) => {
             assert.equal(path, 'extensions')
-            assert.equal(options, opts)
             return watcher
           }
         }
       })
-      const stepExecutor = new StepExecutorMocked({info: () => {}}, opts)
-      assert.equal(stepExecutor.watcher, undefined)
-      stepExecutor.stop = (cb) => {
+      const stepExecutor = new StepExecutorMocked({info: () => {}})
+      stepExecutor.start = (cb) => {
+        done()
         cb()
       }
-      stepExecutor.start = () => {
-        done()
-      }
-      stepExecutor.watch()
+      stepExecutor.stop = (cb) => cb()
+
+      assert.equal(stepExecutor.watcher, undefined)
+
+      stepExecutor.startWatcher(() => {
+        watcher.emit('all')
+      })
+      watcher.emit('ready')
     })
 
     it('should stop the watcher', (done) => {
-      const stepExecutor = new StepExecutor()
-      stepExecutor.watcher = {
+      const watcher = {
         closed: false,
-        close: () => {
-          setTimeout(() => {
-            stepExecutor.watcher.closed = true
-          }, 10)
+        close: function () {
+          this.closed = true
         }
       }
-      stepExecutor.stop(done)
+
+      const StepExecutorMocked = proxyquire('../../../../lib/app/backend/extensionRuntime/StepExecutor', {
+        chokidar: {
+          watch: (path, options) => {
+            assert.equal(path, 'extensions')
+            return watcher
+          }
+        }
+      })
+
+      const stepExecutor = new StepExecutorMocked({info: () => {}})
+
+      stepExecutor.stopWatcher((err) => {
+        assert.ifError(err)
+        done()
+      })
     })
   })
 

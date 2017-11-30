@@ -6,13 +6,12 @@
  */
 
 const { join } = require('path')
-const rimraf = require('rimraf')
-const mkdirp = require('mkdirp')
 const sinon = require('sinon')
 const assert = require('assert')
 const proxyquire = require('proxyquire')
 const UserSettings = require('../../../lib/user/UserSettings')
 const AppSettings = require('../../../lib/app/AppSettings')
+const fsEx = require('fs-extra')
 
 let requestSpyFail = false
 let requestStatusCode = 201
@@ -81,9 +80,10 @@ describe('FrontendSetup', () => {
 
     const appSettings = new AppSettings()
     appSettings.frontendSettings = defaultConfig
-    mkdirp.sync(join(appSettingsPath, AppSettings.SETTINGS_FOLDER))
+    fsEx.emptyDirSync(join(appSettingsPath, AppSettings.SETTINGS_FOLDER))
     appSettings.setId(appId).setAttachedExtensions({}).save().init()
     AppSettings.setInstance(appSettings)
+    fsEx.emptyDirSync(userSettingsPath)
     UserSettings.getInstance().getSession().token = {}
 
     frontendSetup = new FrontendSetup()
@@ -96,10 +96,12 @@ describe('FrontendSetup', () => {
   })
 
   afterEach((done) => {
+    AppSettings.setInstance()
     UserSettings.setInstance()
     delete process.env.USER_PATH
-    rimraf(userSettingsPath, () => {
-      rimraf(appSettingsPath, done)
+    delete process.env.APP_PATH
+    fsEx.remove(userSettingsPath, () => {
+      fsEx.remove(appSettingsPath, done)
     })
   })
 
