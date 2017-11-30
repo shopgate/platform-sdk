@@ -53,6 +53,13 @@ describe('BackendAction', () => {
       stop: (cb) => cb()
     }
 
+    backendAction.cliProxy = {
+      start: (cb) => cb(),
+      server: {
+        close: (cb) => cb()
+      }
+    }
+
     process.env.APP_PATH = appPath
     const appSettings = new AppSettings()
     fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
