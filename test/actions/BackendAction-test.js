@@ -3,7 +3,6 @@ const assert = require('assert')
 const sinon = require('sinon')
 const path = require('path')
 const fsEx = require('fs-extra')
-const rimraf = require('rimraf')
 const mkdirp = require('mkdirp')
 const proxyquire = require('proxyquire')
 const async = require('neo-async')
@@ -73,8 +72,8 @@ describe('BackendAction', () => {
     backendAction.extensionConfigWatcher.stop((err) => {
       if (err) return done(err)
       async.parallel([
-        (cb) => rimraf(userSettingsFolder, cb),
-        (cb) => rimraf(appPath, cb)
+        (cb) => fsEx.remove(userSettingsFolder, cb),
+        (cb) => fsEx.remove(appPath, cb)
       ], (err) => {
         done(err)
       })

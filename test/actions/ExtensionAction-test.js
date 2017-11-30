@@ -1,6 +1,5 @@
 const assert = require('assert')
 const path = require('path')
-const rimraf = require('rimraf')
 const mkdirp = require('mkdirp')
 const fsEx = require('fs-extra')
 const sinon = require('sinon')
@@ -36,8 +35,8 @@ describe('ExtensionAction', () => {
     delete process.env.USER_PATH
     delete process.env.APP_PATH
     async.parallel([
-      (cb) => rimraf(userSettingsFolder, cb),
-      (cb) => rimraf(appPath, cb)
+      (cb) => fsEx.remove(userSettingsFolder, cb),
+      (cb) => fsEx.remove(appPath, cb)
     ], done)
   })
 
