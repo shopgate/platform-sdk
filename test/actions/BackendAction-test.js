@@ -1,4 +1,3 @@
-/* eslint-disable standard/no-callback-literal */
 const assert = require('assert')
 const sinon = require('sinon')
 const path = require('path')
@@ -60,7 +59,21 @@ describe('BackendAction', () => {
     backendAction.extensionConfigWatcher = {
       stop: (cb) => cb()
     }
+    
+    backendAction.cliProxy = {
+      start: (cb) => cb(),
+      server: {
+        close: (cb) => cb()
+      }
+    }
 
+    process.env.APP_PATH = appPath
+    const appSettings = new AppSettings()
+    fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
+    appSettings.setId('foobarTest').setAttachedExtensions({}).save()
+
+    appSettings.init()
+    AppSettings.setInstance(appSettings)
     done()
   })
 

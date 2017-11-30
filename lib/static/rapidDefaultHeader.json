@@ -1,0 +1,7 @@
+{
+  "sg-api-codebase": "5.16.0",
+  "sg-device-type": "android-phone",
+  "accept-encoding": "plain",
+  "content-type": "application/json",
+  "accept-version": "~1"
+}
