@@ -54,7 +54,10 @@ describe('BackendAction', () => {
     }
 
     backendAction.cliProxy = {
-      start: (cb) => cb()
+      start: (cb) => cb(),
+      server: {
+        close: (cb) => cb()
+      }
     }
 
     process.env.APP_PATH = appPath
