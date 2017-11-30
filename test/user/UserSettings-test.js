@@ -1,8 +1,7 @@
 const UserSettings = require('../../lib/user/UserSettings')
 const assert = require('assert')
-const rimraf = require('rimraf')
 const path = require('path')
-const fs = require('fs')
+const fsEx = require('fs-extra')
 
 describe('UserSettings', () => {
   let testFolder
@@ -14,7 +13,8 @@ describe('UserSettings', () => {
 
   afterEach((done) => {
     delete process.env.USER_PATH
-    rimraf(testFolder, done)
+    UserSettings.setInstance()
+    fsEx.remove(testFolder, done)
   })
 
   it('should have default settingsFolder', () => {
@@ -28,20 +28,12 @@ describe('UserSettings', () => {
     assert.equal(new UserSettings().settingsFolder, testFolder)
   })
 
-  it('should return (same) blank session', () => {
-    const userSettings = new UserSettings()
-    const session = userSettings.getSession()
-    assert.equal(session, userSettings.getSession())
-    assert.ok(!session.getToken())
-  })
+  it('should return session loaded from file', () => {
+    const userSettings = new UserSettings().save()
+    const session = {token: 'foo'}
+    fsEx.writeJsonSync(userSettings.sessionFile, {token: 'foo'})
 
-  it('should return (same) session loaded from file', () => {
-    const userSettings = new UserSettings()
-    fs.writeFileSync(userSettings.sessionFile, JSON.stringify({token: 'foo'}))
-
-    const session = userSettings.getSession()
-    assert.equal(session, userSettings.getSession())
-    assert.ok(session.getToken())
+    assert.equal(session.token, new UserSettings().getSession().token)
   })
 
   it('should save all settings', () => {
@@ -51,6 +43,6 @@ describe('UserSettings', () => {
     userSettings.getSession().setToken(token)
     userSettings.save()
 
-    assert.deepEqual(JSON.parse(fs.readFileSync(userSettings.sessionFile)).token, token)
+    assert.deepEqual(fsEx.readJsonSync(userSettings.sessionFile).token, token)
   })
 })

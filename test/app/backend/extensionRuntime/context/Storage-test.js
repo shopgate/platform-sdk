@@ -1,9 +1,8 @@
 const Storage = require('../../../../../lib/app/backend/extensionRuntime/context/Storage')
 const AppSettings = require('../../../../../lib/app/AppSettings')
 const assert = require('assert')
-const rimraf = require('rimraf')
 const path = require('path')
-const fsExtra = require('fs-extra')
+const fsEx = require('fs-extra')
 
 describe('Storage', () => {
   let storagePath
@@ -16,7 +15,7 @@ describe('Storage', () => {
 
   afterEach(done => {
     delete process.env.STORAGE_PATH
-    rimraf(storagePath, done)
+    fsEx.remove(storagePath, done)
   })
 
   describe('constructor', () => {
@@ -41,7 +40,7 @@ describe('Storage', () => {
     it('should construct with data', () => {
       const data = {foo: 'bar', bar: 'foo'}
       const log = {log: true}
-      fsExtra.writeJsonSync(storagePath, data)
+      fsEx.writeJsonSync(storagePath, data)
       storage = new Storage(log)
       assert.equal(storage.path, storagePath)
       assert.deepEqual(storage.data, data)
@@ -121,7 +120,7 @@ describe('Storage', () => {
         assert.equal(storage.saveQueued, undefined)
         assert.equal(storage.saving, true)
 
-        fsExtra.readJson(storagePath, (err, data) => {
+        fsEx.readJson(storagePath, (err, data) => {
           assert.ifError(err)
           assert.deepEqual(data, storage.data)
           done()

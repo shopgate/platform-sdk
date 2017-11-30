@@ -53,8 +53,7 @@
     "commander": "^2.12.2",
     "fs-extra": "^4.0.2",
     "glob": "^7.1.2",
-    "inquirer": "^4.0.0",
-    "mkdirp": "^0.5.1",
+    "inquirer": "^4.0.1",
     "morgan": "^1.9.0",
     "neo-async": "^2.5.0",
     "os": "^0.1.1",
@@ -75,7 +74,6 @@
     "portfinder": "^1.0.13",
     "pre-commit": "^1.2.2",
     "proxyquire": "^1.8.0",
-    "rimraf": "^2.6.2",
     "sinon": "^4.1.2",
     "socket.io": "^2.0.4",
     "standard": "^10.0.3"

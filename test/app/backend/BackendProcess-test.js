@@ -1,11 +1,9 @@
 const assert = require('assert')
 const path = require('path')
-const mkdirp = require('mkdirp')
 const fsEx = require('fs-extra')
 const AppSettings = require('../../../lib/app/AppSettings')
 const UserSettings = require('../../../lib/user/UserSettings')
 const BackendProcess = require('../../../lib/app/backend/BackendProcess')
-const rimraf = require('rimraf')
 const portfinder = require('portfinder')
 const async = require('neo-async')
 
@@ -19,7 +17,7 @@ describe('BackendProcess', () => {
   beforeEach((done) => {
     appTestFolder = path.join('build', 'appsettings')
     process.env.APP_PATH = appTestFolder
-    mkdirp.sync(path.join(appTestFolder, AppSettings.SETTINGS_FOLDER))
+    fsEx.emptyDirSync(path.join(appTestFolder, AppSettings.SETTINGS_FOLDER))
     const appSettings = new AppSettings()
     appSettings.setId('shop_10006').setAttachedExtensions({}).save().init()
     AppSettings.setInstance(appSettings)
@@ -28,13 +26,13 @@ describe('BackendProcess', () => {
     process.env.USER_PATH = userTestFolder
     UserSettings.getInstance().getSession().token = {}
 
-    stepExecutor = {start: (cb) => cb(), stop: (cb) => cb(), watch: () => {}}
+    stepExecutor = { start: (cb) => cb(), stop: (cb) => cb(), startWatcher: (cb) => cb(), stopWatcher: (cb) => cb() }
 
     portfinder.getPort((err, port) => {
       assert.ifError(err)
 
       process.env.SGCLOUD_DC_ADDRESS = `http://localhost:${port}`
-      backendProcess = new BackendProcess({useFsEvents: false, interval: 1})
+      backendProcess = new BackendProcess({useFsEvents: false, interval: 1, ignoreInitial: true})
       backendProcess.executor = stepExecutor
       mockServer = require('socket.io').listen(port)
       done()
@@ -44,7 +42,7 @@ describe('BackendProcess', () => {
   afterEach((done) => {
     UserSettings.setInstance()
     AppSettings.setInstance()
-    backendProcess.extensionWatcher.stop(() => {
+    backendProcess.attachedExtensionsWatcher.stop(() => {
       backendProcess.disconnect((err) => {
         if (err) return done(err)
         mockServer.close((err) => {
@@ -53,8 +51,8 @@ describe('BackendProcess', () => {
           delete process.env.APP_PATH
           delete process.env.USER_PATH
           async.parallel([
-            (cb) => rimraf(appTestFolder, cb),
-            (cb) => rimraf(userTestFolder, cb)
+            (cb) => fsEx.remove(appTestFolder, cb),
+            (cb) => fsEx.remove(userTestFolder, cb)
           ], done)
         })
       })
@@ -103,7 +101,7 @@ describe('BackendProcess', () => {
       })
       backendProcess.connect(() => {
         fsEx.writeJSON(
-          backendProcess.extensionWatcher.configPath,
+          backendProcess.attachedExtensionsWatcher.configPath,
           {attachedExtensions: {testExt: {id: 'testExt'}}},
           () => {}
         )
@@ -126,11 +124,11 @@ describe('BackendProcess', () => {
 
       backendProcess.connect(() => {
         fsEx.writeJSON(
-          backendProcess.extensionWatcher.configPath,
+          backendProcess.attachedExtensionsWatcher.configPath,
           {attachedExtensions: {testExt: {id: 'testExt'}}},
           () => {
             setTimeout(() => {
-              fsEx.writeJSON(backendProcess.extensionWatcher.configPath,
+              fsEx.writeJSON(backendProcess.attachedExtensionsWatcher.configPath,
                 {attachedExtensions: {}},
                 () => {}
               )
