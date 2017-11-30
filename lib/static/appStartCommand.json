@@ -1,0 +1,27 @@
+{
+  "c": "appStart",
+  "p": {
+    "apiKey": "testTesttest",
+    "appIdentifier": "shop:0",
+    "appVersion": "5.16.0",
+    "codebase": "5.16.0",
+    "device": {
+      "cameras": [],
+      "carrier": "testCarrier",
+      "locale": "de",
+      "model": "testModel",
+      "os": {
+        "apiLevel": "24",
+        "platform": "android",
+        "ver": "7.0"
+      },
+      "screen": {
+        "height": 1184,
+        "scale": 2,
+        "width": 720
+      },
+      "type": "phone"
+    },
+    "isDevelopmentApp": true
+  }
+}
