@@ -1,8 +1,7 @@
 const assert = require('assert')
 const request = require('request')
 const path = require('path')
-const rimraf = require('rimraf')
-const mkdirp = require('mkdirp')
+const fsEx = require('fs-extra')
 const nock = require('nock')
 
 const CliProxy = require('../lib/CliProxy')
@@ -19,7 +18,7 @@ describe('CliProxy', () => {
     process.env.APP_PATH = appPath
 
     const appSettings = new AppSettings()
-    mkdirp.sync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
+    fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
     appSettings.setId('foobarTest').setAttachedExtensions({}).save().init()
     AppSettings.setInstance(appSettings)
 
@@ -30,7 +29,7 @@ describe('CliProxy', () => {
     AppSettings.setInstance()
     delete process.env.APP_PATH
     nock.enableNetConnect()
-    rimraf(appPath, done)
+    fsEx.remove(appPath, done)
   })
 
   describe('start()', () => {
