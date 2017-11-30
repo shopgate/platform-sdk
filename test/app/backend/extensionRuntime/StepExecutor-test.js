@@ -65,10 +65,10 @@ describe('StepExecutor', () => {
       const watcher = {
         on: (event, fn) => {
           if (eventCount++ === 0) {
-            assert.equal(event, 'ready')
-          } else {
             assert.equal(stepExecutor.watcher, watcher)
             assert.equal(event, 'all')
+          } else {
+            assert.equal(event, 'ready')
           }
           fn()
         }
