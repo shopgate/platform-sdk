@@ -203,7 +203,8 @@ describe('StepExecutor', () => {
     }
     executor.execute({}, stepMeta, (err) => {
       assert.ok(err)
-      assert.equal(err.message, 'Step timeout')
+      assert.equal(err.message, `Step '${stepMeta.path}' timeout`)
+      assert.equal(err.code, 'ETIMEOUT')
       done()
     })
   })
