@@ -19,7 +19,7 @@ describe('InitAction', () => {
     new InitAction().register(commander)
 
     assert(commander.command.calledWith('init'))
-    assert(commander.option.calledWith('--application_id <appId>'))
+    assert(commander.option.calledWith('--appId <appId>'))
     assert(commander.description.calledOnce)
     assert(commander.action.calledOnce)
   })
@@ -77,7 +77,7 @@ describe('InitAction', () => {
     process.env.APP_PATH = appPath
     UserSettings.getInstance().getSession().token = {}
 
-    new InitAction().run({'application_id': 'test'}, () => {
+    new InitAction().run({appId: 'test'}, () => {
       delete process.env.APP_PATH
       AppSettings.setInstance()
       fsEx.remove(appPath, done)
@@ -87,11 +87,11 @@ describe('InitAction', () => {
   describe('getAppId', () => {
     it('should return appId if already set in options', (done) => {
       const init = new InitAction()
-      const applicationId = 'test'
-      init.options = {'application_id': applicationId}
+      const appId = 'test'
+      init.options = {appId}
       init.getAppId(null, (err, id) => {
         assert.ifError(err)
-        assert.equal(id, applicationId)
+        assert.equal(id, appId)
         done()
       })
     })
@@ -103,8 +103,8 @@ describe('InitAction', () => {
 
       function prompt (questions) {
         assert.equal(questions.length, 1)
-        assert.deepEqual(questions[0], {type: 'input', name: 'application_id', message: 'Enter your Sandbox App ID:'})
-        return Promise.resolve({'application_id': appId})
+        assert.deepEqual(questions[0], {type: 'input', name: 'appId', message: 'Enter your Sandbox App ID:'})
+        return Promise.resolve({appId})
       }
 
       init.getAppId(prompt, (err, id) => {
