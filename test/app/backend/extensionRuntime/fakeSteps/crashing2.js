@@ -1,3 +1,3 @@
 module.exports = function (context, input, cb) {
-  process.exit(1)
+  cb(null, input.foo.bar.notThere)
 }
