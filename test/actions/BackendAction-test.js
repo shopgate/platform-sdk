@@ -136,7 +136,7 @@ describe('BackendAction', () => {
         on: (name, cb) => { cb() }
       }
 
-      backendAction.dcClient.downloadPipelines = (appId, cb) => cb(null, [{pipeline: {id: 'testPipeline'}}])
+      backendAction.dcClient.downloadPipelines = (appId, trusted, cb) => cb(null, [{pipeline: {id: 'testPipeline'}}])
       backendAction.dcClient.removePipeline = (pId, aId, cb) => cb()
       backendAction._extensionChanged = (cfg, cb = () => {}) => {}
       backendAction._themeChanged = (cfg, cb = () => {}) => {}
@@ -164,7 +164,7 @@ describe('BackendAction', () => {
       const file = path.join(backendAction.pipelinesFolder, 'dCPlTest.json')
       assert.equal(backendAction.pipelines[file], undefined)
 
-      backendAction.dcClient.uploadPipeline = (f, aId, cb) => {
+      backendAction.dcClient.uploadPipeline = (f, aId, trusted, cb) => {
         assert.deepEqual(backendAction.pipelines[file].id, pipeline.pipeline.id)
         assert.deepEqual(f, pipeline)
         assert.equal(aId, appId)
@@ -207,7 +207,7 @@ describe('BackendAction', () => {
 
     it('should throw error if dcClient is not reachable', (done) => {
       const pipeline = {pipeline: {id: 'plFooBarline2'}}
-      backendAction.dcClient.uploadPipeline = (pl, id, cb) => cb(new Error('EUNKNOWN'))
+      backendAction.dcClient.uploadPipeline = (pl, id, trusted, cb) => cb(new Error('EUNKNOWN'))
 
       const file = path.join(backendAction.pipelinesFolder, 'dCPlTest2.json')
       fsEx.writeJson(file, pipeline, (err) => {
@@ -222,7 +222,7 @@ describe('BackendAction', () => {
 
     it('should return if pipeline was changed', (done) => {
       const pipeline = {pipeline: {id: 'plFooBarline3'}}
-      backendAction.dcClient.uploadPipeline = (pl, id, cb) => cb()
+      backendAction.dcClient.uploadPipeline = (pl, id, trusted, cb) => cb()
 
       const file = path.join(backendAction.pipelinesFolder, 'dCPlTest3.json')
       fsEx.writeJson(file, pipeline, (err) => {
@@ -237,7 +237,7 @@ describe('BackendAction', () => {
     it('should return if pipeline was removed', (done) => {
       const pipelineId = 'plFooBarline3'
       let called = false
-      backendAction.dcClient.removePipeline = (plId, id, cb) => {
+      backendAction.dcClient.removePipeline = (plId, id, trusted, cb) => {
         assert.equal(plId, pipelineId)
         called = true
         cb()
