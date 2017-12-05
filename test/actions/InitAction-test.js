@@ -77,7 +77,7 @@ describe('InitAction', () => {
     process.env.APP_PATH = appPath
     UserSettings.getInstance().getSession().token = {}
 
-    new InitAction().run({'appId': 'test'}, () => {
+    new InitAction().run({appId: 'test'}, () => {
       delete process.env.APP_PATH
       AppSettings.setInstance()
       fsEx.remove(appPath, done)
@@ -88,7 +88,7 @@ describe('InitAction', () => {
     it('should return appId if already set in options', (done) => {
       const init = new InitAction()
       const applicationId = 'test'
-      init.options = {'appId': applicationId}
+      init.options = {appId: applicationId}
       init.getAppId(null, (err, id) => {
         assert.ifError(err)
         assert.equal(id, applicationId)
@@ -104,7 +104,7 @@ describe('InitAction', () => {
       function prompt (questions) {
         assert.equal(questions.length, 1)
         assert.deepEqual(questions[0], {type: 'input', name: 'appId', message: 'Enter your Sandbox App ID:'})
-        return Promise.resolve({'appId': appId})
+        return Promise.resolve({appId: appId})
       }
 
       init.getAppId(prompt, (err, id) => {
