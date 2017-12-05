@@ -9,7 +9,7 @@ platform:
 
 install:
   - ps: Install-Product node $env:nodejs_version
-  - npm i --no-optional --no-package-lock -f
+  - npm i --no-optional --no-package-lock
 
 test_script:
   - npm t
