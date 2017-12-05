@@ -214,7 +214,7 @@ describe('BackendAction', () => {
         assert.ifError(err)
         backendAction._pipelineChanged(file, (err) => {
           assert.ok(err)
-          assert.equal(err.message, `Could not upload pipeline 'plFooBarline2': EUNKNOWN`)
+          assert.equal(err.message, `Error while uploading pipeline 'plFooBarline2': EUNKNOWN`)
           done()
         })
       })
