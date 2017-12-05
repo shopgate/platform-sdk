@@ -80,8 +80,7 @@
     "standard": "^10.0.3"
   },
   "engines": {
-    "node": ">= 8.0.0",
-    "npm": ">= 5.0.0"
+    "node": ">= 8.0.0"
   },
   "pre-commit": [
     "lint-staged",
