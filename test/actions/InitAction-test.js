@@ -38,12 +38,10 @@ describe('InitAction', () => {
   it('should throw if user not logged in', (done) => {
     UserSettings.getInstance().getSession().token = null
     const init = new InitAction()
-    try {
-      init.run()
-    } catch (err) {
+    init.run(null, (err) => {
       assert.equal(err.message, 'not logged in')
       done()
-    }
+    })
   })
 
   it('should throw if application already initialized', (done) => {
@@ -58,18 +56,12 @@ describe('InitAction', () => {
 
     const init = new InitAction()
 
-    let wasCatched = false
-    try {
-      init.run()
-    } catch (err) {
-      wasCatched = true
+    init.run(null, (err) => {
       assert.equal(err.message, `The current folder is already initialized for application ${appId}`)
-    }
-
-    assert.ok(wasCatched)
-    delete process.env.APP_PATH
-    AppSettings.setInstance()
-    fsEx.remove(appPath, done)
+      delete process.env.APP_PATH
+      AppSettings.setInstance()
+      fsEx.remove(appPath, done)
+    })
   })
 
   it('should create folders, settings file and save appId', (done) => {
