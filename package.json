@@ -99,9 +99,7 @@
       "lcov",
       "text-summary"
     ],
-    "sourceMap": false,
     "all": true,
-    "report-dir": "build",
-    "cache": false
+    "report-dir": "build"
   }
 }
