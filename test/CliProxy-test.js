@@ -4,7 +4,7 @@ const path = require('path')
 const fsEx = require('fs-extra')
 const nock = require('nock')
 
-const CliProxy = require('../lib/CliProxy')
+const CliProxy = require('../lib/app/backend/CliProxy')
 const AppSettings = require('../lib/app/AppSettings')
 
 const appPath = path.join('build', 'appsettings')
