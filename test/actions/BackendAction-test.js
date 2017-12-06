@@ -36,17 +36,22 @@ describe('BackendAction', () => {
     }
   })
 
-  beforeEach(function (done) {
-    fsEx.emptyDirSync(userSettingsFolder)
+  let userSettings
+  let appSettings
+
+  before(() => {
     process.env.USER_PATH = userSettingsFolder
-    const userSettings = new UserSettings()
-    userSettings.getSession().setToken({})
-
     process.env.APP_PATH = appPath
+    fsEx.emptyDirSync(userSettingsFolder)
     fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
-    new AppSettings().setId('foobarTest')
+  })
 
+  beforeEach(function (done) {
+    userSettings = new UserSettings().setToken({})
+    appSettings = new AppSettings().setId('foobarTest')
     backendAction = new BackendAction()
+    backendAction.userSettings = userSettings
+    backendAction.appSettings = appSettings
     fsEx.emptyDirSync(backendAction.pipelinesFolder)
     backendAction.pipelineWatcher = {
       start: (cb) => cb(),
@@ -66,20 +71,14 @@ describe('BackendAction', () => {
     done()
   })
 
-  afterEach(function (done) {
-    delete process.env.USER_PATH
-    delete process.env.APP_PATH
-
+  afterEach((done) => {
     backendAction.pipelineWatcher.close()
-    backendAction.extensionConfigWatcher.stop((err) => {
-      if (err) return done(err)
-      async.parallel([
-        (cb) => fsEx.remove(userSettingsFolder, cb),
-        (cb) => fsEx.remove(appPath, cb)
-      ], (err) => {
-        done(err)
-      })
-    })
+    backendAction.extensionConfigWatcher.stop(done)
+  })
+
+  after(() => {
+    fsEx.removeSync(userSettingsFolder)
+    fsEx.removeSync(appPath)
   })
 
   describe('general', () => {
@@ -97,7 +96,7 @@ describe('BackendAction', () => {
     })
 
     it('should throw if user not logged in', () => {
-      UserSettings.getInstance().getSession().setToken()
+      userSettings.setToken()
       try {
         backendAction.run('start')
       } catch (err) {
@@ -152,7 +151,7 @@ describe('BackendAction', () => {
     it('should call dcClient if pipelines were updated', (done) => {
       const pipeline = {pipeline: {id: 'plFooBarline1'}}
       const appId = 'foobarAppIdDcTestBackendAction'
-      AppSettings.getInstance().setId(appId)
+      appSettings.setId(appId)
 
       const file = path.join(backendAction.pipelinesFolder, 'dCPlTest.json')
       assert.equal(backendAction.pipelines[file], undefined)

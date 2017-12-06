@@ -1,16 +1,25 @@
 const assert = require('assert')
 const nock = require('nock')
 const DcHttpClient = require('../lib/DcHttpClient')
+const UserSettings = require('../lib/user/UserSettings')
+const path = require('path')
+const fsEx = require('fs-extra')
 
 describe('DcHttpClient', () => {
   let dcClient
-  let userSettings
-  let session
+
+  before(() => {
+    process.env.USER_PATH = path.join('build', 'usersettings')
+    fsEx.emptyDirSync(process.env.USER_PATH)
+  })
+
+  after(() => {
+    fsEx.removeSync(process.env.USER_PATH)
+    delete process.env.USER_PATH
+  })
 
   beforeEach(() => {
-    session = {getToken: () => {}}
-    userSettings = {getSession: () => session}
-    dcClient = new DcHttpClient(userSettings)
+    dcClient = new DcHttpClient(new UserSettings().setToken({}), {debug: () => {}})
   })
 
   describe('getInfos', () => {
@@ -33,20 +42,14 @@ describe('DcHttpClient', () => {
     })
 
     it('should update the usertoken on jwt-update', (done) => {
-      const newToken = 'foobarTokenNew'
+      const newToken = 'foobarTokenNew45662'
       const dcMock = nock(dcClient.dcAddress)
         .get(`/applications/${appId}/${infoType}/${deviceId}`)
         .reply(200, null, {'x-jwt': newToken})
 
-      userSettings.save = () => {}
-      let sessionToken
-      session.setToken = (token) => {
-        sessionToken = token
-      }
-
       dcClient.getInfos(infoType, appId, deviceId, (err) => {
         assert.ifError(err)
-        assert.equal(sessionToken, newToken)
+        assert.equal(dcClient.userSettings.getToken(), newToken)
         dcMock.done()
         done()
       })
@@ -83,20 +86,14 @@ describe('DcHttpClient', () => {
     })
 
     it('should update the usertoken on jwt-update', (done) => {
-      const newToken = 'foobarTokenNew'
+      const newToken = 'foobarTokenNew13456'
       const dcMock = nock(dcClient.dcAddress)
         .get(`/applications/${appId}/pipelines`)
         .reply(200, {}, {'x-jwt': newToken})
 
-      userSettings.save = () => {}
-      let sessionToken
-      session.setToken = (token) => {
-        sessionToken = token
-      }
-
       dcClient.downloadPipelines(appId, (err) => {
         assert.ifError(err)
-        assert.equal(sessionToken, newToken)
+        assert.equal(dcClient.userSettings.getToken(), newToken)
         dcMock.done()
         done()
       })
@@ -117,41 +114,39 @@ describe('DcHttpClient', () => {
 
   describe('uploadPipeline', () => {
     it('should update a pipeline', (done) => {
-      nock(dcClient.dcAddress)
+      const dcMock = nock(dcClient.dcAddress)
         .put('/applications/shop_10006/pipelines/someId')
         .reply(204)
 
       dcClient.uploadPipeline({pipeline: {id: 'someId'}}, 'shop_10006', (err) => {
         assert.ifError(err)
+        dcMock.done()
         done()
       })
     })
 
     it('should update the usertoken on jwt-update', (done) => {
-      nock(dcClient.dcAddress)
+      const newToken = 'newToken134'
+      const dcMock = nock(dcClient.dcAddress)
         .put('/applications/shop_10006/pipelines/someId')
-        .reply(204, {}, {'x-jwt': 'newToken'})
-
-      userSettings.save = () => {}
-      let sessionToken
-      session.setToken = (token) => {
-        sessionToken = token
-      }
+        .reply(204, {}, {'x-jwt': newToken})
 
       dcClient.uploadPipeline({pipeline: {id: 'someId'}}, 'shop_10006', (err) => {
         assert.ifError(err)
-        assert.equal(sessionToken, 'newToken')
+        assert.equal(dcClient.userSettings.getToken(), newToken)
+        dcMock.done()
         done()
       })
     })
 
     it('should return an error on dc-error', (done) => {
-      nock(dcClient.dcAddress)
+      const dcMock = nock(dcClient.dcAddress)
         .put('/applications/shop_10006/pipelines/someId')
         .reply(500)
 
       dcClient.uploadPipeline({pipeline: {id: 'someId'}}, 'shop_10006', (err) => {
         assert.ok(err)
+        dcMock.done()
         done()
       })
     })
@@ -159,41 +154,39 @@ describe('DcHttpClient', () => {
 
   describe('removePipeline', () => {
     it('should remove a pipeline', (done) => {
-      nock(dcClient.dcAddress)
+      const dcMock = nock(dcClient.dcAddress)
         .delete('/applications/shop_10006/pipelines/someId')
         .reply(204)
 
       dcClient.removePipeline('someId', 'shop_10006', (err) => {
         assert.ifError(err)
+        dcMock.done()
         done()
       })
     })
 
     it('should update the usertoken on jwt-update', (done) => {
-      nock(dcClient.dcAddress)
+      const newToken = 'newToken4123'
+      const dcMock = nock(dcClient.dcAddress)
         .delete('/applications/shop_10006/pipelines/someId')
-        .reply(204, {}, {'x-jwt': 'newToken'})
-
-      userSettings.save = () => {}
-      let sessionToken
-      session.setToken = (token) => {
-        sessionToken = token
-      }
+        .reply(204, {}, {'x-jwt': newToken})
 
       dcClient.removePipeline('someId', 'shop_10006', (err) => {
         assert.ifError(err)
-        assert.equal(sessionToken, 'newToken')
+        assert.equal(dcClient.userSettings.getToken(), newToken)
+        dcMock.done()
         done()
       })
     })
 
     it('should return an error on dc-error', (done) => {
-      nock(dcClient.dcAddress)
+      const dcMock = nock(dcClient.dcAddress)
         .delete('/applications/shop_10006/pipelines/someId')
         .reply(500)
 
       dcClient.removePipeline('someId', 'shop_10006', (err) => {
         assert.ok(err)
+        dcMock.done()
         done()
       })
     })
@@ -202,41 +195,39 @@ describe('DcHttpClient', () => {
   describe('setStartPageUrl', () => {
     it('should set the start page url', (done) => {
       const startPageUrl = 'http://someurl'
-      nock(dcClient.dcAddress)
+      const dcMock = nock(dcClient.dcAddress)
         .put('/applications/shop_10006/settings/startpage', {startPageUrl})
         .reply(204)
 
       dcClient.setStartPageUrl('shop_10006', startPageUrl, (err) => {
         assert.ifError(err)
+        dcMock.done()
         done()
       })
     })
 
     it('should update the usertoken on jwt-update', (done) => {
-      nock(dcClient.dcAddress)
+      const newToken = 'newToken341'
+      const dcMock = nock(dcClient.dcAddress)
         .put('/applications/shop_10006/settings/startpage')
-        .reply(204, {}, {'x-jwt': 'newToken'})
-
-      userSettings.save = () => {}
-      let sessionToken
-      session.setToken = (token) => {
-        sessionToken = token
-      }
+        .reply(204, {}, {'x-jwt': newToken})
 
       dcClient.setStartPageUrl('shop_10006', 'http://someurl', (err) => {
         assert.ifError(err)
-        assert.equal(sessionToken, 'newToken')
+        assert.equal(dcClient.userSettings.getToken(), newToken)
+        dcMock.done()
         done()
       })
     })
 
     it('should return an error on dc-error', (done) => {
-      nock(dcClient.dcAddress)
+      const dcMock = nock(dcClient.dcAddress)
         .put('/applications/shop_10006/settings/startpage')
         .reply(500)
 
       dcClient.setStartPageUrl('shop_10006', 'http://someurl', (err) => {
         assert.ok(err)
+        dcMock.done()
         done()
       })
     })
@@ -261,20 +252,14 @@ describe('DcHttpClient', () => {
     })
 
     it('should update the usertoken on jwt-update', (done) => {
-      const newToken = 'foobarTokenNew'
+      const newToken = 'foobarTokenNew34'
       const dcMock = nock(dcClient.dcAddress)
         .post(`/applications/${appId}/extensions/${extId}/generateConfig`)
         .reply(200, {}, {'x-jwt': newToken})
 
-      userSettings.save = () => {}
-      let sessionToken
-      session.setToken = (token) => {
-        sessionToken = token
-      }
-
       dcClient.generateExtensionConfig({id: extId}, appId, (err) => {
         assert.ifError(err)
-        assert.equal(sessionToken, newToken)
+        assert.equal(dcClient.userSettings.getToken(), newToken)
         dcMock.done()
         done()
       })
