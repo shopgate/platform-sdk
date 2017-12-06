@@ -28,7 +28,7 @@ describe('StepExecutor', () => {
 
     new AppSettings().setId('shop_10006')._saveExtensions({'@foo/bar': {path: 'foobar'}})
     new UserSettings().setToken({})
-    
+
     const extensionDir = path.join(appPath, AppSettings.EXTENSIONS_FOLDER, 'foobar', 'extension')
     fsEx.emptyDirSync(extensionDir)
     glob(path.join(__dirname, 'fakeSteps', '*.js'), {}, (err, files) => {
