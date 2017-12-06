@@ -6,6 +6,7 @@ const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
 
 const appPath = path.join('build', 'appsettings')
+const userPath = path.join('build', 'usersettings')
 
 describe('FrontendAction', () => {
   let frontendAction
@@ -17,25 +18,19 @@ describe('FrontendAction', () => {
     }
   })
 
-  beforeEach((done) => {
+  beforeEach(() => {
     frontendAction = new FrontendAction()
-    UserSettings.getInstance().getSession().token = {}
+    process.env.USER_PATH = userPath
+    fsEx.emptyDirSync(userPath)
+    new UserSettings().setToken({})
     process.env.APP_PATH = appPath
-    const appSettings = new AppSettings()
     fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
-    appSettings.setId('foobarTest').setAttachedExtensions({}).save()
-
-    appSettings.init()
-    AppSettings.setInstance(appSettings)
-    done()
+    new AppSettings().setId('foobarTest')
   })
 
-  afterEach((done) => {
-    UserSettings.setInstance()
-    AppSettings.setInstance()
+  afterEach(() => {
     delete process.env.APP_PATH
-
-    done()
+    delete process.env.USER_PATH
   })
 
   describe('themeChanged()', () => {

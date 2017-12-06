@@ -17,14 +17,11 @@ describe('BackendProcess', () => {
   beforeEach((done) => {
     appTestFolder = path.join('build', 'appsettings')
     process.env.APP_PATH = appTestFolder
-    fsEx.emptyDirSync(path.join(appTestFolder, AppSettings.SETTINGS_FOLDER))
-    const appSettings = new AppSettings()
-    appSettings.setId('shop_10006').setAttachedExtensions({}).save().init()
-    AppSettings.setInstance(appSettings)
+    new AppSettings().setId('shop_10006')
 
     userTestFolder = path.join('build', 'usersettings')
     process.env.USER_PATH = userTestFolder
-    UserSettings.getInstance().getSession().token = {}
+    new UserSettings().setToken({})
 
     stepExecutor = {
       start: (cb) => cb(),

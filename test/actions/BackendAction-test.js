@@ -39,15 +39,12 @@ describe('BackendAction', () => {
   beforeEach(function (done) {
     fsEx.emptyDirSync(userSettingsFolder)
     process.env.USER_PATH = userSettingsFolder
-    UserSettings.getInstance().getSession().token = {}
+    const userSettings = new UserSettings()
+    userSettings.getSession().setToken({})
 
     process.env.APP_PATH = appPath
-    const appSettings = new AppSettings()
     fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
-    appSettings.setId('foobarTest').setAttachedExtensions({}).save()
-
-    appSettings.init()
-    AppSettings.setInstance(appSettings)
+    new AppSettings().setId('foobarTest')
 
     backendAction = new BackendAction()
     fsEx.emptyDirSync(backendAction.pipelinesFolder)
@@ -70,8 +67,6 @@ describe('BackendAction', () => {
   })
 
   afterEach(function (done) {
-    UserSettings.setInstance()
-    AppSettings.setInstance()
     delete process.env.USER_PATH
     delete process.env.APP_PATH
 
@@ -102,9 +97,9 @@ describe('BackendAction', () => {
     })
 
     it('should throw if user not logged in', () => {
-      UserSettings.getInstance().getSession().token = null
+      UserSettings.getInstance().getSession().setToken()
       try {
-        backendAction.run('attach')
+        backendAction.run('start')
       } catch (err) {
         assert.equal(err.message, 'not logged in')
       }

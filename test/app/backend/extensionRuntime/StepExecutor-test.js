@@ -26,14 +26,11 @@ describe('StepExecutor', () => {
     executor = new StepExecutor(log)
     executor.stepTimeout = 1000
 
-    const appSettings = new AppSettings()
-    fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
-    fsEx.emptyDirSync(path.join(appPath, AppSettings.EXTENSIONS_FOLDER, 'foobar', 'extension'))
-    appSettings.setId('shop_10006').setAttachedExtensions({'@foo/bar': {path: 'foobar'}}).save().init()
-    AppSettings.setInstance(appSettings)
-    UserSettings.getInstance().getSession().token = {}
+    new AppSettings().setId('shop_10006')._saveExtensions({'@foo/bar': {path: 'foobar'}})
+    new UserSettings().setToken({})
+    
     const extensionDir = path.join(appPath, AppSettings.EXTENSIONS_FOLDER, 'foobar', 'extension')
-
+    fsEx.emptyDirSync(extensionDir)
     glob(path.join(__dirname, 'fakeSteps', '*.js'), {}, (err, files) => {
       assert.ifError(err)
       async.each(files, (file, eCb) => fsEx.copy(file, path.join(extensionDir, path.basename(file)), eCb), (err) => {
@@ -44,8 +41,6 @@ describe('StepExecutor', () => {
   })
 
   afterEach((done) => {
-    UserSettings.setInstance()
-    AppSettings.setInstance()
     delete process.env.SGCLOUD_DC_WS_ADDRESS
     delete process.env.APP_PATH
     delete process.env.USER_PATH

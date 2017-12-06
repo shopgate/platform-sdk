@@ -78,13 +78,10 @@ describe('FrontendSetup', () => {
     process.env.USER_PATH = userSettingsPath
     process.env.APP_PATH = appSettingsPath
 
-    const appSettings = new AppSettings()
-    appSettings.frontendSettings = defaultConfig
     fsEx.emptyDirSync(join(appSettingsPath, AppSettings.SETTINGS_FOLDER))
-    appSettings.setId(appId).setAttachedExtensions({}).save().init()
-    AppSettings.setInstance(appSettings)
+    new AppSettings().setId(appId).getFrontendSettings()._saveSettings(defaultConfig)
     fsEx.emptyDirSync(userSettingsPath)
-    UserSettings.getInstance().getSession().token = {}
+    new UserSettings().setToken({})
 
     frontendSetup = new FrontendSetup()
     frontendSetup.defaultConfig = defaultConfig

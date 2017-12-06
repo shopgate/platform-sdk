@@ -29,12 +29,8 @@ describe('FrontendProcess', () => {
     process.env.USER_PATH = userSettingsPath
     process.env.APP_PATH = appSettingsPath
 
-    const appSettings = new AppSettings()
-    fsEx.emptyDirSync(join(appSettingsPath, AppSettings.SETTINGS_FOLDER))
-    appSettings.setId(appId).setAttachedExtensions({}).save().init()
-    AppSettings.setInstance(appSettings)
-    fsEx.emptyDirSync(userSettingsPath)
-    UserSettings.getInstance().getSession().token = {}
+    new AppSettings().setId(appId)
+    new UserSettings().setToken({})
 
     const FrontendProcess = proxyquire('../../../lib/app/frontend/FrontendProcess', {
       child_process: {
@@ -58,8 +54,6 @@ describe('FrontendProcess', () => {
   })
 
   afterEach((done) => {
-    UserSettings.setInstance()
-
     delete process.env.USER_PATH
     delete process.env.APP_PATH
 

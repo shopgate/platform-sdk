@@ -22,16 +22,13 @@ describe('ExtensionAction', () => {
 
     const appSettings = new AppSettings()
     fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
-    appSettings.setId(appId).setAttachedExtensions({}).save().init()
-    AppSettings.setInstance(appSettings)
+    appSettings.setId(appId)
 
     fsEx.emptyDirSync(userSettingsFolder)
-    UserSettings.getInstance().getSession().token = {}
+    new UserSettings().setToken({})
   })
 
   afterEach((done) => {
-    UserSettings.setInstance()
-    AppSettings.setInstance()
     delete process.env.USER_PATH
     delete process.env.APP_PATH
     async.parallel([

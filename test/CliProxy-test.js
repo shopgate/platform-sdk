@@ -3,31 +3,31 @@ const request = require('request')
 const path = require('path')
 const fsEx = require('fs-extra')
 const nock = require('nock')
-
-const CliProxy = require('../lib/app/backend/CliProxy')
+const proxyquire = require('proxyquire')
 const AppSettings = require('../lib/app/AppSettings')
 
 const appPath = path.join('build', 'appsettings')
+
+const CliProxy = proxyquire(
+  '../lib/app/backend/CliProxy', {
+    '../../logger': {info: () => {}}
+  }
+)
 
 describe('CliProxy', () => {
   let cliProxy
 
   beforeEach(() => {
-    cliProxy = new CliProxy()
-
     process.env.APP_PATH = appPath
-
-    const appSettings = new AppSettings()
     fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
-    appSettings.setId('foobarTest').setAttachedExtensions({}).save().init()
-    AppSettings.setInstance(appSettings)
 
+    cliProxy = new CliProxy(new AppSettings().setId('foobarTest'))
     nock.disableNetConnect()
   })
 
   afterEach((done) => {
-    AppSettings.setInstance()
     delete process.env.APP_PATH
+
     nock.enableNetConnect()
     cliProxy.close((err) => {
       assert.ifError(err)

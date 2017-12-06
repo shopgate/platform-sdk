@@ -8,11 +8,12 @@
 const assert = require('assert')
 const FrontendSettings = require('../../../lib/app/frontend/FrontendSettings')
 
-let settings = new FrontendSettings()
-
 describe('FrontendSettings', () => {
+  let settingsPath
+  let settings
   beforeEach(() => {
-    settings.settings = {}
+    settingsPath = 'foobar'
+    settings = new FrontendSettings(settingsPath)
   })
 
   it('can be instanciated', () => {
