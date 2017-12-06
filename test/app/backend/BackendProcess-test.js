@@ -26,13 +26,18 @@ describe('BackendProcess', () => {
     process.env.USER_PATH = userTestFolder
     UserSettings.getInstance().getSession().token = {}
 
-    stepExecutor = { start: (cb) => cb(), stop: (cb) => cb(), startWatcher: (cb) => cb(), stopWatcher: (cb) => cb() }
+    stepExecutor = {
+      start: (cb) => cb(),
+      stop: (cb) => cb(),
+      startWatcher: (cb) => cb(),
+      stopWatcher: (cb) => cb()
+    }
 
     portfinder.getPort((err, port) => {
       assert.ifError(err)
 
       process.env.SGCLOUD_DC_ADDRESS = `http://localhost:${port}`
-      backendProcess = new BackendProcess({useFsEvents: false, interval: 1, ignoreInitial: true})
+      backendProcess = new BackendProcess({useFsEvents: false, ignoreInitial: true})
       backendProcess.executor = stepExecutor
       mockServer = require('socket.io').listen(port)
       done()
@@ -42,21 +47,17 @@ describe('BackendProcess', () => {
   afterEach((done) => {
     UserSettings.setInstance()
     AppSettings.setInstance()
-    backendProcess.attachedExtensionsWatcher.stop(() => {
-      backendProcess.disconnect((err) => {
-        if (err) return done(err)
-        mockServer.close((err) => {
-          if (err) return done(err)
-          delete process.env.SGCLOUD_DC_ADDRESS
-          delete process.env.APP_PATH
-          delete process.env.USER_PATH
-          async.parallel([
-            (cb) => fsEx.remove(appTestFolder, cb),
-            (cb) => fsEx.remove(userTestFolder, cb)
-          ], done)
-        })
-      })
-    })
+    delete process.env.SGCLOUD_DC_ADDRESS
+    delete process.env.APP_PATH
+    delete process.env.USER_PATH
+
+    async.parallel([
+      (cb) => backendProcess.attachedExtensionsWatcher.stop(cb),
+      (cb) => fsEx.remove(appTestFolder, cb),
+      (cb) => fsEx.remove(userTestFolder, cb),
+      (cb) => mockServer.close(cb),
+      (cb) => backendProcess.disconnect(cb)
+    ], done)
   })
 
   describe('select application', () => {
