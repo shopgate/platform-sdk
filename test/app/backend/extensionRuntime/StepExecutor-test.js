@@ -162,7 +162,7 @@ describe('StepExecutor', () => {
     }
     executor.execute(input, stepMeta, (err) => {
       assert.ok(err)
-      assert.ok(err.message.endsWith('notThere.js" not found'))
+      assert.ok(err.message.endsWith('notThere.js not found'))
       done()
     })
   })
