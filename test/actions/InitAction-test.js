@@ -86,7 +86,7 @@ describe('InitAction', () => {
 
     new InitAction().run({appId: 'test'}, (err) => {
       fsEx.remove(appPath, () => {
-        assert.equal(err, 'The application test is not available or permissions are missing (message: Getting application data failed). Please check the application at developer.shopgate.com!')
+        assert.equal(err.message, 'The application test is not available or permissions are missing (message: Getting application data failed). Please check the application at developer.shopgate.com!')
         delete process.env.APP_PATH
         AppSettings.setInstance()
         dcMock.done()
