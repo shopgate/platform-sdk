@@ -162,7 +162,21 @@ describe('StepExecutor', () => {
     }
     executor.execute(input, stepMeta, (err) => {
       assert.ok(err)
-      assert.ok(err.message.endsWith('notThere.js" not found'))
+      assert.ok(err.message.endsWith('notThere.js not found'))
+      done()
+    })
+  })
+
+  it('should fail if step file contains a syntax error', (done) => {
+    const input = {foo: 'bar'}
+    const stepMeta = {
+      id: '@foo/bar',
+      path: '@foo/bar/crashing2.js',
+      meta: {appId: 'shop_123'}
+    }
+    executor.execute(input, stepMeta, (err) => {
+      assert.ok(err)
+      assert.equal(err.message, 'Cannot read property \'notThere\' of undefined')
       done()
     })
   })
