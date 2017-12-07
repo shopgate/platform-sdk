@@ -4,18 +4,21 @@
 
 const commander = require('commander')
 const semver = require('semver')
+const updateNotifier = require('update-notifier')
 const logger = require('../lib/logger')
 
 // set version (includes version command)
-const {version, engines} = require('../package.json')
+const pkg = require('../package.json')
 
 // check node version
-if (!semver.satisfies(process.version, engines.node)) {
+if (!semver.satisfies(process.version, pkg.engines.node)) {
   console.error(`You have a outdated node version (${process.version}). Please upgrade to the newest version`)
   process.exit(1)
 }
 
-commander.version(version)
+updateNotifier({pkg}).notify()
+
+commander.version(pkg.version)
 
 // load all custom actions
 const actions = require('../')
