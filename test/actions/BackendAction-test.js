@@ -68,6 +68,9 @@ describe('BackendAction', () => {
     }
 
     backendAction.dcClient = {}
+    backendAction.backendProcess = new BackendProcess()
+    backendAction.backendProcess.triggerPipelineReload = (cb) => cb()
+
     done()
   })
 
@@ -123,8 +126,6 @@ describe('BackendAction', () => {
 
   describe('watching', () => {
     it('should update pipelines', (done) => {
-      backendAction.backendProcess = new BackendProcess()
-
       backendAction.extensionConfigWatcher = {
         start: () => { return backendAction.extensionConfigWatcher },
         stop: (cb) => { cb() },
