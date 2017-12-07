@@ -62,9 +62,7 @@ describe('BackendAction', () => {
 
     backendAction.cliProxy = {
       start: (cb) => cb(),
-      server: {
-        close: (cb) => cb()
-      }
+      close: (cb) => cb()
     }
 
     backendAction.dcClient = {}

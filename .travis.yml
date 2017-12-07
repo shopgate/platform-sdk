@@ -18,6 +18,9 @@ before_script:
   - if [[ "$TRAVIS_NODE_VERSION" == "8" && "$TRAVIS_OS_NAME" == "linux" ]]; then npm run lint; fi
   - if [[ "$TRAVIS_NODE_VERSION" == "8" && "$TRAVIS_OS_NAME" == "linux" ]]; then npm run check; fi
 
+install:
+  - npm i --no-package-lock
+
 script:
   - if [[ "$TRAVIS_NODE_VERSION" == "8" && "$TRAVIS_OS_NAME" == "linux" ]]; then npm run cover; else npm t; fi
 
