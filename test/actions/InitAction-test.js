@@ -41,12 +41,10 @@ describe('InitAction', () => {
   it('should throw if user not logged in', (done) => {
     UserSettings.getInstance().getSession().token = null
     const init = new InitAction()
-    try {
-      init.run()
-    } catch (err) {
+    init.run(null, (err) => {
       assert.equal(err.message, 'not logged in')
       done()
-    }
+    })
   })
 
   it('should throw if application already initialized', (done) => {
@@ -61,18 +59,12 @@ describe('InitAction', () => {
 
     const init = new InitAction()
 
-    let wasCatched = false
-    try {
-      init.run()
-    } catch (err) {
-      wasCatched = true
+    init.run(null, (err) => {
       assert.equal(err.message, `The current folder is already initialized for application ${appId}`)
-    }
-
-    assert.ok(wasCatched)
-    delete process.env.APP_PATH
-    AppSettings.setInstance()
-    fsEx.remove(appPath, done)
+      delete process.env.APP_PATH
+      AppSettings.setInstance()
+      fsEx.remove(appPath, done)
+    })
   })
 
   it('should throw an error because getting the application data as validation fails', (done) => {
@@ -119,11 +111,11 @@ describe('InitAction', () => {
   describe('getAppId', () => {
     it('should return appId if already set in options', (done) => {
       const init = new InitAction()
-      const appId = 'test'
-      init.options = {appId}
+      const applicationId = 'test'
+      init.options = {appId: applicationId}
       init.getAppId(null, (err, id) => {
         assert.ifError(err)
-        assert.equal(id, appId)
+        assert.equal(id, applicationId)
         done()
       })
     })
@@ -136,7 +128,7 @@ describe('InitAction', () => {
       function prompt (questions) {
         assert.equal(questions.length, 1)
         assert.deepEqual(questions[0], {type: 'input', name: 'appId', message: 'Enter your Sandbox App ID:'})
-        return Promise.resolve({appId})
+        return Promise.resolve({appId: appId})
       }
 
       init.getAppId(prompt, (err, id) => {
