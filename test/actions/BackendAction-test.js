@@ -3,7 +3,6 @@ const sinon = require('sinon')
 const path = require('path')
 const fsEx = require('fs-extra')
 const proxyquire = require('proxyquire')
-const async = require('neo-async')
 
 const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
