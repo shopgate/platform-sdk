@@ -12,7 +12,7 @@ const pkg = require('../package.json')
 
 // check node version
 if (!semver.satisfies(process.version, pkg.engines.node)) {
-  console.error(`You have a outdated node version (${process.version}). Please upgrade to the newest version`)
+  console.error(`You have an outdated node version (${process.version}). Please upgrade to the newest version`)
   process.exit(1)
 }
 
