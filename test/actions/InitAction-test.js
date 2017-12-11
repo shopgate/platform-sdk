@@ -7,6 +7,7 @@ const userSettingsFolder = path.join('build', 'usersettings')
 const appPath = path.join('build', 'appsettings')
 const sinon = require('sinon')
 const fsEx = require('fs-extra')
+const nock = require('nock')
 
 describe('InitAction', () => {
   it('should register', () => {
@@ -26,12 +27,14 @@ describe('InitAction', () => {
 
   beforeEach(() => {
     process.env.USER_PATH = userSettingsFolder
+    process.env.SGCLOUD_DC_ADDRESS = 'http://test.test'
     fsEx.emptyDirSync(userSettingsFolder)
   })
 
   afterEach((done) => {
     UserSettings.setInstance()
     delete process.env.USER_PATH
+    delete process.env.SGCLOUD_DC_ADDRESS
     fsEx.remove(userSettingsFolder, done)
   })
 
@@ -64,15 +67,44 @@ describe('InitAction', () => {
     })
   })
 
+  it('should throw an error because getting the application data as validation fails', (done) => {
+    AppSettings.setInstance()
+    process.env.APP_PATH = appPath
+    UserSettings.getInstance().getSession().token = {}
+
+    const dcMock = nock(process.env.SGCLOUD_DC_ADDRESS)
+    .get(`/applications/test`)
+    .reply(403, {})
+
+    new InitAction().run({appId: 'test'}, (err) => {
+      fsEx.remove(appPath, () => {
+        assert.equal(err.message, 'The application test is not available or permissions are missing (message: Getting application data failed). Please check the application at developer.shopgate.com!')
+        delete process.env.APP_PATH
+        AppSettings.setInstance()
+        dcMock.done()
+        done()
+      })
+    })
+  })
+
   it('should create folders, settings file and save appId', (done) => {
     AppSettings.setInstance()
     process.env.APP_PATH = appPath
     UserSettings.getInstance().getSession().token = {}
 
-    new InitAction().run({appId: 'test'}, () => {
-      delete process.env.APP_PATH
-      AppSettings.setInstance()
-      fsEx.remove(appPath, done)
+    const dcMock = nock(process.env.SGCLOUD_DC_ADDRESS)
+    .get(`/applications/test`)
+    .reply(200, {})
+
+    new InitAction().run({appId: 'test'}, (err) => {
+      fsEx.remove(appPath, (err2) => {
+        assert.ifError(err)
+        assert.ifError(err2)
+        delete process.env.APP_PATH
+        AppSettings.setInstance()
+        dcMock.done()
+        done()
+      })
     })
   })
 
