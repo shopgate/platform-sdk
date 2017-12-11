@@ -4,6 +4,10 @@
 * The command sgcloud init will now exit with an error if the application does not exist as development application within the shopgate cloud system
 * Better error log if a local step fails
 * Fixed unhandled error exception when using unkown command options on init or login command
+<<<<<<< HEAD
+* Fixed hanging unit tests
+=======
 * Added update check for the sdk; if outdated, any sgcloud command will show the update message
+>>>>>>> 7bb23253fc195083ad7c900b99192672aa2edb17
 
 ## v1.0.0 - Initial Release
