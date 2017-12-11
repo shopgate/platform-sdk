@@ -62,9 +62,7 @@ describe('BackendAction', () => {
 
     backendAction.cliProxy = {
       start: (cb) => cb(),
-      server: {
-        close: (cb) => cb()
-      }
+      close: (cb) => cb()
     }
 
     backendAction.dcClient = {}
@@ -208,14 +206,14 @@ describe('BackendAction', () => {
 
     it('should throw error if dcClient is not reachable', (done) => {
       const pipeline = {pipeline: {id: 'plFooBarline2'}}
-      backendAction.dcClient.uploadPipeline = (pl, id, cb) => cb(new Error('EUNKNOWN'))
+      backendAction.dcClient.uploadPipeline = (pl, id, cb) => cb(new Error(`error`))
 
       const file = path.join(backendAction.pipelinesFolder, 'dCPlTest2.json')
       fsEx.writeJson(file, pipeline, (err) => {
         assert.ifError(err)
         backendAction._pipelineChanged(file, (err) => {
           assert.ok(err)
-          assert.equal(err.message, `Could not upload pipeline 'plFooBarline2': EUNKNOWN`)
+          assert.equal(err.message, `error`)
           done()
         })
       })

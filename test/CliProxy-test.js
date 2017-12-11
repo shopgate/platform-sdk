@@ -29,7 +29,10 @@ describe('CliProxy', () => {
     AppSettings.setInstance()
     delete process.env.APP_PATH
     nock.enableNetConnect()
-    fsEx.remove(appPath, done)
+    cliProxy.close((err) => {
+      assert.ifError(err)
+      fsEx.remove(appPath, done)
+    })
   })
 
   describe('start()', () => {
@@ -105,7 +108,7 @@ describe('CliProxy', () => {
     it('should start server', (done) => {
       cliProxy._startPipelineServer(1238, 'rapidUrl', 1, 1, 10006, (err, server) => {
         assert.ifError(err)
-        server.close(done)
+        done()
       })
     })
   })
@@ -170,7 +173,7 @@ describe('CliProxy', () => {
           assert.equal(body, 'Custom Error')
           api.done()
           nock.disableNetConnect()
-          server.close(done)
+          done()
         })
       })
     })
@@ -207,7 +210,7 @@ describe('CliProxy', () => {
           assert.deepEqual(body, {'error': {'message': 'SomeError'}})
           api.done()
           nock.disableNetConnect()
-          server.close(done)
+          done()
         })
       })
     })
