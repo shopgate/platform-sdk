@@ -7,6 +7,7 @@ const userSettingsFolder = path.join('build', 'usersettings')
 const appPath = path.join('build', 'appsettings')
 const sinon = require('sinon')
 const fsEx = require('fs-extra')
+const nock = require('nock')
 
 describe('InitAction', () => {
   it('should register', () => {
@@ -26,13 +27,19 @@ describe('InitAction', () => {
 
   beforeEach(() => {
     process.env.USER_PATH = userSettingsFolder
+    process.env.SGCLOUD_DC_ADDRESS = 'http://test.test'
     fsEx.emptyDirSync(userSettingsFolder)
   })
 
   afterEach((done) => {
     UserSettings.setInstance()
     delete process.env.USER_PATH
-    fsEx.remove(userSettingsFolder, done)
+    delete process.env.SGCLOUD_DC_ADDRESS
+    fsEx.remove(userSettingsFolder, () => {
+      delete process.env.APP_PATH
+      AppSettings.setInstance()
+      fsEx.remove(appPath, done)
+    })
   })
 
   it('should throw if user not logged in', (done) => {
@@ -44,23 +51,51 @@ describe('InitAction', () => {
     })
   })
 
-  it('should throw if application already initialized', (done) => {
+  it('should reinit the application if selected', (done) => {
     UserSettings.getInstance().getSession().token = {}
     const appId = 'foobarTest'
-
     process.env.APP_PATH = appPath
     const appSettings = new AppSettings()
     fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
     appSettings.setId(appId).save().init()
     AppSettings.setInstance(appSettings)
 
-    const init = new InitAction()
+    const dcMock = nock(process.env.SGCLOUD_DC_ADDRESS)
+      .get(`/applications/test`)
+      .reply(200, {})
 
-    init.run(null, (err) => {
-      assert.equal(err.message, `The current folder is already initialized for application ${appId}`)
-      delete process.env.APP_PATH
-      AppSettings.setInstance()
-      fsEx.remove(appPath, done)
+    const init = new InitAction()
+    init.permitDeletion = (prompt, cb) => cb(null, true)
+
+    init.run({appId: 'test'}, (err) => {
+      fsEx.remove(appPath, (err2) => {
+        assert.ifError(err)
+        assert.ifError(err2)
+        delete process.env.APP_PATH
+        AppSettings.setInstance()
+        dcMock.done()
+        done()
+      })
+    })
+  })
+
+  it('should throw an error because getting the application data as validation fails', (done) => {
+    AppSettings.setInstance()
+    process.env.APP_PATH = appPath
+    UserSettings.getInstance().getSession().token = {}
+
+    const dcMock = nock(process.env.SGCLOUD_DC_ADDRESS)
+    .get(`/applications/test`)
+    .reply(403, {})
+
+    new InitAction().run({appId: 'test'}, (err) => {
+      fsEx.remove(appPath, () => {
+        assert.equal(err.message, 'The application test is not available or permissions are missing (message: Getting application data failed). Please check the application at developer.shopgate.com!')
+        delete process.env.APP_PATH
+        AppSettings.setInstance()
+        dcMock.done()
+        done()
+      })
     })
   })
 
@@ -69,10 +104,19 @@ describe('InitAction', () => {
     process.env.APP_PATH = appPath
     UserSettings.getInstance().getSession().token = {}
 
-    new InitAction().run({appId: 'test'}, () => {
-      delete process.env.APP_PATH
-      AppSettings.setInstance()
-      fsEx.remove(appPath, done)
+    const dcMock = nock(process.env.SGCLOUD_DC_ADDRESS)
+    .get(`/applications/test`)
+    .reply(200, {})
+
+    new InitAction().run({appId: 'test'}, (err) => {
+      fsEx.remove(appPath, (err2) => {
+        assert.ifError(err)
+        assert.ifError(err2)
+        delete process.env.APP_PATH
+        AppSettings.setInstance()
+        dcMock.done()
+        done()
+      })
     })
   })
 
@@ -102,6 +146,23 @@ describe('InitAction', () => {
       init.getAppId(prompt, (err, id) => {
         assert.ifError(err)
         assert.equal(id, appId)
+        done()
+      })
+    })
+  })
+
+  describe('permitDeletion', () => {
+    it('should use prompt', (done) => {
+      const init = new InitAction()
+
+      function prompt (question) {
+        assert.deepEqual(question, {type: 'input', name: 'overwrite', message: 'Do you really want to overwrite your current application? (y/n)'})
+        return Promise.resolve({overwrite: 'y'})
+      }
+
+      init.permitDeletion(prompt, (err, res) => {
+        assert.ifError(err)
+        assert.equal(res, true)
         done()
       })
     })
