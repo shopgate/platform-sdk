@@ -4,6 +4,7 @@
 * The command sgcloud init will now exit with an error if the application does not exist as development application within the shopgate cloud system
 * Better error log if a local step fails
 * Fixed unhandled error exception when using unkown command options on init or login command
+* Fixed hanging unit tests
 * Added update check for the sdk; if outdated, any sgcloud command will show the update message
 * Trusted pipelines are now supported
 
