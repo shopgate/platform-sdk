@@ -1,4 +1,4 @@
-## v1.0.1
+## v1.1.0
 * Pipeline synchronization will now only occur every 500ms to avoid needless uploading of (unfinished) pipelines
 * The command sgcloud init will now exit with an error if the application does not exist as development application within the shopgate cloud system
 * Better error log if a local step fails
