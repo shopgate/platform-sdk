@@ -174,10 +174,28 @@ describe('StepExecutor', () => {
       path: '@foo/bar/crashing2.js',
       meta: {appId: 'shop_123'}
     }
+
+    let exitCalled = false
+    executor.start = (cb) => {
+      assert.equal(executor.childProcess, undefined)
+      assert.ok(exitCalled)
+      done()
+    }
+
+    const onExit = executor.onExit.bind(executor)
+    executor.onExit = (code, signal) => {
+      if (!exitCalled) {
+        assert.equal(code, 1)
+        assert.equal(signal, null)
+      }
+      assert.ok(executor.childProcess)
+      exitCalled = true
+      onExit(code, signal)
+    }
+
     executor.execute(input, stepMeta, (err) => {
       assert.ok(err)
       assert.equal(err.message, 'Cannot read property \'notThere\' of undefined')
-      done()
     })
   })
 
