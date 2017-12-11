@@ -95,7 +95,7 @@ describe('BackendProcess', () => {
         })
 
         sock.on('registerExtension', (data, cb) => {
-          assert.deepEqual(data, {extensionId: 'testExt'})
+          assert.deepEqual(data, {extensionId: 'testExt', trusted: false})
           cb()
           done()
         })
@@ -103,7 +103,7 @@ describe('BackendProcess', () => {
       backendProcess.connect(() => {
         fsEx.writeJSON(
           backendProcess.attachedExtensionsWatcher.configPath,
-          {attachedExtensions: {testExt: {id: 'testExt'}}},
+          {attachedExtensions: {testExt: {id: 'testExt', trusted: false}}},
           () => {}
         )
       })
@@ -117,7 +117,7 @@ describe('BackendProcess', () => {
         })
 
         sock.on('deregisterExtension', (data, cb) => {
-          assert.deepEqual(data, {extensionId: 'testExt'})
+          assert.deepEqual(data, {extensionId: 'testExt', trusted: false})
           cb()
           done()
         })
@@ -126,7 +126,7 @@ describe('BackendProcess', () => {
       backendProcess.connect(() => {
         fsEx.writeJSON(
           backendProcess.attachedExtensionsWatcher.configPath,
-          {attachedExtensions: {testExt: {id: 'testExt'}}},
+          {attachedExtensions: {testExt: {id: 'testExt', trusted: false}}},
           () => {
             setTimeout(() => {
               fsEx.writeJSON(backendProcess.attachedExtensionsWatcher.configPath,
