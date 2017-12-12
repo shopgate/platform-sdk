@@ -6,5 +6,6 @@
 * Fixed unhandled error exception when using unkown command options on init or login command
 * Fixed hanging unit tests
 * Added update check for the sdk; if outdated, any sgcloud command will show the update message
+* Trusted pipelines are now supported
 
 ## v1.0.0 - Initial Release

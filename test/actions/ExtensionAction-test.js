@@ -82,7 +82,7 @@ describe('ExtensionAction', () => {
       fsEx.writeJSONSync(path.join(extPath, 'extension-config.json'), {id})
 
       action.run('attach', [name])
-      assert.deepEqual(AppSettings.getInstance().attachedExtensions[id], {path: name})
+      assert.deepEqual(AppSettings.getInstance().attachedExtensions[id], {path: name, trusted: false})
     })
 
     it('should attach all local extensions if no one is given', () => {
@@ -100,8 +100,8 @@ describe('ExtensionAction', () => {
       action.run('attach')
 
       assert.deepEqual(AppSettings.getInstance().attachedExtensions, {
-        existentExtension1: { path: 'existentExtension1' },
-        existentExtension2: { path: 'existentExtension2' }
+        existentExtension1: { path: 'existentExtension1', trusted: false },
+        existentExtension2: { path: 'existentExtension2', trusted: false }
       })
     })
 
@@ -155,7 +155,7 @@ describe('ExtensionAction', () => {
       fsEx.ensureDirSync(extPath)
       fsEx.writeJSONSync(path.join(extPath, 'extension-config.json'), {id: name})
 
-      AppSettings.getInstance().attachExtension(name, name)
+      AppSettings.getInstance().attachExtension(name, {id: name, trusted: false})
       action.run('detach', [name])
       assert.deepEqual(AppSettings.getInstance().attachedExtensions, {})
     })
@@ -176,8 +176,8 @@ describe('ExtensionAction', () => {
     })
 
     it('should detach all extensions if none was specified', () => {
-      AppSettings.getInstance().attachExtension('ext1', 'ext1')
-      AppSettings.getInstance().attachExtension('ext2', 'ext2')
+      AppSettings.getInstance().attachExtension('ext1', {id: 'ext1'})
+      AppSettings.getInstance().attachExtension('ext2', {id: 'ext2'})
 
       action.run('detach')
       assert.deepEqual(AppSettings.getInstance().attachedExtensions, {})

@@ -11,7 +11,7 @@ describe('PipelineWatcher', () => {
   beforeEach((done) => {
     process.env.APP_PATH = appPath
     pipelineWatcher = new PipelineWatcher()
-    fsEx.emptyDirSync(pipelineWatcher.pipelineFolder)
+    fsEx.emptyDirSync(path.join(pipelineWatcher.appFolder, 'pipelines'))
     pipelineWatcher.start(done)
   })
 
@@ -22,7 +22,7 @@ describe('PipelineWatcher', () => {
   })
 
   it('should emit changed pipeline', (done) => {
-    const pipelinePath = path.join(pipelineWatcher.pipelineFolder, 'somePipeline.json')
+    const pipelinePath = path.join(pipelineWatcher.appFolder, 'pipelines', 'somePipeline.json')
 
     pipelineWatcher.on('all', (event, file) => {
       assert.equal(event, 'add')
