@@ -6,6 +6,7 @@
 * Fixed unhandled error exception when using unkown command options on init or login command
 * Fixed hanging unit tests
 * Added update check for the sdk; if outdated, any sgcloud command will show the update message
+* Trusted pipelines are now supported
 * The SDK will now ask the user for permission to overwrite the local application-config if a new init is executed in an existing app-folder.
 
 ## v1.0.0 - Initial Release

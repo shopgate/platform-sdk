@@ -57,7 +57,7 @@ describe('InitAction', () => {
     process.env.APP_PATH = appPath
     const appSettings = new AppSettings()
     fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
-    appSettings.setId(appId).save().init()
+    appSettings.setId(appId).setAttachedExtensions({}).save().init()
     AppSettings.setInstance(appSettings)
 
     const dcMock = nock(process.env.SGCLOUD_DC_ADDRESS)
