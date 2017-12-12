@@ -124,20 +124,14 @@ describe('BackendAction', () => {
       backendAction.backendProcess = new BackendProcess()
 
       backendAction.extensionConfigWatcher = {
-        start: () => { return backendAction.extensionConfigWatcher },
-        stop: (cb) => { cb() },
-        on: (name, cb) => { cb() }
-      }
-      backendAction.themeConfigWatcher = {
-        start: () => { return backendAction.themeConfigWatcher },
-        stop: (cb) => { cb() },
-        on: (name, cb) => { cb() }
+        start: (cb) => cb(),
+        stop: (cb) => cb(),
+        on: (name, fn) => fn()
       }
 
       backendAction.dcClient.downloadPipelines = (appId, trusted, cb) => cb(null, [{pipeline: {id: 'testPipeline'}}])
-      backendAction.dcClient.removePipeline = (pId, aId, cb) => cb()
-      backendAction._extensionChanged = (cfg, cb = () => {}) => {}
-      backendAction._themeChanged = (cfg, cb = () => {}) => {}
+      backendAction.dcClient.removePipeline = (pId, aId, trusted, cb) => cb()
+      backendAction._extensionChanged = (cfg, cb = () => {}) => cb()
 
       try {
         backendAction._startSubProcess()
@@ -216,7 +210,7 @@ describe('BackendAction', () => {
           done()
         })
       })
-    }).timeout(5000)
+    })
 
     it('should return if pipeline was changed', (done) => {
       const pipeline = {pipeline: {id: 'plFooBarline3'}}
