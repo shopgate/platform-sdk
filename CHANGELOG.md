@@ -7,5 +7,5 @@
 * Fixed hanging unit tests
 * Added update check for the sdk; if outdated, any sgcloud command will show the update message
 * Trusted pipelines are now supported
-
+* Improved log, so that step-logs are prefixed with the corresponding step
 ## v1.0.0 - Initial Release
