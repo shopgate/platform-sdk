@@ -45,7 +45,7 @@
     ]
   },
   "dependencies": {
-    "@shopgate/cloud-sdk-webpack": "^1.5.4",
+    "@shopgate/cloud-sdk-webpack": "^1.5.6",
     "bunyan": "^1.8.12",
     "bunyan-format": "^0.2.1",
     "chalk": "^2.3.0",
