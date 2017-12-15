@@ -93,12 +93,14 @@ describe('BackendAction', () => {
       commander.command = sinon.stub().returns(commander)
       commander.description = sinon.stub().returns(commander)
       commander.action = sinon.stub().returns(commander)
+      commander.option = sinon.stub().returns(commander)
 
       backendAction.register(commander)
 
       assert(commander.command.calledWith('backend <action>'))
       assert(commander.description.calledOnce)
       assert(commander.action.calledOnce)
+      assert(commander.option.calledOnce)
     })
 
     it('should throw if user not logged in', () => {
