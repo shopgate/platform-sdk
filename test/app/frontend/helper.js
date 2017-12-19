@@ -35,8 +35,6 @@ const setupAppEnvironment = (callback = () => {}) => {
  * @param {Function} callback Anything local that should be called in afterEach afterwards.
  */
 const clearAppEnviroment = (callback = () => {}) => {
-  UserSettings.setInstance()
-
   delete process.env.USER_PATH
   delete process.env.APP_PATH
   delete process.env.appId

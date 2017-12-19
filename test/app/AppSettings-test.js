@@ -27,9 +27,9 @@ describe('AppSettings', () => {
     fsEx.writeJsonSync(appSettings.settingsFile, {})
     fsEx.writeJsonSync(appSettings.attachedExtensionsFile, {})
     try {
-      appSettings.init()
+      appSettings.validate()
     } catch (err) {
-      assert.equal(err.message, 'application data invalid')
+      assert.equal(err.message, 'application not initialized')
       done()
     }
   })

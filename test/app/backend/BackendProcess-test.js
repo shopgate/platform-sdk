@@ -6,6 +6,7 @@ const UserSettings = require('../../../lib/user/UserSettings')
 const BackendProcess = require('../../../lib/app/backend/BackendProcess')
 const portfinder = require('portfinder')
 const async = require('neo-async')
+const logger = require('../../../lib/logger')
 
 describe('BackendProcess', () => {
   let backendProcess
@@ -13,15 +14,17 @@ describe('BackendProcess', () => {
   let mockServer
   let userTestFolder
   let appTestFolder
+  let userSettings
+  let appSettings
 
   beforeEach((done) => {
     appTestFolder = path.join('build', 'appsettings')
     process.env.APP_PATH = appTestFolder
-    new AppSettings().setId('shop_10006')
+    appSettings = new AppSettings().setId('shop_10006')
 
     userTestFolder = path.join('build', 'usersettings')
     process.env.USER_PATH = userTestFolder
-    new UserSettings().setToken({})
+    userSettings = new UserSettings().setToken({})
 
     stepExecutor = {
       start: (cb) => cb(),
@@ -34,7 +37,7 @@ describe('BackendProcess', () => {
       assert.ifError(err)
 
       process.env.SGCLOUD_DC_ADDRESS = `http://localhost:${port}`
-      backendProcess = new BackendProcess({useFsEvents: false, ignoreInitial: true})
+      backendProcess = new BackendProcess(userSettings, appSettings, logger)
       backendProcess.executor = stepExecutor
       mockServer = require('socket.io').listen(port)
       done()
@@ -42,8 +45,6 @@ describe('BackendProcess', () => {
   })
 
   afterEach((done) => {
-    UserSettings.setInstance()
-    AppSettings.setInstance()
     delete process.env.SGCLOUD_DC_ADDRESS
     delete process.env.APP_PATH
     delete process.env.USER_PATH
@@ -92,7 +93,7 @@ describe('BackendProcess', () => {
         })
 
         sock.on('registerExtension', (data, cb) => {
-          assert.deepEqual(data, {extensionId: 'testExt'})
+          assert.deepEqual(data, {extensionId: 'testExt', trusted: false})
           cb()
           done()
         })
@@ -100,7 +101,7 @@ describe('BackendProcess', () => {
       backendProcess.connect(() => {
         fsEx.writeJSON(
           backendProcess.attachedExtensionsWatcher.configPath,
-          {attachedExtensions: {testExt: {id: 'testExt'}}},
+          {attachedExtensions: {testExt: {id: 'testExt', trusted: false}}},
           () => {}
         )
       })
@@ -114,7 +115,7 @@ describe('BackendProcess', () => {
         })
 
         sock.on('deregisterExtension', (data, cb) => {
-          assert.deepEqual(data, {extensionId: 'testExt'})
+          assert.deepEqual(data, {extensionId: 'testExt', trusted: false})
           cb()
           done()
         })
@@ -123,7 +124,7 @@ describe('BackendProcess', () => {
       backendProcess.connect(() => {
         fsEx.writeJSON(
           backendProcess.attachedExtensionsWatcher.configPath,
-          {attachedExtensions: {testExt: {id: 'testExt'}}},
+          {attachedExtensions: {testExt: {id: 'testExt', trusted: false}}},
           () => {
             setTimeout(() => {
               fsEx.writeJSON(backendProcess.attachedExtensionsWatcher.configPath,
@@ -138,29 +139,11 @@ describe('BackendProcess', () => {
   })
 
   describe('update token', () => {
-    let oldUserSettingsInstance
     const token = { foo: 'bar' }
 
-    before((done) => {
-      oldUserSettingsInstance = UserSettings.getInstance()
-      const newUserSettingsInstance = {
-        save: () => {},
-        getSession: () => { return { setToken: (t) => assert.deepEqual(t, token) } },
-        getInstance: function () { return this }
-      }
-
-      UserSettings.setInstance(newUserSettingsInstance)
-      done()
-    })
-
-    after((done) => {
-      UserSettings.setInstance(oldUserSettingsInstance)
-      done()
-    })
-
-    it('should update the token', (done) => {
+    it('should update the token', () => {
       backendProcess.updateToken(token)
-      done()
+      assert.deepEqual(userSettings.getToken(), token)
     })
   })
 })

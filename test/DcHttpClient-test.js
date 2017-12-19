@@ -77,7 +77,7 @@ describe('DcHttpClient', () => {
         .get(`/applications/${appId}/pipelines`)
         .reply(200, body)
 
-      dcClient.downloadPipelines(appId, (err, pipelines) => {
+      dcClient.downloadPipelines(appId, false, (err, pipelines) => {
         assert.ifError(err)
         assert.deepEqual(pipelines, body.pipelines)
         dcMock.done()
@@ -91,7 +91,7 @@ describe('DcHttpClient', () => {
         .get(`/applications/${appId}/pipelines`)
         .reply(200, {}, {'x-jwt': newToken})
 
-      dcClient.downloadPipelines(appId, (err) => {
+      dcClient.downloadPipelines(appId, false, (err) => {
         assert.ifError(err)
         assert.equal(dcClient.userSettings.getToken(), newToken)
         dcMock.done()
@@ -104,7 +104,7 @@ describe('DcHttpClient', () => {
         .get(`/applications/${appId}/pipelines`)
         .reply(500)
 
-      dcClient.downloadPipelines(appId, (err) => {
+      dcClient.downloadPipelines(appId, false, (err) => {
         assert.ok(err)
         dcMock.done()
         done()
@@ -118,7 +118,7 @@ describe('DcHttpClient', () => {
         .put('/applications/shop_10006/pipelines/someId')
         .reply(204)
 
-      dcClient.uploadPipeline({pipeline: {id: 'someId'}}, 'shop_10006', (err) => {
+      dcClient.uploadPipeline({pipeline: {id: 'someId'}}, 'shop_10006', false, (err) => {
         assert.ifError(err)
         dcMock.done()
         done()
@@ -131,7 +131,7 @@ describe('DcHttpClient', () => {
         .put('/applications/shop_10006/pipelines/someId')
         .reply(204, {}, {'x-jwt': newToken})
 
-      dcClient.uploadPipeline({pipeline: {id: 'someId'}}, 'shop_10006', (err) => {
+      dcClient.uploadPipeline({pipeline: {id: 'someId'}}, 'shop_10006', false, (err) => {
         assert.ifError(err)
         assert.equal(dcClient.userSettings.getToken(), newToken)
         dcMock.done()
@@ -144,7 +144,7 @@ describe('DcHttpClient', () => {
         .put('/applications/shop_10006/pipelines/someId')
         .reply(500)
 
-      dcClient.uploadPipeline({pipeline: {id: 'someId'}}, 'shop_10006', (err) => {
+      dcClient.uploadPipeline({pipeline: {id: 'someId'}}, 'shop_10006', false, (err) => {
         assert.ok(err)
         dcMock.done()
         done()
@@ -158,7 +158,7 @@ describe('DcHttpClient', () => {
         .delete('/applications/shop_10006/pipelines/someId')
         .reply(204)
 
-      dcClient.removePipeline('someId', 'shop_10006', (err) => {
+      dcClient.removePipeline('someId', 'shop_10006', false, (err) => {
         assert.ifError(err)
         dcMock.done()
         done()
@@ -171,7 +171,7 @@ describe('DcHttpClient', () => {
         .delete('/applications/shop_10006/pipelines/someId')
         .reply(204, {}, {'x-jwt': newToken})
 
-      dcClient.removePipeline('someId', 'shop_10006', (err) => {
+      dcClient.removePipeline('someId', 'shop_10006', false, (err) => {
         assert.ifError(err)
         assert.equal(dcClient.userSettings.getToken(), newToken)
         dcMock.done()
@@ -184,7 +184,7 @@ describe('DcHttpClient', () => {
         .delete('/applications/shop_10006/pipelines/someId')
         .reply(500)
 
-      dcClient.removePipeline('someId', 'shop_10006', (err) => {
+      dcClient.removePipeline('someId', 'shop_10006', false, (err) => {
         assert.ok(err)
         dcMock.done()
         done()
@@ -271,6 +271,36 @@ describe('DcHttpClient', () => {
         .reply(500)
 
       dcClient.generateExtensionConfig({id: extId}, appId, (err) => {
+        assert.ok(err)
+        dcMock.done()
+        done()
+      })
+    })
+  })
+
+  describe('getApplicationData', () => {
+    const appId = 'foobarAppId'
+
+    it('should get application data', (done) => {
+      const data = {foo: {body: {bar: 'foobar'}}}
+      const dcMock = nock(dcClient.dcAddress)
+        .get(`/applications/${appId}`)
+        .reply(200, data)
+
+      dcClient.getApplicationData(appId, (err, body) => {
+        assert.ifError(err)
+        assert.deepEqual(body, data)
+        dcMock.done()
+        done()
+      })
+    })
+
+    it('should callback error on dc error', (done) => {
+      const dcMock = nock(dcClient.dcAddress)
+        .get(`/applications/${appId}`)
+        .reply(500)
+
+      dcClient.getApplicationData(appId, (err) => {
         assert.ok(err)
         dcMock.done()
         done()

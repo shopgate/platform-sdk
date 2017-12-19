@@ -25,11 +25,13 @@ const appId = 'foobarTest'
 let frontendProcess
 
 describe('FrontendProcess', () => {
+  let appSettings
+
   beforeEach(() => {
     process.env.USER_PATH = userSettingsPath
     process.env.APP_PATH = appSettingsPath
 
-    new AppSettings().setId(appId)
+    appSettings = new AppSettings().setId(appId)
     new UserSettings().setToken({})
 
     const FrontendProcess = proxyquire('../../../lib/app/frontend/FrontendProcess', {
@@ -50,7 +52,7 @@ describe('FrontendProcess', () => {
 
     frontendProcess = new FrontendProcess({
       theme: null
-    }, frontendSetup)
+    }, frontendSetup, appSettings)
   })
 
   afterEach((done) => {

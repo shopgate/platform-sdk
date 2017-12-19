@@ -1,6 +1,6 @@
 {
   "name": "@shopgate/cloud-sdk",
-  "version": "1.0.1",
+  "version": "1.1.1",
   "description": "Shopgate's Cloud SDK",
   "main": "index.js",
   "scripts": {
@@ -45,7 +45,7 @@
     ]
   },
   "dependencies": {
-    "@shopgate/cloud-sdk-webpack": "^1.5.4",
+    "@shopgate/cloud-sdk-webpack": "^1.5.6",
     "bunyan": "^1.8.12",
     "bunyan-format": "^0.2.1",
     "chalk": "^2.3.0",
@@ -60,9 +60,10 @@
     "os": "^0.1.1",
     "request": "^2.83.0",
     "restify": "^6.3.4",
-    "restify-cors-middleware": "^1.0.1",
+    "restify-cors-middleware": "^1.1.0",
     "semver": "^5.4.1",
-    "socket.io-client": "^2.0.4"
+    "socket.io-client": "^2.0.4",
+    "update-notifier": "^2.3.0"
   },
   "devDependencies": {
     "coveralls": "^3.0.0",
@@ -83,7 +84,8 @@
     "node": ">= 8.0.0"
   },
   "pre-commit": [
-    "lint-staged"
+    "lint-staged",
+    "test"
   ],
   "nyc": {
     "include": [

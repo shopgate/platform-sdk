@@ -79,11 +79,12 @@ describe('FrontendSetup', () => {
     process.env.APP_PATH = appSettingsPath
 
     fsEx.emptyDirSync(join(appSettingsPath, AppSettings.SETTINGS_FOLDER))
-    new AppSettings().setId(appId).getFrontendSettings()._saveSettings(defaultConfig)
+    const appSettings = new AppSettings().setId(appId)
+    appSettings.getFrontendSettings()._saveSettings(defaultConfig)
     fsEx.emptyDirSync(userSettingsPath)
     new UserSettings().setToken({})
 
-    frontendSetup = new FrontendSetup()
+    frontendSetup = new FrontendSetup(null, appSettings)
     frontendSetup.defaultConfig = defaultConfig
 
     inquirer.prompt = setPromptBody()
@@ -93,8 +94,6 @@ describe('FrontendSetup', () => {
   })
 
   afterEach((done) => {
-    AppSettings.setInstance()
-    UserSettings.setInstance()
     delete process.env.USER_PATH
     delete process.env.APP_PATH
     fsEx.remove(userSettingsPath, () => {
@@ -238,8 +237,7 @@ describe('FrontendSetup', () => {
 
     it('should save the settings', () => {
       frontendSetup.save(defaultConfig)
-      const saveSettings = frontendSetup.settings.getFrontendSettings().settings
-      assert.equal(JSON.stringify(saveSettings), JSON.stringify(defaultConfig))
+      assert.equal(JSON.stringify(frontendSetup.settings.getFrontendSettings()._loadSettings()), JSON.stringify(defaultConfig))
     })
 
     it('should show two console logs on success', () => {

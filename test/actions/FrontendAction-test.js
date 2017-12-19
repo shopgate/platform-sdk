@@ -42,6 +42,10 @@ describe('FrontendAction', () => {
         }
       }
 
+      frontendAction.appSettings = {
+        getId: () => 'appId'
+      }
+
       const cfgPath = path.join(process.env.APP_PATH, 'extension', 'testExt')
       frontendAction.themeChanged(dcClient, { file: generated, path: cfgPath }, (err) => {
         assert.ifError(err)
