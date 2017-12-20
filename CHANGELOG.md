@@ -1,3 +1,6 @@
+## v1.2.0
+* Set minimum node version to 8.4.0
+
 ## v1.1.1
 * Update `cloud-sdk-webpack` module to v1.5.6.
 
