@@ -14,6 +14,7 @@ describe('FrontendSettings', () => {
   beforeEach(() => {
     settingsPath = 'foobar'
     settings = new FrontendSettings(settingsPath)
+    fsEx.ensureDirSync(settings.settingsFolder)
     fsEx.writeJsonSync(settings.frontendSettingsFile, {})
   })
 
