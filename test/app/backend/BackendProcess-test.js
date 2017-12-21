@@ -39,6 +39,7 @@ describe('BackendProcess', () => {
       process.env.SGCLOUD_DC_ADDRESS = `http://localhost:${port}`
       backendProcess = new BackendProcess(userSettings, appSettings, logger)
       backendProcess.executor = stepExecutor
+      backendProcess.attachedExtensionsWatcher.options = { ignoreInitial: true }
       mockServer = require('socket.io').listen(port)
       done()
     })
