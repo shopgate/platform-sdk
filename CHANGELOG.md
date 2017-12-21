@@ -1,5 +1,6 @@
 ## v1.2.0
 * Set minimum node version to 8.4.0
+* Improved log, so that step-logs are prefixed with the corresponding step
 
 ## v1.1.1
 * Update `cloud-sdk-webpack` module to v1.5.6.
@@ -13,5 +14,5 @@
 * Fixed hanging unit tests
 * Added update check for the sdk; if outdated, any sgcloud command will show the update message
 * Trusted pipelines are now supported
-* Improved log, so that step-logs are prefixed with the corresponding step
+
 ## v1.0.0 - Initial Release
