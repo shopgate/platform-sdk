@@ -156,7 +156,7 @@ describe('InitAction', () => {
       const init = new InitAction()
 
       function prompt (question) {
-        assert.deepEqual(question, {type: 'input', name: 'overwrite', message: 'Do you really want to overwrite your current application? (y/n)'})
+        assert.deepEqual(question, {type: 'input', name: 'overwrite', default: 'n', message: 'Do you really want to overwrite your current application? (y/N)'})
         return Promise.resolve({overwrite: 'y'})
       }
 
