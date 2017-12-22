@@ -1,3 +1,10 @@
+## v1.2.0
+* Set minimum node version to 8.4.0
+* Improved log, so that step-logs are prefixed with the corresponding step
+
+## v1.1.1
+* Update `cloud-sdk-webpack` module to v1.5.6.
+
 ## v1.1.0
 * Pipeline synchronization will now only occur every 500ms to avoid needless uploading of (unfinished) pipelines
 * Errors on pipeline upload will now be more verbose
