@@ -1,6 +1,7 @@
 ## v1.2.0
 * Set minimum node version to 8.4.0
 * Improved log, so that step-logs are prefixed with the corresponding step
+* Added support for react@^16.2.0
 
 ## v1.1.1
 * Update `cloud-sdk-webpack` module to v1.5.6.
