@@ -1,3 +1,4 @@
+const assert = require('assert')
 const path = require('path')
 const fsEx = require('fs-extra')
 const utils = require('../../lib/utils/utils')
@@ -11,13 +12,17 @@ describe('utils', () => {
     const ext2Dir = path.join(testProjectDir, 'extensions', 'te2', 'extension')
     const theme1Dir = path.join(testProjectDir, 'themes', 'tt1', 'config')
     const theme2Dir = path.join(testProjectDir, 'themes', 'tt2', 'config')
+    const plDir = path.join(testProjectDir, 'pipelines')
+    const tplDir = path.join(testProjectDir, 'trustedPipelines')
 
     const dirs = [
       settingsDir,
       ext1Dir,
       ext2Dir,
       theme1Dir,
-      theme2Dir
+      theme2Dir,
+      plDir,
+      tplDir
     ]
 
     const appFile = path.join(settingsDir, 'app.json')
@@ -27,6 +32,8 @@ describe('utils', () => {
     const ext2ConfFile = path.join(ext2Dir, 'config.json')
     const theme1AppFile = path.join(theme1Dir, 'app.json')
     const theme2AppFile = path.join(theme2Dir, 'app.json')
+    const pl = path.join(plDir, 'pl.json')
+    const tpl = path.join(tplDir, 'tpl.json')
 
     const files = [
       appFile,
@@ -35,7 +42,9 @@ describe('utils', () => {
       ext1ConfFile,
       ext2ConfFile,
       theme1AppFile,
-      theme2AppFile
+      theme2AppFile,
+      pl,
+      tpl
     ]
 
     beforeEach((done) => {
@@ -53,7 +62,10 @@ describe('utils', () => {
 
     it('should reset the project', (done) => {
       utils.resetProject()
-      done()
+      setTimeout(() => {
+        files.forEach(file => assert.ok(!fsEx.pathExistsSync(file), `${file} should not exists`))
+        done()
+      }, 1000)
     })
   })
 })
