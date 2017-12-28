@@ -1,6 +1,7 @@
 const assert = require('assert')
 const nock = require('nock')
 const DcHttpClient = require('../lib/DcHttpClient')
+const UnauthorizedError = require('../lib/errors/UnauthorizedError')
 
 describe('DcHttpClient', () => {
   let dcClient
@@ -305,6 +306,19 @@ describe('DcHttpClient', () => {
       dcClient.getApplicationData(appId, (err, body) => {
         assert.ifError(err)
         assert.deepEqual(body, data)
+        dcMock.done()
+        done()
+      })
+    })
+
+    it('should callback unauthorized error on dc unauthorized error', (done) => {
+      const dcMock = nock(dcClient.dcAddress)
+        .get(`/applications/${appId}`)
+        .reply(401, {message: 'Error!'})
+
+      dcClient.getApplicationData(appId, (err) => {
+        assert.ok(err)
+        assert.ok(err instanceof UnauthorizedError, 'Error needs to be from type UnauthorizedError')
         dcMock.done()
         done()
       })

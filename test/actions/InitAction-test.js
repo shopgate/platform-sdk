@@ -46,7 +46,7 @@ describe('InitAction', () => {
     UserSettings.getInstance().getSession().token = null
     const init = new InitAction()
     init.run(null, (err) => {
-      assert.equal(err.message, 'not logged in')
+      assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
       done()
     })
   })

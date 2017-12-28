@@ -108,7 +108,7 @@ describe('BackendAction', () => {
       try {
         backendAction.run('attach')
       } catch (err) {
-        assert.equal(err.message, 'not logged in')
+        assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
         done()
       }
     })
