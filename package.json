@@ -4,8 +4,8 @@
   "description": "Shopgate's Cloud SDK",
   "main": "index.js",
   "scripts": {
-    "test": "mocha",
-    "cover": "nyc mocha",
+    "test": "mocha $(find test -name '*-test.js')",
+    "cover": "nyc mocha $(find test -name '*-test.js')",
     "lint": "standard",
     "lint-staged": "lint-staged",
     "check": "nsp check"
@@ -42,6 +42,9 @@
   "standard": {
     "env": [
       "mocha"
+    ],
+    "ignore": [
+      "test/app/backend/extensionRuntime/fakeSteps"
     ]
   },
   "dependencies": {
