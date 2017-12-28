@@ -5,6 +5,8 @@ const fsEx = require('fs-extra')
 const proxyquire = require('proxyquire')
 const async = require('neo-async')
 
+const utils = require('../../lib/utils/utils')
+
 const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
 const userSettingsFolder = path.join('build', 'usersettings')
@@ -101,20 +103,36 @@ describe('BackendAction', () => {
       assert(commander.action.calledOnce)
     })
 
-    it('should throw if user not logged in', () => {
+    it('should throw if user not logged in', (done) => {
       UserSettings.getInstance().getSession().token = null
       try {
         backendAction.run('attach')
       } catch (err) {
         assert.equal(err.message, 'not logged in')
+        done()
       }
     })
 
-    it('should throw if invalid action is given', () => {
+    it('should throw if invalid action is given', (done) => {
       try {
         backendAction.run('invalid')
       } catch (err) {
         assert.equal(err.message, 'unknown action "invalid"')
+        done()
+      }
+    })
+
+    it('should fail because a backend process is already running', (done) => {
+      const pid = process.pid
+      const processFile = path.join(appPath, AppSettings.SETTINGS_FOLDER)
+
+      utils.setProcessFile('backend', processFile, pid)
+
+      try {
+        backendAction.run('start')
+      } catch (err) {
+        assert.equal(err.message, `Backend process is already running with pid: ${pid}. Please cancel this process first.`)
+        done()
       }
     })
   })
