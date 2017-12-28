@@ -65,7 +65,7 @@ describe('InitAction', () => {
       .reply(200, {})
 
     const init = new InitAction()
-    init.permitDeletion = (prompt, cb) => cb(null, true)
+    init.permitDeletion = (prompt, appId, cb) => cb(null, true)
 
     init.run({appId: 'test'}, (err) => {
       fsEx.remove(appPath, (err2) => {
@@ -156,11 +156,11 @@ describe('InitAction', () => {
       const init = new InitAction()
 
       function prompt (question) {
-        assert.deepEqual(question, {type: 'input', name: 'overwrite', default: 'n', message: 'Do you really want to overwrite your current application? (y/N)'})
+        assert.deepEqual(question, {type: 'input', name: 'overwrite', default: 'n', message: 'Do you really want to overwrite your current application (appId)? (y/N)'})
         return Promise.resolve({overwrite: 'y'})
       }
 
-      init.permitDeletion(prompt, (err, res) => {
+      init.permitDeletion(prompt, 'appId', (err, res) => {
         assert.ifError(err)
         assert.equal(res, true)
         done()
