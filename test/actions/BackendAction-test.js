@@ -131,7 +131,7 @@ describe('BackendAction', () => {
       try {
         backendAction.run('start')
       } catch (err) {
-        assert.equal(err.message, `Backend process is already running with pid: ${pid}. Please cancel this process first.`)
+        assert.equal(err.message, `Backend process is already running with pid: ${pid}. Please quit this process first.`)
         done()
       }
     })
