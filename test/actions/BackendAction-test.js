@@ -268,7 +268,7 @@ describe('BackendAction', () => {
         assert.ifError(err)
         backendAction._pipelineChanged(file, (err) => {
           assert.ok(err)
-          assert.equal(err.message, 'invalid pipeline; check the pipeline.id property in build/appsettings/pipelines/dCPlTest3.json')
+          assert.equal(err.message, `invalid pipeline; check the pipeline.id property in ${file}`)
           done()
         })
       })
