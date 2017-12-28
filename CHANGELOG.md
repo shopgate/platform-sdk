@@ -1,6 +1,8 @@
 ## v1.2.0
 * Set minimum node version to 8.4.0
 * Improved log, so that step-logs are prefixed with the corresponding step
+* The SDK will now ask the user for permission to overwrite the local application-config if a new init is executed in an existing app-folder
+* The SDK does not allow two processes of the same kind (frontend/backend) in the same project anymore
 * Added support for `react@^16.2.0`
 * Improve error handling if user is not logged in
 * Hide error stack traces on log level debug
