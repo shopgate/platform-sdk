@@ -7,6 +7,7 @@
 * Improve error handling if user is not logged in
 * Hide error stack traces on log level debug
 * Add check to validate that pipeline id is equal to the file name
+* Logging time values are in local time now
 
 ## v1.1.1
 * Update `cloud-sdk-webpack` module to v1.5.6.
