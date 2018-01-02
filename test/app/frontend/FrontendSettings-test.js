@@ -18,6 +18,10 @@ describe('FrontendSettings', () => {
     fsEx.writeJsonSync(settings.frontendSettingsFile, {})
   })
 
+  afterEach(() => {
+    fsEx.removeSync(settings.settingsFolder)
+  })
+
   it('can be instanciated', () => {
     assert.ok(settings instanceof FrontendSettings)
   })
