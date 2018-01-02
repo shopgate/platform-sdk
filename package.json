@@ -4,8 +4,8 @@
   "description": "Shopgate's Cloud SDK",
   "main": "index.js",
   "scripts": {
-    "test": "mocha $(find test -name '*-test.js')",
-    "cover": "nyc mocha $(find test -name '*-test.js')",
+    "test": "mocha",
+    "cover": "nyc mocha",
     "lint": "standard",
     "lint-staged": "lint-staged",
     "check": "nsp check"
