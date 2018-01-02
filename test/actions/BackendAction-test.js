@@ -274,6 +274,21 @@ describe('BackendAction', () => {
       })
     })
 
+    it('should throw an error if pipeline has invalid json', (done) => {
+      const pipeline = '{someInvalid: content}'
+      backendAction.dcClient.uploadPipeline = (pl, id, trusted, cb) => cb()
+
+      const file = path.join(backendAction.pipelinesFolder, 'dCPlTest5.json')
+      fsEx.writeFile(file, pipeline, (err) => {
+        assert.ifError(err)
+        backendAction._pipelineChanged(file, (err) => {
+          assert.ok(err)
+          assert.equal(err.message, 'Parse error on line 1:\n{someInvalid: content\n-^\nExpecting \'STRING\', \'}\', got \'undefined\'')
+          done()
+        })
+      })
+    })
+
     it('should return if pipeline was removed', (done) => {
       const pipelineId = 'dCPlTest4'
       let called = false
