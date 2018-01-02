@@ -4,6 +4,8 @@ const path = require('path')
 const fsEx = require('fs-extra')
 const proxyquire = require('proxyquire')
 
+const utils = require('../../lib/utils/utils')
+
 const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
 const userSettingsFolder = path.join('build', 'usersettings')
@@ -46,11 +48,17 @@ describe('BackendAction', () => {
   })
 
   beforeEach(function (done) {
+    fsEx.emptyDirSync(userSettingsFolder)
+    process.env.USER_PATH = userSettingsFolder
+    fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
+
     userSettings = new UserSettings().setToken({})
     appSettings = new AppSettings().setId('foobarTest')
+
     backendAction = new BackendAction()
     backendAction.userSettings = userSettings
     backendAction.appSettings = appSettings
+
     fsEx.emptyDirSync(backendAction.pipelinesFolder)
     backendAction.pipelineWatcher = {
       start: (cb) => cb(),
@@ -99,15 +107,30 @@ describe('BackendAction', () => {
       try {
         backendAction.run('start')
       } catch (err) {
-        assert.equal(err.message, 'not logged in')
+        assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
       }
     })
 
-    it('should throw if invalid action is given', () => {
+    it('should throw if invalid action is given', (done) => {
       try {
         backendAction.run('invalid')
       } catch (err) {
         assert.equal(err.message, 'unknown action "invalid"')
+        done()
+      }
+    })
+
+    it('should fail because a backend process is already running', (done) => {
+      const pid = process.pid
+      const processFile = path.join(appPath, AppSettings.SETTINGS_FOLDER)
+
+      utils.setProcessFile('backend', processFile, pid)
+
+      try {
+        backendAction.run('start')
+      } catch (err) {
+        assert.equal(err.message, `Backend process is already running with pid: ${pid}. Please quit this process first.`)
+        done()
       }
     })
   })
@@ -146,7 +169,7 @@ describe('BackendAction', () => {
       const appId = 'foobarAppIdDcTestBackendAction'
       appSettings.setId(appId)
 
-      const file = path.join(backendAction.pipelinesFolder, 'dCPlTest.json')
+      const file = path.join(backendAction.pipelinesFolder, 'plFooBarline1.json')
       assert.equal(backendAction.pipelines[file], undefined)
 
       backendAction.dcClient.uploadPipeline = (f, aId, trusted, cb) => {
@@ -191,7 +214,7 @@ describe('BackendAction', () => {
     })
 
     it('should throw error if dcClient is not reachable', (done) => {
-      const pipeline = {pipeline: {id: 'plFooBarline2'}}
+      const pipeline = {pipeline: {id: 'dCPlTest2'}}
       backendAction.dcClient.uploadPipeline = (pl, id, trusted, cb) => cb(new Error('error'))
 
       const file = path.join(backendAction.pipelinesFolder, 'dCPlTest2.json')
@@ -206,7 +229,7 @@ describe('BackendAction', () => {
     })
 
     it('should return if pipeline was changed', (done) => {
-      const pipeline = {pipeline: {id: 'plFooBarline3'}}
+      const pipeline = {pipeline: {id: 'dCPlTest3'}}
       backendAction.dcClient.uploadPipeline = (pl, id, trusted, cb) => cb()
 
       const file = path.join(backendAction.pipelinesFolder, 'dCPlTest3.json')
@@ -219,44 +242,53 @@ describe('BackendAction', () => {
       })
     })
 
-    it('should throw specific error if pipeline-file was invalid', (done) => {
-      const BackendAction2 = proxyquire('../../lib/actions/BackendAction', {
-        '../app/backend/BackendProcess': BackendProcess,
-        '../logger': {
-          info: () => {},
-          error: (a, b) => {
-            assert.deepEqual(a, {field: 'SomeField'})
-            assert.equal(b, 'Pipeline invalid: Some detailed error message')
-            done()
-          },
-          debug: () => {}
-        }
-      })
-
-      backendAction = new BackendAction2()
-      backendAction.dcClient = {}
-      backendAction.pipelineWatcher = {
-        close: () => {}
-      }
-      backendAction.extensionConfigWatcher = {
-        stop: (cb) => cb()
-      }
-
-      const pipeline = {pipeline: {id: 'plFooBarline3'}}
+    it('should throw an error if pipeline id is not matching with the filename', (done) => {
+      const pipeline = {pipeline: {id: 'nonMatchingId'}}
       backendAction.dcClient.uploadPipeline = (pl, id, trusted, cb) => cb()
 
-      const invalidErr = new Error()
-      invalidErr.message = JSON.stringify({errors: [{field: 'SomeField', message: 'Some detailed error message'}]})
-      invalidErr.code = 'PIPELINE_INVALID'
-      backendAction._pipelineChanged = (file, cb) => cb(invalidErr)
+      const file = path.join(backendAction.pipelinesFolder, 'dCPlTest3.json')
+      fsEx.writeJson(file, pipeline, (err) => {
+        assert.ifError(err)
+        backendAction._pipelineChanged(file, (err) => {
+          assert.ok(err)
+          assert.equal(err.message, 'The pipeline id and the file name need to be equal! Please make sure you changed both places')
+          done()
+        })
+      })
+    })
+
+    it('should throw an error if pipeline is invalid', (done) => {
+      const pipeline = {}
+      backendAction.dcClient.uploadPipeline = (pl, id, trusted, cb) => cb()
 
       const file = path.join(backendAction.pipelinesFolder, 'dCPlTest3.json')
-      fsEx.writeJsonSync(file, pipeline)
-      backendAction._pipelineEvent(null, file)
+      fsEx.writeJson(file, pipeline, (err) => {
+        assert.ifError(err)
+        backendAction._pipelineChanged(file, (err) => {
+          assert.ok(err)
+          assert.equal(err.message, `invalid pipeline; check the pipeline.id property in ${file}`)
+          done()
+        })
+      })
+    })
+
+    it('should throw an error if pipeline has invalid json', (done) => {
+      const pipeline = '{someInvalid: content}'
+      backendAction.dcClient.uploadPipeline = (pl, id, trusted, cb) => cb()
+
+      const file = path.join(backendAction.pipelinesFolder, 'dCPlTest5.json')
+      fsEx.writeFile(file, pipeline, (err) => {
+        assert.ifError(err)
+        backendAction._pipelineChanged(file, (err) => {
+          assert.ok(err)
+          assert.equal(err.message, 'Parse error on line 1:\n{someInvalid: content\n-^\nExpecting \'STRING\', \'}\', got \'undefined\'')
+          done()
+        })
+      })
     })
 
     it('should return if pipeline was removed', (done) => {
-      const pipelineId = 'plFooBarline3'
+      const pipelineId = 'dCPlTest4'
       let called = false
       backendAction.dcClient.removePipeline = (plId, id, trusted, cb) => {
         assert.equal(plId, pipelineId)
@@ -264,7 +296,7 @@ describe('BackendAction', () => {
         cb()
       }
 
-      const file = path.join(backendAction.pipelinesFolder, 'dCPlTest3.json')
+      const file = path.join(backendAction.pipelinesFolder, 'dCPlTest4.json')
       backendAction.pipelines[file] = {id: pipelineId}
 
       backendAction._pipelineRemoved(file, (err) => {

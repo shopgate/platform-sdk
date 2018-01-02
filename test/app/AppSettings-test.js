@@ -21,6 +21,17 @@ describe('AppSettings', () => {
     assert.ok(new AppSettings().settingsFolder.includes('.sgcloud'))
   })
 
+  it('should throw an error if application data does not exist', (done) => {
+    const appSettings = new AppSettings()
+    fsEx.emptyDirSync(appSettings.settingsFolder)
+    try {
+      appSettings.validate()
+    } catch (err) {
+      assert.equal(err.message, 'The current folder seems not to be a sgcloud project. Please run sgcloud init first.')
+      done()
+    }
+  })
+
   it('should throw if application data is invalid', (done) => {
     const appSettings = new AppSettings()
     fsEx.emptyDirSync(appSettings.settingsFolder)
@@ -29,7 +40,7 @@ describe('AppSettings', () => {
     try {
       appSettings.validate()
     } catch (err) {
-      assert.equal(err.message, 'application not initialized')
+      assert.equal(err.message, 'The current folder seems not to be a sgcloud project. Please run sgcloud init first.')
       done()
     }
   })

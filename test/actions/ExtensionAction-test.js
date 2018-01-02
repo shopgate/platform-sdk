@@ -58,7 +58,7 @@ describe('ExtensionAction', () => {
       try {
         action.run('attach')
       } catch (err) {
-        assert.equal(err.message, 'not logged in')
+        assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
       }
     })
 

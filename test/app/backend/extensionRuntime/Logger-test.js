@@ -1,12 +1,18 @@
 const Logger = require('../../../../lib/app/backend/extensionRuntime/Logger')
 const assert = require('assert')
 const bunyan = require('bunyan')
-const LOG_LEVELS = Object.keys(bunyan.levelFromName)
 const sinon = require('sinon')
 
 describe('ExtensionRuntime Logger', () => {
-  it('should expose functions equal to bunyan log levels', () => {
-    assert.deepEqual(Object.keys(new Logger()), LOG_LEVELS)
+  const logLevels = Object.keys(bunyan.levelFromName)
+  const syslogLevels = logLevels.map((logLevel) => `sys${logLevel.charAt(0).toUpperCase()}${logLevel.slice(1)}`)
+  const resultingLogLevels = logLevels.concat(syslogLevels)
+
+  it('should expose functions equal to bunyan log levels plus system log levels', () => {
+    const actualLogLevels = Object.keys(new Logger())
+    resultingLogLevels.forEach((logLevel) => {
+      assert.ok(actualLogLevels.indexOf(logLevel) >= 0)
+    })
   })
 
   describe('test each log level', () => {
@@ -20,8 +26,8 @@ describe('ExtensionRuntime Logger', () => {
       spy.restore()
     })
 
-    for (let i = 0; i < LOG_LEVELS.length; i++) {
-      const level = LOG_LEVELS[i]
+    for (let i = 0; i < logLevels.length; i++) {
+      const level = logLevels[i]
       it(`should call process.send with type:log, level:${level} and passed arguments`, () => {
         const args = [{foo: 'bar'}, 'foobar']
         logger[level](...args)

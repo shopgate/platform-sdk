@@ -42,10 +42,13 @@
   "standard": {
     "env": [
       "mocha"
+    ],
+    "ignore": [
+      "test/app/backend/extensionRuntime/fakeSteps"
     ]
   },
   "dependencies": {
-    "@shopgate/cloud-sdk-webpack": "^1.5.6",
+    "@shopgate/cloud-sdk-webpack": "^1.6.0",
     "bunyan": "^1.8.12",
     "bunyan-format": "^0.2.1",
     "chalk": "^2.3.0",
@@ -55,6 +58,7 @@
     "fs-extra": "^4.0.3",
     "glob": "^7.1.2",
     "inquirer": "^4.0.1",
+    "jsonlint": "^1.6.2",
     "morgan": "^1.9.0",
     "neo-async": "^2.5.0",
     "os": "^0.1.1",
@@ -81,7 +85,7 @@
     "standard": "^10.0.3"
   },
   "engines": {
-    "node": ">= 8.0.0"
+    "node": ">= 8.4.0"
   },
   "pre-commit": [
     "lint-staged",

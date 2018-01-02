@@ -37,7 +37,10 @@ describe('InitAction', () => {
   afterEach((done) => {
     delete process.env.USER_PATH
     delete process.env.SGCLOUD_DC_ADDRESS
-    fsEx.remove(userSettingsFolder, done)
+    fsEx.remove(userSettingsFolder, () => {
+      delete process.env.APP_PATH
+      fsEx.remove(appPath, done)
+    })
   })
 
   it('should throw if user not logged in', (done) => {
@@ -46,26 +49,34 @@ describe('InitAction', () => {
     try {
       init.run(null)
     } catch (e) {
-      assert.equal(e.message, 'not logged in')
+      assert.equal(e.message, 'You\'re not logged in! Please run `sgcloud login` again.')
       done()
     }
   })
 
-  it('should throw if application already initialized', (done) => {
+  it('should reinit the application if selected', (done) => {
     userSettings.setToken({})
     const appId = 'foobarTest'
-
     process.env.APP_PATH = appPath
     const appSettings = new AppSettings()
     fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
     appSettings.setId(appId)
 
-    const init = new InitAction()
+    const dcMock = nock(process.env.SGCLOUD_DC_ADDRESS)
+      .get(`/applications/test`)
+      .reply(200, {})
 
-    init.run(null, (err) => {
-      assert.equal(err.message, `The current folder is already initialized for application ${appId}`)
-      delete process.env.APP_PATH
-      fsEx.remove(appPath, done)
+    const init = new InitAction()
+    init.permitDeletion = (prompt, appId, cb) => cb(null, true)
+
+    init.run({appId: 'test'}, (err) => {
+      fsEx.remove(appPath, (err2) => {
+        assert.ifError(err)
+        assert.ifError(err2)
+        delete process.env.APP_PATH
+        dcMock.done()
+        done()
+      })
     })
   })
 
@@ -132,6 +143,23 @@ describe('InitAction', () => {
       init.getAppId(prompt, (err, id) => {
         assert.ifError(err)
         assert.equal(id, appId)
+        done()
+      })
+    })
+  })
+
+  describe('permitDeletion', () => {
+    it('should use prompt', (done) => {
+      const init = new InitAction()
+
+      function prompt (question) {
+        assert.deepEqual(question, {type: 'input', name: 'overwrite', default: 'n', message: 'Do you really want to overwrite your current application (appId)? (y/N)'})
+        return Promise.resolve({overwrite: 'y'})
+      }
+
+      init.permitDeletion(prompt, 'appId', (err, res) => {
+        assert.ifError(err)
+        assert.equal(res, true)
         done()
       })
     })
