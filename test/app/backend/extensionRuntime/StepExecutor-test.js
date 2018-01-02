@@ -87,6 +87,7 @@ describe('StepExecutor', () => {
       log = {info: () => {}, error: () => {}, debug: () => {}, warn: () => {}}
       executor = new StepExecutor(log)
       executor.stepTimeout = 1000
+      executor.stepLogger = {info: () => {}, error: () => {}, debug: () => {}, warn: () => {}}
 
       const appSettings = new AppSettings()
       fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
