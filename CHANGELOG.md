@@ -7,6 +7,8 @@
 * Improve error handling if user is not logged in
 * Hide error stack traces on log level debug
 * Add check to validate that pipeline id is equal to the file name
+* Update log when pipeline file is invalid; JSON parse error will be displayed
+* Better error log, when something's wrong in a step file
 
 ## v1.1.1
 * Update `cloud-sdk-webpack` module to v1.5.6.

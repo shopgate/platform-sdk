@@ -204,6 +204,70 @@ describe('StepExecutor', () => {
       })
     })
 
+    it('should fail if step file is invalid', (done) => {
+      const input = {foo: 'bar'}
+      const stepMeta = {
+        id: '@foo/bar',
+        path: '@foo/bar/crashing3.js',
+        meta: {appId: 'shop_123'}
+      }
+
+      let exitCalled = false
+      executor.start = (cb) => {
+        assert.equal(executor.childProcess, undefined)
+        assert.ok(exitCalled)
+        done()
+      }
+
+      const onExit = executor.onExit.bind(executor)
+      executor.onExit = (code, signal) => {
+        if (!exitCalled) {
+          assert.equal(code, 1)
+          assert.equal(signal, null)
+        }
+        assert.ok(executor.childProcess)
+        exitCalled = true
+        onExit(code, signal)
+      }
+
+      executor.execute(input, stepMeta, (err) => {
+        assert.ok(err)
+        assert.equal(err.message, 'Unexpected token (')
+      })
+    })
+
+    it('should fail if module.exports is missing in step file', (done) => {
+      const input = {foo: 'bar'}
+      const stepMeta = {
+        id: '@foo/bar',
+        path: '@foo/bar/crashing4.js',
+        meta: {appId: 'shop_123'}
+      }
+
+      let exitCalled = false
+      executor.start = (cb) => {
+        assert.equal(executor.childProcess, undefined)
+        assert.ok(exitCalled)
+        done()
+      }
+
+      const onExit = executor.onExit.bind(executor)
+      executor.onExit = (code, signal) => {
+        if (!exitCalled) {
+          assert.equal(code, 1)
+          assert.equal(signal, null)
+        }
+        assert.ok(executor.childProcess)
+        exitCalled = true
+        onExit(code, signal)
+      }
+
+      executor.execute(input, stepMeta, (err) => {
+        assert.ok(err)
+        assert.equal(err.message, 'Can\'t find step function; did you export a step function like \'module.exports = function ([error,] context, input, callback) {...}\'?')
+      })
+    })
+
     it('should crash and recover if step crashed', (done) => {
       const stepMeta = {
         id: '@foo/bar',
