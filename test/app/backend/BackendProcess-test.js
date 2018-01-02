@@ -1,21 +1,38 @@
+const EventEmitter = require('events')
 const assert = require('assert')
 const path = require('path')
 const fsEx = require('fs-extra')
 const AppSettings = require('../../../lib/app/AppSettings')
 const UserSettings = require('../../../lib/user/UserSettings')
-const BackendProcess = require('../../../lib/app/backend/BackendProcess')
 const portfinder = require('portfinder')
 const async = require('neo-async')
-const logger = require('../../../lib/logger')
+
+const proxyquire = require('proxyquire')
+
+class SocketIOMock extends EventEmitter {
+  connect () { this.emit('connect') }
+  disconnect () { this.disconnected = true }
+  removeListener () {}
+}
+
+class WatcherMock extends EventEmitter {
+  start (cb) { cb() }
+  stop () {}
+}
 
 describe('BackendProcess', () => {
   let backendProcess
   let stepExecutor
-  let mockServer
   let userTestFolder
   let appTestFolder
   let userSettings
   let appSettings
+
+  const socketIOMock = new SocketIOMock()
+
+  const BackendProcess = proxyquire('../../../lib/app/backend/BackendProcess', {
+    'socket.io-client': () => socketIOMock
+  })
 
   beforeEach((done) => {
     appTestFolder = path.join('build', 'appsettings')
@@ -37,10 +54,10 @@ describe('BackendProcess', () => {
       assert.ifError(err)
 
       process.env.SGCLOUD_DC_ADDRESS = `http://localhost:${port}`
+      const logger = { info: () => {}, error: () => {}, debug: () => {} }
       backendProcess = new BackendProcess(userSettings, appSettings, logger)
       backendProcess.executor = stepExecutor
-      backendProcess.attachedExtensionsWatcher.options = { ignoreInitial: true }
-      mockServer = require('socket.io').listen(port)
+      backendProcess.attachedExtensionsWatcher = new WatcherMock()
       done()
     })
   })
@@ -50,35 +67,30 @@ describe('BackendProcess', () => {
     delete process.env.APP_PATH
     delete process.env.USER_PATH
 
+    socketIOMock.removeAllListeners()
+
     async.parallel([
-      (cb) => backendProcess.attachedExtensionsWatcher.stop(cb),
       (cb) => fsEx.remove(appTestFolder, cb),
       (cb) => fsEx.remove(userTestFolder, cb),
-      (cb) => mockServer.close(cb),
       (cb) => backendProcess.disconnect(cb)
     ], done)
   })
 
   describe('select application', () => {
     it('should select an application', (done) => {
-      mockServer.on('connection', (sock) => {
-        sock.on('selectApplication', (data, cb) => {
-          assert.deepEqual(data, {applicationId: 'shop_10006'})
-          cb()
-        })
+      socketIOMock.on('selectApplication', (data, cb) => {
+        assert.deepEqual(data, {applicationId: 'shop_10006'})
+        cb()
       })
       backendProcess.connect(done)
     })
 
     it('should fail if socket sends error', (done) => {
-      mockServer.on('connection', (sock) => {
-        sock.on('selectApplication', (data, cb) => {
-          const err = new Error('Forbidden')
-          err.code = 403
-          cb(err)
-        })
+      socketIOMock.on('selectApplication', (data, cb) => {
+        const err = new Error('Forbidden')
+        err.code = 403
+        cb(err)
       })
-
       backendProcess.connect((err) => {
         assert.ok(err)
         assert.equal(err.code, 403)
@@ -87,56 +99,38 @@ describe('BackendProcess', () => {
     })
 
     it('should forward on extensions attach', (done) => {
-      mockServer.on('connection', (sock) => {
-        sock.on('selectApplication', (data, cb) => {
-          assert.deepEqual(data, {applicationId: 'shop_10006'})
-          cb()
-        })
+      socketIOMock.on('selectApplication', (data, cb) => {
+        assert.deepEqual(data, {applicationId: 'shop_10006'})
+        cb()
+      })
 
-        sock.on('registerExtension', (data, cb) => {
-          assert.deepEqual(data, {extensionId: 'testExt', trusted: false})
-          cb()
-          done()
-        })
+      socketIOMock.on('registerExtension', (data, cb) => {
+        assert.deepEqual(data, {extensionId: 'testExt', trusted: false})
+        cb()
+        done()
       })
+
       backendProcess.connect(() => {
-        fsEx.writeJSON(
-          backendProcess.attachedExtensionsWatcher.configPath,
-          {attachedExtensions: {testExt: {id: 'testExt', trusted: false}}},
-          () => {}
-        )
+        backendProcess.attachedExtensionsWatcher.emit('attach', {id: 'testExt', trusted: false})
       })
-    }).timeout(15000)
+    })
 
     it('should forward on extensions detach', (done) => {
-      mockServer.on('connection', (sock) => {
-        sock.on('selectApplication', (data, cb) => {
-          assert.deepEqual(data, {applicationId: 'shop_10006'})
-          cb()
-        })
+      socketIOMock.on('selectApplication', (data, cb) => {
+        assert.deepEqual(data, {applicationId: 'shop_10006'})
+        cb()
+      })
 
-        sock.on('deregisterExtension', (data, cb) => {
-          assert.deepEqual(data, {extensionId: 'testExt', trusted: false})
-          cb()
-          done()
-        })
+      socketIOMock.on('deregisterExtension', (data, cb) => {
+        assert.deepEqual(data, {extensionId: 'testExt', trusted: false})
+        cb()
+        done()
       })
 
       backendProcess.connect(() => {
-        fsEx.writeJSON(
-          backendProcess.attachedExtensionsWatcher.configPath,
-          {attachedExtensions: {testExt: {id: 'testExt', trusted: false}}},
-          () => {
-            setTimeout(() => {
-              fsEx.writeJSON(backendProcess.attachedExtensionsWatcher.configPath,
-                {attachedExtensions: {}},
-                () => {}
-              )
-            }, 2000)
-          }
-        )
+        backendProcess.attachedExtensionsWatcher.emit('detach', {id: 'testExt', trusted: false})
       })
-    }).timeout(10000)
+    })
   })
 
   describe('update token', () => {
