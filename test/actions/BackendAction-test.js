@@ -105,7 +105,7 @@ describe('BackendAction', () => {
   describe('general', () => {
     it('should work', () => {
       backendAction._startSubProcess = () => {}
-      backendAction.run('start')
+      assert.doesNotThrow(() => backendAction.run('start'))
     })
 
     it('should register', () => {
