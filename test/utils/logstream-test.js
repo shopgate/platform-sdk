@@ -53,17 +53,19 @@ describe('LogStream', () => {
   })
 
   it('should log with en-US locale', (done) => {
+    const date = new Date(1000 * 60 * 13)
     serr.write = (msg) => {
-      assert.ok(msg.indexOf('1/1/1970, 1:13:00 AM') !== -1)
+      assert.ok(msg.indexOf(date.toLocaleString('en-US')) !== -1)
       done()
     }
 
-    logger.error({time: new Date(1000 * 60 * 13)}, 'sth. went wrong')
+    logger.error({time: date}, 'sth. went wrong')
   })
 
   it('should log with de-DE locale', (done) => {
+    const date = new Date(1000 * 60 * 13)
     serr.write = (msg) => {
-      assert.ok(msg.indexOf('1.1.1970, 01:13:00') !== -1)
+      assert.ok(msg.indexOf(date.toLocaleString('de-DE')) !== -1)
       done()
     }
 
@@ -81,6 +83,6 @@ describe('LogStream', () => {
     })
     logger.plain = console.log
 
-    logger.error({time: new Date(1000 * 60 * 13)}, 'sth. went wrong')
+    logger.error({time: date}, 'sth. went wrong')
   })
 })
