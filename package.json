@@ -42,6 +42,9 @@
   "standard": {
     "env": [
       "mocha"
+    ],
+    "ignore": [
+      "test/app/backend/extensionRuntime/fakeSteps"
     ]
   },
   "dependencies": {
@@ -56,6 +59,7 @@
     "fs-extra": "^5.0.0",
     "glob": "^7.1.2",
     "inquirer": "^4.0.1",
+    "jsonlint": "^1.6.2",
     "morgan": "^1.9.0",
     "neo-async": "^2.5.0",
     "os": "^0.1.1",
