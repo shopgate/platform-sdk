@@ -46,12 +46,19 @@ describe('ExtensionAction', () => {
       commander.command = sinon.stub().returns(commander)
       commander.description = sinon.stub().returns(commander)
       commander.action = sinon.stub().returns(commander)
+      commander.option = sinon.stub().returns(commander)
 
       action.register(commander)
 
+      assert(commander.command.calledWith('extension-create [types...]'))
+      assert(commander.description.calledWith('creates a new extension'))
+      assert(commander.option.calledWith('--extension [extensionName]', 'Name of the new extension'))
+      assert(commander.option.calledWith('--organization [organizationName]', 'Name of the organization this extension belongs to'))
+
       assert(commander.command.calledWith('extension <action> [extensions...]'))
-      assert(commander.description.calledOnce)
-      assert(commander.action.calledOnce)
+      assert(commander.description.calledWith('attaches or detaches one or more extensions'))
+
+      assert(commander.action.callCount === 2)
     })
 
     it('should throw if user not logged in', () => {
