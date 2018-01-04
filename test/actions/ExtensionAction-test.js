@@ -13,34 +13,34 @@ const userSettingsFolder = path.join('build', 'usersettings')
 const appPath = path.join('build', 'appsettings')
 
 describe('ExtensionAction', () => {
+  const action = new ExtensionAction()
+
+  beforeEach(() => {
+    process.env.USER_PATH = userSettingsFolder
+    process.env.APP_PATH = appPath
+    const appId = 'foobarTest'
+
+    const appSettings = new AppSettings()
+    fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
+    appSettings.setId(appId).setAttachedExtensions({}).save().init()
+    AppSettings.setInstance(appSettings)
+
+    fsEx.emptyDirSync(userSettingsFolder)
+    UserSettings.getInstance().getSession().token = {}
+  })
+
+  afterEach((done) => {
+    UserSettings.setInstance()
+    AppSettings.setInstance()
+    delete process.env.USER_PATH
+    delete process.env.APP_PATH
+    async.parallel([
+      (cb) => fsEx.remove(userSettingsFolder, cb),
+      (cb) => fsEx.remove(appPath, cb)
+    ], done)
+  })
+
   describe('attaching and detaching', () => {
-    const action = new ExtensionAction()
-
-    beforeEach(() => {
-      process.env.USER_PATH = userSettingsFolder
-      process.env.APP_PATH = appPath
-      const appId = 'foobarTest'
-
-      const appSettings = new AppSettings()
-      fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
-      appSettings.setId(appId).setAttachedExtensions({}).save().init()
-      AppSettings.setInstance(appSettings)
-
-      fsEx.emptyDirSync(userSettingsFolder)
-      UserSettings.getInstance().getSession().token = {}
-    })
-
-    afterEach((done) => {
-      UserSettings.setInstance()
-      AppSettings.setInstance()
-      delete process.env.USER_PATH
-      delete process.env.APP_PATH
-      async.parallel([
-        (cb) => fsEx.remove(userSettingsFolder, cb),
-        (cb) => fsEx.remove(appPath, cb)
-      ], done)
-    })
-
     describe('general', () => {
       it('should register', () => {
         const commander = {}
@@ -194,17 +194,136 @@ describe('ExtensionAction', () => {
     })
   })
 
-  // describe('extension create', () => {
-  //   describe('general', () => {
-  //     it('should create an extension', (done) => {
-  //       const action = new ExtensionAction()
+  describe('extension create', () => {
+    const extensionFolder = path.join('build', 'extensions')
 
-  //       done()
-  //     })
+    beforeEach((done) => {
+      fsEx.ensureDirSync(extensionFolder)
+      done()
+    })
 
-  //     it('should fail because of sth.', (done) => {
-  //       done()
-  //     })
-  //   })
-  // })
+    afterEach((done) => {
+      fsEx.removeSync(extensionFolder)
+      done()
+    })
+
+    describe('general', () => {
+      it('should create an extension', (done) => {
+        const action = new ExtensionAction()
+
+        action.getUserInput = () => { return new Promise((resolve, reject) => { resolve({}) }) }
+        action.downloadBoilerplate = () => { return new Promise((resolve, reject) => { resolve({}) }) }
+        action.renameBoilerplate = () => { return new Promise((resolve, reject) => { resolve({}) }) }
+        action.removeUnusedDirs = () => { return new Promise((resolve, reject) => { resolve({}) }) }
+        action.removePlaceHolders = () => { return new Promise((resolve, reject) => { resolve({}) }) }
+        action.updateBackendFiles = () => { return new Promise((resolve, reject) => { resolve({}) }) }
+        action.installFrontendDependencies = () => { return new Promise((resolve, reject) => { resolve({}) }) }
+
+        action.createExtension(null, null).then(() => {
+          done()
+        })
+      })
+
+      it('should catch an error because of sth.', (done) => {
+        const action = new ExtensionAction()
+
+        action.getUserInput = () => { return new Promise((resolve, reject) => { reject(new Error('error')) }) }
+
+        action.createExtension(null, null).then(() => {
+          done()
+        })
+      })
+    })
+
+    describe('getUserInput', () => {
+      it('should get the user input by command', (done) => {
+        const options = {
+          extension: 'e1',
+          organization: 'o1',
+          trusted: 'trusted'
+        }
+        const types = ['backend', 'frontend']
+
+        const externalUserInput = {}
+        const expected = { extensionName: 'e1',
+          organizationName: 'o1',
+          trusted: false,
+          toBeCreated: { frontend: true, backend: true }
+        }
+
+        new ExtensionAction().getUserInput(options, types, externalUserInput).then(() => {
+          assert.deepEqual(externalUserInput, expected)
+          done()
+        })
+      })
+
+      // it('should get the user input by stdin', (done) => {
+      //   const externalUserInput = {}
+      //   const expected = { extensionName: 'e1',
+      //     organizationName: 'o1',
+      //     trusted: false,
+      //     toBeCreated: { frontend: true, backend: true }
+      //   }
+
+      //   new ExtensionAction().getUserInput(null, null, externalUserInput).then(() => {
+      //     assert.deepEqual(externalUserInput, expected)
+      //     done()
+      //   })
+
+      // })
+    })
+
+    describe('downloadBoilerplate', () => {
+      it('should download and unzip the boilerplate', (done) => {
+        const state = {}
+
+        // TODO: mock
+
+        const df = new ExtensionAction().downloadBoilerplate(extensionFolder, state)
+        df().then(() => {
+          assert.ok(fsEx.existsSync(path.join(extensionFolder, 'cloud-sdk-boilerplate-extension-master')))
+          assert.ok(state.cloned)
+          done()
+        })
+      })
+    })
+
+    describe('renameBoilerplate', () => {
+      it('should rename the boilerplate dir', (done) => {
+        const oldName = 'foo'
+        const newName = 'bar'
+
+        const userInput = { extensionName: newName }
+        const defaultPath = path.join(extensionFolder, oldName)
+        const state = {}
+
+        fsEx.ensureDirSync(path.join(extensionFolder, oldName))
+
+        const rb = new ExtensionAction().renameBoilerplate(userInput, defaultPath, extensionFolder, state)
+        rb().then(() => {
+          const newPath = path.join(extensionFolder, 'bar')
+          assert.equal(state.extensionPath, newPath)
+          assert.ok(state.moved)
+          assert.ok(fsEx.existsSync(newPath))
+          done()
+        })
+      })
+    })
+
+    describe('removeUnusedDirs', () => {
+
+    })
+
+    describe('removePlaceHolders', () => {
+
+    })
+
+    describe('updateBackendFiles', () => {
+
+    })
+
+    describe('installFrontendDependencies', () => {
+
+    })
+  })
 })
