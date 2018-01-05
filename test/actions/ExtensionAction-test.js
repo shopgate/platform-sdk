@@ -256,21 +256,6 @@ describe('ExtensionAction', () => {
           done()
         })
       })
-
-      // it('should get the user input by stdin', (done) => {
-      //   const externalUserInput = {}
-      //   const expected = { extensionName: 'e1',
-      //     organizationName: 'o1',
-      //     trusted: false,
-      //     toBeCreated: { frontend: true, backend: true }
-      //   }
-
-      //   new ExtensionAction().getUserInput(null, null, externalUserInput).then(() => {
-      //     assert.deepEqual(externalUserInput, expected)
-      //     done()
-      //   })
-
-      // })
     })
 
     describe('downloadBoilerplate', () => {
@@ -279,8 +264,7 @@ describe('ExtensionAction', () => {
 
         // TODO: mock
 
-        const df = new ExtensionAction().downloadBoilerplate(extensionFolder, state)
-        df().then(() => {
+        new ExtensionAction().downloadBoilerplate(extensionFolder, state).then(() => {
           assert.ok(fsEx.existsSync(path.join(extensionFolder, 'cloud-sdk-boilerplate-extension-master')))
           assert.ok(state.cloned)
           done()
@@ -299,8 +283,7 @@ describe('ExtensionAction', () => {
 
         fsEx.ensureDirSync(path.join(extensionFolder, oldName))
 
-        const rb = new ExtensionAction().renameBoilerplate(userInput, defaultPath, extensionFolder, state)
-        rb().then(() => {
+        new ExtensionAction().renameBoilerplate(userInput, defaultPath, extensionFolder, state).then(() => {
           const newPath = path.join(extensionFolder, 'bar')
           assert.equal(state.extensionPath, newPath)
           assert.ok(state.moved)
@@ -311,19 +294,156 @@ describe('ExtensionAction', () => {
     })
 
     describe('removeUnusedDirs', () => {
+      const extensionPath = path.join(extensionFolder, 'ex1')
 
+      it('should remove the unused dirs', (done) => {
+        const userInput = {
+          toBeCreated: {
+            backend: false,
+            frontend: false
+          }
+        }
+
+        const state = { extensionPath }
+
+        const dirs = [
+          path.join(extensionPath, 'frontend'),
+          path.join(extensionPath, 'extension'),
+          path.join(extensionPath, 'pipelines')
+        ]
+
+        dirs.forEach((dir) => fsEx.ensureDirSync(dir))
+
+        new ExtensionAction().removeUnusedDirs(userInput, state).then(() => {
+          dirs.forEach((dir) => assert.ok(!fsEx.existsSync(dir)))
+          done()
+        })
+      })
     })
 
     describe('removePlaceHolders', () => {
+      const extensionPath = path.join(extensionFolder, 'ex1')
 
+      beforeEach((done) => {
+        fsEx.ensureDirSync(extensionPath)
+        done()
+      })
+
+      afterEach((done) => {
+        fsEx.removeSync(extensionFolder)
+        done()
+      })
+
+      it('should remove all occurences of /awesomeExtension/ and /awesomeOrgani[s|z]ation/', (done) => {
+        const userInput = {
+          extensionName: 'e1',
+          organizationName: 'o1'
+        }
+
+        const state = { extensionPath }
+
+        const files = [
+          path.join(extensionPath, 'sth.json'),
+          path.join(extensionPath, 'sth.js')
+        ]
+
+        files.forEach((file) => fsEx.writeJsonSync(file, {awesomeExtension: 'awesomeOrganization'}))
+
+        new ExtensionAction().removePlaceHolders(userInput, state).then(() => {
+          files.forEach((file) => assert.deepEqual(fsEx.readJsonSync(file), {e1: 'o1'}))
+          done()
+        })
+      })
+
+      it('should catch the "No files match the pattern" error', (done) => {
+        const userInput = {
+          extensionName: 'e1',
+          organizationName: 'o1'
+        }
+
+        const state = { extensionPath }
+
+        const file = path.join(extensionPath, 'sth.jsx')
+        fsEx.writeJsonSync(file, {awesomeExtension: 'awesomeOrganization'})
+
+        new ExtensionAction().removePlaceHolders(userInput, state).then(() => {
+          assert.deepEqual(fsEx.readJsonSync(file), {awesomeExtension: 'awesomeOrganization'})
+          done()
+        })
+      })
     })
 
     describe('updateBackendFiles', () => {
+      const extensionPath = path.join(extensionFolder, 'ex1')
 
+      beforeEach((done) => {
+        fsEx.ensureDirSync(extensionPath)
+        done()
+      })
+
+      afterEach((done) => {
+        fsEx.removeSync(extensionFolder)
+        done()
+      })
+
+      it('should update/rename backend files', (done) => {
+        const userInput = {
+          trusted: true,
+          organizationName: 'o1',
+          toBeCreated: {
+            backend: true
+          }
+        }
+        const state = { extensionPath }
+
+        const pipelineDir = path.join(extensionPath, 'pipelines')
+        fsEx.ensureDirSync(pipelineDir)
+        fsEx.writeJSON(path.join(pipelineDir, 'awesomeOrganization.awesomePipeline.json'), {})
+
+        const exConfFile = path.join(extensionPath, 'extension-config.json')
+        fsEx.writeJSON(exConfFile, {})
+
+        new ExtensionAction().updateBackendFiles(userInput, state).then(() => {
+          assert.ok(fsEx.exists(path.join(extensionPath, 'pipelines', 'o1.awesomePipeline.json')))
+          assert.deepEqual(fsEx.readJsonSync(exConfFile), {trusted: true})
+          done()
+        })
+      })
     })
 
     describe('installFrontendDependencies', () => {
+      const extensionPath = path.join(extensionFolder, 'ex1')
+      const frontendPath = path.join(extensionPath, 'frontend')
 
+      beforeEach((done) => {
+        fsEx.ensureDirSync(frontendPath)
+        done()
+      })
+
+      afterEach((done) => {
+        fsEx.removeSync(frontendPath)
+        done()
+      })
+
+      it('should install the frontend dependencies', (done) => {
+        const state = { extensionPath }
+        const userInput = {
+          toBeCreated: {
+            frontend: true
+          }
+        }
+
+        fsEx.writeJsonSync(path.join(frontendPath, 'package.json'), {})
+
+        const c = {
+          command: 'ls',
+          params: ['-la']
+        }
+
+        new ExtensionAction().installFrontendDependencies(userInput, state, c).then(() => {
+          done()
+        })
+      })
     })
   })
 })
