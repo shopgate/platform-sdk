@@ -30,6 +30,15 @@ const actions = require('../')
 Object.keys(actions).forEach(a => new actions[a]().register(commander))
 
 // activate argument parsing
+
+// NOTE: the following is a commander workaround
+const indexOfExtension = process.argv.indexOf('extension')
+const indexOfCreate = process.argv.indexOf('create')
+if (indexOfExtension - indexOfCreate === -1) {
+  process.argv[indexOfExtension] = 'extension-create'
+  process.argv.splice(indexOfCreate, 1)
+}
+
 commander.parse(process.argv)
 
 // undefined if no cmd is given on cli, object if a cmd was found, string if not
