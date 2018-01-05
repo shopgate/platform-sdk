@@ -3,6 +3,7 @@ const path = require('path')
 const fsEx = require('fs-extra')
 const sinon = require('sinon')
 const async = require('neo-async')
+const nock = require('nock')
 
 const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
@@ -198,11 +199,13 @@ describe('ExtensionAction', () => {
     const extensionFolder = path.join('build', 'extensions')
 
     beforeEach((done) => {
+      nock.disableNetConnect()
       fsEx.ensureDirSync(extensionFolder)
       done()
     })
 
     afterEach((done) => {
+      nock.enableNetConnect()
       fsEx.removeSync(extensionFolder)
       done()
     })
@@ -262,25 +265,42 @@ describe('ExtensionAction', () => {
       it('should download and unzip the boilerplate', (done) => {
         const state = {}
 
-        // TODO: mock
+        const n = nock('https://github.com')
+          .get('/shopgate/cloud-sdk-boilerplate-extension/archive/master.zip')
+          .replyWithFile(200, path.join('test', 'testfiles', 'cloud-sdk-boilerplate-extension.zip'), {'Content-Type': 'application/zip'})
 
         new ExtensionAction().downloadBoilerplate(extensionFolder, state).then(() => {
           assert.ok(fsEx.existsSync(path.join(extensionFolder, 'cloud-sdk-boilerplate-extension-master')))
           assert.ok(state.cloned)
+          n.done()
+          done()
+        })
+      })
+
+      it('should fail because of error while loading or unzipping', (done) => {
+        const state = {}
+
+        const n = nock('https://github.com')
+        .get('/shopgate/cloud-sdk-boilerplate-extension/archive/master.zip')
+        .reply(404, {error: 'error'})
+
+        new ExtensionAction().downloadBoilerplate(extensionFolder, state).catch((err) => {
+          assert.ok(err.message.startsWith('Error while downloading boilerplate'))
+          n.done()
           done()
         })
       })
     })
 
     describe('renameBoilerplate', () => {
+      const oldName = 'foo'
+      const newName = 'bar'
+
+      const userInput = { extensionName: newName }
+      const defaultPath = path.join(extensionFolder, oldName)
+      const state = {}
+
       it('should rename the boilerplate dir', (done) => {
-        const oldName = 'foo'
-        const newName = 'bar'
-
-        const userInput = { extensionName: newName }
-        const defaultPath = path.join(extensionFolder, oldName)
-        const state = {}
-
         fsEx.ensureDirSync(path.join(extensionFolder, oldName))
 
         new ExtensionAction().renameBoilerplate(userInput, defaultPath, extensionFolder, state).then(() => {
@@ -288,6 +308,16 @@ describe('ExtensionAction', () => {
           assert.equal(state.extensionPath, newPath)
           assert.ok(state.moved)
           assert.ok(fsEx.existsSync(newPath))
+          done()
+        })
+      })
+
+      it('should fail because moving failed', (done) => {
+        fsEx.ensureDirSync(path.join(extensionFolder, oldName))
+        fsEx.ensureDirSync(path.join(extensionFolder, newName))
+
+        new ExtensionAction().renameBoilerplate(userInput, defaultPath, extensionFolder, state).catch((err) => {
+          assert.ok(err.message.indexOf('EEXIST') !== -1)
           done()
         })
       })
@@ -409,6 +439,10 @@ describe('ExtensionAction', () => {
           done()
         })
       })
+
+      it('should return early because the function has nothing to do', () => {
+        assert.doesNotThrow(() => new ExtensionAction().updateBackendFiles({toBeCreated: {}}, {}))
+      })
     })
 
     describe('installFrontendDependencies', () => {
@@ -443,6 +477,10 @@ describe('ExtensionAction', () => {
         new ExtensionAction().installFrontendDependencies(userInput, state, c).then(() => {
           done()
         })
+      })
+
+      it('should return early because the function has nothing to do', () => {
+        assert.doesNotThrow(() => new ExtensionAction().installFrontendDependencies({toBeCreated: {}}, {}, {}))
       })
     })
   })
