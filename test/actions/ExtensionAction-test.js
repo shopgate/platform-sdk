@@ -230,11 +230,29 @@ describe('ExtensionAction', () => {
       it('should catch an error because of sth.', (done) => {
         const action = new ExtensionAction()
 
-        action.getUserInput = () => { return new Promise((resolve, reject) => { reject(new Error('error')) }) }
+        action.getUserInput = () => { return new Promise((resolve, reject) => { resolve() }) }
+        action.downloadBoilerplate = (extensionsFolder, state) => {
+          state.cloned = true
+          return new Promise((resolve, reject) => {
+            reject(new Error('error'))
+          })
+        }
+        action.cleanUp = (state) => assert.ok(state.cloned)
 
         action.createExtension(null, null).then(() => {
           done()
         })
+      })
+
+      it('should throw error "not logged in"', (done) => {
+        UserSettings.getInstance().getSession().token = undefined
+
+        try {
+          new ExtensionAction().createExtension(null, null)
+        } catch (err) {
+          assert.equal(err.message, 'not logged in')
+          done()
+        }
       })
     })
 
@@ -481,6 +499,55 @@ describe('ExtensionAction', () => {
 
       it('should return early because the function has nothing to do', () => {
         assert.doesNotThrow(() => new ExtensionAction().installFrontendDependencies({toBeCreated: {}}, {}, {}))
+      })
+
+      it('should fail because the command failed', (done) => {
+        const state = { extensionPath }
+        const userInput = {
+          toBeCreated: {
+            frontend: true
+          }
+        }
+
+        fsEx.writeJsonSync(path.join(frontendPath, 'package.json'), {})
+
+        const c = {
+          command: 'cd',
+          params: ['doesNotExist']
+        }
+
+        new ExtensionAction().installFrontendDependencies(userInput, state, c).catch((err) => {
+          assert.ok(err.message.startsWith('Install process exited with code'))
+          done()
+        })
+      })
+    })
+
+    describe('cleanUp', () => {
+      const extensionPath = path.join(extensionFolder, 'ex1')
+
+      beforeEach((done) => {
+        fsEx.ensureDirSync(extensionPath)
+        done()
+      })
+
+      afterEach((done) => {
+        fsEx.removeSync(extensionFolder)
+        done()
+      })
+
+      it('should delete the extension directory', () => {
+        const state = {
+          cloned: true,
+          moved: true,
+          extensionPath
+        }
+
+        assert.ok(fsEx.existsSync(extensionPath))
+
+        new ExtensionAction().cleanUp(state, 'doesNotExist')
+
+        assert.ok(!fsEx.existsSync(extensionPath))
       })
     })
   })
