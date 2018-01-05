@@ -10,6 +10,7 @@
 * Update log when pipeline file is invalid; JSON parse error will be displayed
 * Better error log, when something's wrong in a step file
 * Improve logger output of extension logger
+* Add extension create command
 
 ## v1.1.1
 * Update `cloud-sdk-webpack` module to v1.5.6.
