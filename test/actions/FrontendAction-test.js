@@ -63,7 +63,7 @@ describe('FrontendAction', () => {
         frontendAction.run('start')
         assert.fail()
       } catch (err) {
-        assert.equal(err.message, 'Please pass the folder of desired theme. Run `sgcloud frontend start -t <foldername of the theme>`')
+        assert.equal(err.message, 'Please pass the folder of the desired theme. Run `sgcloud frontend start -t <foldername of the theme>`')
       }
     })
 
