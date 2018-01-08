@@ -10,6 +10,8 @@ const fsEx = require('fs-extra')
 const nock = require('nock')
 
 describe('InitAction', () => {
+  let userSettings
+
   it('should register', () => {
     const commander = {}
     commander.command = sinon.stub().returns(commander)
@@ -29,36 +31,36 @@ describe('InitAction', () => {
     process.env.USER_PATH = userSettingsFolder
     process.env.SGCLOUD_DC_ADDRESS = 'http://test.test'
     fsEx.emptyDirSync(userSettingsFolder)
+    userSettings = new UserSettings()
   })
 
   afterEach((done) => {
-    UserSettings.setInstance()
     delete process.env.USER_PATH
     delete process.env.SGCLOUD_DC_ADDRESS
     fsEx.remove(userSettingsFolder, () => {
       delete process.env.APP_PATH
-      AppSettings.setInstance()
       fsEx.remove(appPath, done)
     })
   })
 
   it('should throw if user not logged in', (done) => {
-    UserSettings.getInstance().getSession().token = null
+    userSettings.setToken(null)
     const init = new InitAction()
-    init.run(null, (err) => {
-      assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
+    try {
+      init.run(null)
+    } catch (e) {
+      assert.equal(e.message, 'You\'re not logged in! Please run `sgcloud login` again.')
       done()
-    })
+    }
   })
 
   it('should reinit the application if selected', (done) => {
-    UserSettings.getInstance().getSession().token = {}
+    userSettings.setToken({})
     const appId = 'foobarTest'
     process.env.APP_PATH = appPath
     const appSettings = new AppSettings()
     fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
-    appSettings.setId(appId).setAttachedExtensions({}).save().init()
-    AppSettings.setInstance(appSettings)
+    appSettings.setId(appId)
 
     const dcMock = nock(process.env.SGCLOUD_DC_ADDRESS)
       .get(`/applications/test`)
@@ -72,7 +74,6 @@ describe('InitAction', () => {
         assert.ifError(err)
         assert.ifError(err2)
         delete process.env.APP_PATH
-        AppSettings.setInstance()
         dcMock.done()
         done()
       })
@@ -80,9 +81,8 @@ describe('InitAction', () => {
   })
 
   it('should throw an error because getting the application data as validation fails', (done) => {
-    AppSettings.setInstance()
     process.env.APP_PATH = appPath
-    UserSettings.getInstance().getSession().token = {}
+    userSettings.setToken({})
 
     const dcMock = nock(process.env.SGCLOUD_DC_ADDRESS)
     .get(`/applications/test`)
@@ -92,7 +92,6 @@ describe('InitAction', () => {
       fsEx.remove(appPath, () => {
         assert.equal(err.message, 'The application test is not available or permissions are missing (message: Getting application data failed). Please check the application at developer.shopgate.com!')
         delete process.env.APP_PATH
-        AppSettings.setInstance()
         dcMock.done()
         done()
       })
@@ -100,9 +99,8 @@ describe('InitAction', () => {
   })
 
   it('should create folders, settings file and save appId', (done) => {
-    AppSettings.setInstance()
     process.env.APP_PATH = appPath
-    UserSettings.getInstance().getSession().token = {}
+    userSettings.setToken({})
 
     const dcMock = nock(process.env.SGCLOUD_DC_ADDRESS)
     .get(`/applications/test`)
@@ -113,7 +111,6 @@ describe('InitAction', () => {
         assert.ifError(err)
         assert.ifError(err2)
         delete process.env.APP_PATH
-        AppSettings.setInstance()
         dcMock.done()
         done()
       })

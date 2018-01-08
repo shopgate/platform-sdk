@@ -4,15 +4,22 @@
  * This source code is licensed under the Apache 2.0 license found in the
  * LICENSE file in the root directory of this source tree.
  */
-
+const fsEx = require('fs-extra')
 const assert = require('assert')
 const FrontendSettings = require('../../../lib/app/frontend/FrontendSettings')
 
-let settings = new FrontendSettings()
-
 describe('FrontendSettings', () => {
+  let settingsPath
+  let settings
   beforeEach(() => {
-    settings.settings = {}
+    settingsPath = 'foobar'
+    settings = new FrontendSettings(settingsPath)
+    fsEx.ensureDirSync(settings.settingsFolder)
+    fsEx.writeJsonSync(settings.frontendSettingsFile, {})
+  })
+
+  afterEach(() => {
+    fsEx.removeSync(settings.settingsFolder)
   })
 
   it('can be instanciated', () => {
