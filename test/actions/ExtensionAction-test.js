@@ -498,9 +498,10 @@ describe('ExtensionAction', () => {
 
         fsEx.writeJsonSync(path.join(frontendPath, 'package.json'), {})
 
+        // just do sth.
         const c = {
-          command: 'ls',
-          params: ['-la']
+          command: 'npm',
+          params: ['-v']
         }
 
         new ExtensionAction().installFrontendDependencies(userInput, state, c).then(() => {
@@ -523,15 +524,15 @@ describe('ExtensionAction', () => {
         fsEx.writeJsonSync(path.join(frontendPath, 'package.json'), {})
 
         const c = {
-          command: 'cd',
-          params: ['doesNotExist']
+          command: 'npm',
+          params: ['i', 'nonExistentPackage']
         }
 
         new ExtensionAction().installFrontendDependencies(userInput, state, c).catch((err) => {
           assert.ok(err.message.startsWith('Install process exited with code'))
           done()
         })
-      })
+      }).timeout(10000)
     })
 
     describe('cleanUp', () => {
