@@ -237,7 +237,7 @@ describe('FrontendSetup', () => {
 
     it('should save the settings', () => {
       frontendSetup.save(defaultConfig)
-      assert.equal(JSON.stringify(frontendSetup.settings.getFrontendSettings()._loadSettings()), JSON.stringify(defaultConfig))
+      assert.equal(JSON.stringify(frontendSetup.settings.getFrontendSettings().loadSettings()), JSON.stringify(defaultConfig))
     })
 
     it('should show two console logs on success', () => {
