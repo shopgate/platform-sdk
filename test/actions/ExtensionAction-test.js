@@ -15,24 +15,23 @@ const appPath = path.join('build', 'appsettings')
 
 describe('ExtensionAction', () => {
   const action = new ExtensionAction()
+  let userSettings
+  let appSettings
 
   beforeEach(() => {
     process.env.USER_PATH = userSettingsFolder
     process.env.APP_PATH = appPath
     const appId = 'foobarTest'
 
-    const appSettings = new AppSettings()
+    appSettings = new AppSettings()
     fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
-    appSettings.setId(appId).setAttachedExtensions({}).save().init()
-    AppSettings.setInstance(appSettings)
+    appSettings.setId(appId)
 
     fsEx.emptyDirSync(userSettingsFolder)
-    UserSettings.getInstance().getSession().token = {}
+    userSettings = new UserSettings().setToken({})
   })
 
   afterEach((done) => {
-    UserSettings.setInstance()
-    AppSettings.setInstance()
     delete process.env.USER_PATH
     delete process.env.APP_PATH
     async.parallel([
@@ -65,11 +64,11 @@ describe('ExtensionAction', () => {
       })
 
       it('should throw if user not logged in', () => {
-        UserSettings.getInstance().getSession().token = null
+        userSettings.setToken(null)
         try {
           action.run('attach')
         } catch (err) {
-          assert.equal(err.message, 'not logged in')
+          assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
         }
       })
 
@@ -89,10 +88,12 @@ describe('ExtensionAction', () => {
 
         const extPath = path.join(appPath, 'extensions', name)
         fsEx.ensureDirSync(extPath)
-        fsEx.writeJSONSync(path.join(extPath, 'extension-config.json'), {id})
+        fsEx.writeJSONSync(path.join(extPath, 'extension-config.json'), {id, trusted: false})
 
         action.run('attach', [name])
-        assert.deepEqual(AppSettings.getInstance().attachedExtensions[id], {path: name, trusted: false})
+
+        const config = fsEx.readJsonSync(appSettings.attachedExtensionsFile)
+        assert.deepEqual(config.attachedExtensions[id], {path: name, trusted: false})
       })
 
       it('should attach all local extensions if no one is given', () => {
@@ -103,13 +104,13 @@ describe('ExtensionAction', () => {
         const extPath2 = path.join(appPath, 'extensions', name2)
         fsEx.ensureDirSync(extPath1)
         fsEx.ensureDirSync(extPath2)
-        fsEx.writeJSONSync(path.join(extPath1, 'extension-config.json'), {id: 'existentExtension1'})
-        fsEx.writeJSONSync(path.join(extPath2, 'extension-config.json'), {id: 'existentExtension2'})
+        fsEx.writeJSONSync(path.join(extPath1, 'extension-config.json'), {id: 'existentExtension1', trusted: false})
+        fsEx.writeJSONSync(path.join(extPath2, 'extension-config.json'), {id: 'existentExtension2', trusted: false})
 
         action.run('attach', [name1])
         action.run('attach')
-
-        assert.deepEqual(AppSettings.getInstance().attachedExtensions, {
+        const config = fsEx.readJsonSync(appSettings.attachedExtensionsFile)
+        assert.deepEqual(config.attachedExtensions, {
           existentExtension1: { path: 'existentExtension1', trusted: false },
           existentExtension2: { path: 'existentExtension2', trusted: false }
         })
@@ -137,8 +138,6 @@ describe('ExtensionAction', () => {
         } catch (e) {
           assert.equal(e.message, `Config file of '${name}' is invalid or not existent`)
         }
-
-        assert.deepEqual(AppSettings.getInstance().attachedExtensions, {})
       })
 
       it('should throw an error if extension is already attached', () => {
@@ -155,6 +154,15 @@ describe('ExtensionAction', () => {
           assert.equal(e.message, `Extension 'existentExtension (existentExtension) is already attached`)
         }
       })
+
+      it('should throw if user not logged in', () => {
+        userSettings.setToken(null)
+        try {
+          action.run('attach')
+        } catch (err) {
+          assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
+        }
+      })
     })
 
     describe('detaching', () => {
@@ -165,9 +173,11 @@ describe('ExtensionAction', () => {
         fsEx.ensureDirSync(extPath)
         fsEx.writeJSONSync(path.join(extPath, 'extension-config.json'), {id: name})
 
-        AppSettings.getInstance().attachExtension(name, {id: name, trusted: false})
+        appSettings.attachExtension(name, {id: name, trusted: false})
         action.run('detach', [name])
-        assert.deepEqual(AppSettings.getInstance().attachedExtensions, {})
+
+        const config = fsEx.readJsonSync(appSettings.attachedExtensionsFile)
+        assert.deepEqual(config.attachedExtensions, {})
       })
 
       it('should skip if extension was not attached', (done) => {
@@ -186,11 +196,12 @@ describe('ExtensionAction', () => {
       })
 
       it('should detach all extensions if none was specified', () => {
-        AppSettings.getInstance().attachExtension('ext1', {id: 'ext1'})
-        AppSettings.getInstance().attachExtension('ext2', {id: 'ext2'})
+        appSettings.attachExtension('ext2', {id: 'ext2'})
+        appSettings.attachExtension('ext1', {id: 'ext1'})
 
         action.run('detach')
-        assert.deepEqual(AppSettings.getInstance().attachedExtensions, {})
+        const config = fsEx.readJsonSync(appSettings.attachedExtensionsFile)
+        assert.deepEqual(config.attachedExtensions, {})
       })
     })
   })
@@ -245,12 +256,12 @@ describe('ExtensionAction', () => {
       })
 
       it('should throw error "not logged in"', (done) => {
-        UserSettings.getInstance().getSession().token = undefined
+        userSettings.setToken(null)
 
         try {
           new ExtensionAction().createExtension(null, null)
         } catch (err) {
-          assert.equal(err.message, 'not logged in')
+          assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
           done()
         }
       })

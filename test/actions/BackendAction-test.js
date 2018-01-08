@@ -3,7 +3,6 @@ const sinon = require('sinon')
 const path = require('path')
 const fsEx = require('fs-extra')
 const proxyquire = require('proxyquire')
-const async = require('neo-async')
 
 const utils = require('../../lib/utils/utils')
 
@@ -38,20 +37,28 @@ describe('BackendAction', () => {
     }
   })
 
+  let userSettings
+  let appSettings
+
+  before(() => {
+    process.env.USER_PATH = userSettingsFolder
+    process.env.APP_PATH = appPath
+    fsEx.emptyDirSync(userSettingsFolder)
+    fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
+  })
+
   beforeEach(function (done) {
     fsEx.emptyDirSync(userSettingsFolder)
     process.env.USER_PATH = userSettingsFolder
-    UserSettings.getInstance().getSession().token = {}
-
-    process.env.APP_PATH = appPath
-    const appSettings = new AppSettings()
     fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
-    appSettings.setId('foobarTest').setAttachedExtensions({}).save()
 
-    appSettings.init()
-    AppSettings.setInstance(appSettings)
+    userSettings = new UserSettings().setToken({})
+    appSettings = new AppSettings().setId('foobarTest')
 
     backendAction = new BackendAction()
+    backendAction.userSettings = userSettings
+    backendAction.appSettings = appSettings
+
     fsEx.emptyDirSync(backendAction.pipelinesFolder)
     backendAction.pipelineWatcher = {
       start: (cb) => cb(),
@@ -71,22 +78,14 @@ describe('BackendAction', () => {
     done()
   })
 
-  afterEach(function (done) {
-    UserSettings.setInstance()
-    AppSettings.setInstance()
-    delete process.env.USER_PATH
-    delete process.env.APP_PATH
-
+  afterEach((done) => {
     backendAction.pipelineWatcher.close()
-    backendAction.extensionConfigWatcher.stop((err) => {
-      if (err) return done(err)
-      async.parallel([
-        (cb) => fsEx.remove(userSettingsFolder, cb),
-        (cb) => fsEx.remove(appPath, cb)
-      ], (err) => {
-        done(err)
-      })
-    })
+    backendAction.extensionConfigWatcher.stop(done)
+  })
+
+  after(() => {
+    fsEx.removeSync(userSettingsFolder)
+    fsEx.removeSync(appPath)
   })
 
   describe('general', () => {
@@ -103,13 +102,12 @@ describe('BackendAction', () => {
       assert(commander.action.calledOnce)
     })
 
-    it('should throw if user not logged in', (done) => {
-      UserSettings.getInstance().getSession().token = null
+    it('should throw if user not logged in', () => {
+      userSettings.setToken()
       try {
-        backendAction.run('attach')
+        backendAction.run('start')
       } catch (err) {
         assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
-        done()
       }
     })
 
@@ -169,7 +167,7 @@ describe('BackendAction', () => {
     it('should call dcClient if pipelines were updated', (done) => {
       const pipeline = {pipeline: {id: 'plFooBarline1'}}
       const appId = 'foobarAppIdDcTestBackendAction'
-      AppSettings.getInstance().setId(appId)
+      appSettings.setId(appId)
 
       const file = path.join(backendAction.pipelinesFolder, 'plFooBarline1.json')
       assert.equal(backendAction.pipelines[file], undefined)

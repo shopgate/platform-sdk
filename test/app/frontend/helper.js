@@ -23,11 +23,9 @@ const setupAppEnvironment = (callback = () => {}) => {
   process.env.APP_PATH = appSettingsPath
   process.env.appId = appId
 
-  const appSettings = new AppSettings()
   fsEx.emptyDirSync(join(appSettingsPath, AppSettings.SETTINGS_FOLDER))
-  appSettings.setId(appId).setAttachedExtensions({}).save().init()
-  AppSettings.setInstance(appSettings)
-  UserSettings.getInstance().getSession().token = {}
+  new AppSettings().setId(appId)
+  new UserSettings().setToken({})
 
   callback()
 }
@@ -37,8 +35,6 @@ const setupAppEnvironment = (callback = () => {}) => {
  * @param {Function} callback Anything local that should be called in afterEach afterwards.
  */
 const clearAppEnviroment = (callback = () => {}) => {
-  UserSettings.setInstance()
-
   delete process.env.USER_PATH
   delete process.env.APP_PATH
   delete process.env.appId
