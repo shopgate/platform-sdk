@@ -345,7 +345,9 @@ describe('ExtensionAction', () => {
         fsEx.ensureDirSync(path.join(extensionFolder, oldName))
         fsEx.ensureDirSync(path.join(extensionFolder, newName))
 
-        new ExtensionAction().renameBoilerplate(userInput, defaultPath, extensionFolder, state).catch((err) => {
+        new ExtensionAction().renameBoilerplate(userInput, defaultPath, extensionFolder, state).then(() => {
+          if (/^win/.test(process.platform)) done()
+        }).catch((err) => {
           assert.ok(err.message.indexOf('EEXIST') !== -1)
           done()
         })
