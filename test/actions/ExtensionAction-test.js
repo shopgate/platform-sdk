@@ -500,7 +500,7 @@ describe('ExtensionAction', () => {
 
         // just do sth.
         const c = {
-          command: 'npm',
+          command: /^win/.test(process.platform) ? 'npm.cmd' : 'npm',
           params: ['-v']
         }
 
@@ -524,7 +524,7 @@ describe('ExtensionAction', () => {
         fsEx.writeJsonSync(path.join(frontendPath, 'package.json'), {})
 
         const c = {
-          command: 'npm',
+          command: /^win/.test(process.platform) ? 'npm.cmd' : 'npm',
           params: ['i', 'nonExistentPackage']
         }
 
