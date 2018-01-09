@@ -46,7 +46,7 @@ describe('ExtensionAction', () => {
       commander.description = sinon.stub().returns(commander)
       commander.action = sinon.stub().returns(commander)
 
-      action.register(commander)
+      ExtensionAction.register(commander)
 
       assert(commander.command.calledWith('extension <action> [extensions...]'))
       assert(commander.description.calledOnce)
