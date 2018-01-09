@@ -95,7 +95,7 @@ describe('BackendAction', () => {
       commander.description = sinon.stub().returns(commander)
       commander.action = sinon.stub().returns(commander)
 
-      backendAction.register(commander)
+      BackendAction.register(commander)
 
       assert(commander.command.calledWith('backend <action>'))
       assert(commander.description.calledOnce)
