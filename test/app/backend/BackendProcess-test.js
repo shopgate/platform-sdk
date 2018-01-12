@@ -82,6 +82,10 @@ describe('BackendProcess', () => {
         assert.deepEqual(data, {applicationId: 'shop_10006'})
         cb()
       })
+
+      socketIOMock.on('reset', (data, cb) => cb())
+      socketIOMock.on('reload', (data, cb) => cb())
+
       backendProcess.connect(done)
     })
 
@@ -98,11 +102,44 @@ describe('BackendProcess', () => {
       })
     })
 
+    it('should fail if socket sends error (reset)', (done) => {
+      socketIOMock.on('selectApplication', (data, cb) => {
+        assert.deepEqual(data, {applicationId: 'shop_10006'})
+        cb()
+      })
+
+      socketIOMock.on('reset', (data, cb) => cb(new Error('error')))
+      backendProcess.connect((err) => {
+        assert.ok(err)
+        assert.equal(err.message, 'error')
+        done()
+      })
+    })
+
+    it('should fail if socket sends error (reload)', (done) => {
+      socketIOMock.on('selectApplication', (data, cb) => {
+        assert.deepEqual(data, {applicationId: 'shop_10006'})
+        cb()
+      })
+
+      socketIOMock.on('reset', (data, cb) => cb())
+      socketIOMock.on('reload', (data, cb) => cb(new Error('error')))
+
+      backendProcess.connect((err) => {
+        assert.ok(err)
+        assert.equal(err.message, 'error')
+        done()
+      })
+    })
+
     it('should forward on extensions attach', (done) => {
       socketIOMock.on('selectApplication', (data, cb) => {
         assert.deepEqual(data, {applicationId: 'shop_10006'})
         cb()
       })
+
+      socketIOMock.on('reset', (data, cb) => cb())
+      socketIOMock.on('reload', (data, cb) => cb())
 
       socketIOMock.on('registerExtension', (data, cb) => {
         assert.deepEqual(data, {extensionId: 'testExt', trusted: false})
@@ -120,6 +157,9 @@ describe('BackendProcess', () => {
         assert.deepEqual(data, {applicationId: 'shop_10006'})
         cb()
       })
+
+      socketIOMock.on('reset', (data, cb) => cb())
+      socketIOMock.on('reload', (data, cb) => cb())
 
       socketIOMock.on('deregisterExtension', (data, cb) => {
         assert.deepEqual(data, {extensionId: 'testExt', trusted: false})
