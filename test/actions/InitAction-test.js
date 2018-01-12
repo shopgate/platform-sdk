@@ -19,7 +19,7 @@ describe('InitAction', () => {
     commander.option = sinon.stub().returns(commander)
     commander.action = sinon.stub().returns(commander)
 
-    new InitAction().register(commander)
+    InitAction.register(commander)
 
     assert(commander.command.calledWith('init'))
     assert(commander.option.calledWith('--appId <appId>'))

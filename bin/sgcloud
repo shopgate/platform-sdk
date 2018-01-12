@@ -27,7 +27,7 @@ caporal.version(pkg.version)
 
 // load all custom actions
 const actions = require('../')
-Object.keys(actions).forEach(a => new actions[a]().register(caporal))
+Object.keys(actions).forEach(a => actions[a].register(caporal))
 
 // activate argument parsing
 caporal.parse(process.argv)

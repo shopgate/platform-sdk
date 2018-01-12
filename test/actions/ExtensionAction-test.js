@@ -50,7 +50,7 @@ describe('ExtensionAction', () => {
         caporal.option = sinon.stub().returns(caporal)
         caporal.argument = sinon.stub().returns(caporal)
 
-        action.register(caporal)
+        ExtensionAction.register(caporal)
 
         assert(caporal.command.calledWith('extension create'))
         assert(caporal.description.calledWith('Creates a new extension'))

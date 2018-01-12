@@ -95,7 +95,7 @@ describe('BackendAction', () => {
       caporal.description = sinon.stub().returns(caporal)
       caporal.action = sinon.stub().returns(caporal)
 
-      backendAction.register(caporal)
+      BackendAction.register(caporal)
 
       assert(caporal.command.calledWith('backend start'))
       assert(caporal.description.calledOnce)
