@@ -50,13 +50,12 @@ describe('ExtensionAction', () => {
         caporal.option = sinon.stub().returns(caporal)
         caporal.argument = sinon.stub().returns(caporal)
 
-        action.register(caporal)
+        ExtensionAction.register(caporal)
 
         assert(caporal.command.calledWith('extension create'))
         assert(caporal.description.calledWith('Creates a new extension'))
         assert(caporal.argument.calledWith('[types...]', 'Types of the extension. Possible types are: frontend, backend'))
-        assert(caporal.option.calledWith('--extension [extensionName]', 'Name of the new extension'))
-        assert(caporal.option.calledWith('--organization [organizationName]', 'Name of the organization this extension belongs to'))
+        assert(caporal.option.calledWith('--extension [extensionName]', 'Name of the new extension (e.g: @myAwesomeOrg/awesomeExtension)'))
         assert(caporal.option.calledWith('--trusted [type]', 'only valid if you\'re about to create a backend extension'))
 
         assert(caporal.command.calledWith('extension attach'))
@@ -223,34 +222,34 @@ describe('ExtensionAction', () => {
       it('should create an extension', (done) => {
         const action = new ExtensionAction()
 
-        action.getUserInput = () => { return new Promise((resolve, reject) => { resolve({}) }) }
-        action.downloadBoilerplate = () => { return new Promise((resolve, reject) => { resolve({}) }) }
-        action.renameBoilerplate = () => { return new Promise((resolve, reject) => { resolve({}) }) }
-        action.removeUnusedDirs = () => { return new Promise((resolve, reject) => { resolve({}) }) }
-        action.removePlaceHolders = () => { return new Promise((resolve, reject) => { resolve({}) }) }
-        action.updateBackendFiles = () => { return new Promise((resolve, reject) => { resolve({}) }) }
-        action.installFrontendDependencies = () => { return new Promise((resolve, reject) => { resolve({}) }) }
+        action._getUserInput = () => { return new Promise((resolve, reject) => { resolve({}) }) }
+        action._checkIfExtensionExists = () => { return new Promise((resolve, reject) => { resolve({}) }) }
+        action._downloadBoilerplate = () => { return new Promise((resolve, reject) => { resolve({}) }) }
+        action._renameBoilerplate = () => { return new Promise((resolve, reject) => { resolve({}) }) }
+        action._removeUnusedDirs = () => { return new Promise((resolve, reject) => { resolve({}) }) }
+        action._removePlaceholders = () => { return new Promise((resolve, reject) => { resolve({}) }) }
+        action._updateBackendFiles = () => { return new Promise((resolve, reject) => { resolve({}) }) }
+        action._installFrontendDependencies = () => { return new Promise((resolve, reject) => { resolve({}) }) }
 
         action.createExtension({}, null).then(() => {
           done()
         })
       })
 
-      it('should catch an error because of sth.', (done) => {
+      it('should catch an error because of sth.', () => {
         const action = new ExtensionAction()
 
-        action.getUserInput = () => { return new Promise((resolve, reject) => { resolve() }) }
-        action.downloadBoilerplate = (extensionsFolder, state) => {
+        action._getUserInput = () => { return new Promise((resolve, reject) => { resolve() }) }
+        action._checkIfExtensionExists = () => { return new Promise((resolve, reject) => { resolve({}) }) }
+        action._downloadBoilerplate = (extensionsFolder, state) => {
           state.cloned = true
           return new Promise((resolve, reject) => {
             reject(new Error('error'))
           })
         }
-        action.cleanUp = (state) => assert.ok(state.cloned)
+        action._cleanUp = (state) => assert.ok(state.cloned)
 
-        action.createExtension({}, null).then(() => {
-          done()
-        })
+        return action.createExtension({}, null)
       })
 
       it('should throw error "not logged in"', (done) => {
@@ -265,61 +264,91 @@ describe('ExtensionAction', () => {
       })
     })
 
-    describe('getUserInput', () => {
-      it('should get the user input by command', (done) => {
+    describe('_getUserInput', () => {
+      it('should get the user input by command', () => {
         const options = {
-          extension: 'e1',
-          organization: 'o1',
+          extension: '@o1/e1',
           trusted: 'trusted'
         }
         const types = ['backend', 'frontend']
 
         const externalUserInput = {}
-        const expected = { extensionName: 'e1',
+        const expected = {
+          extensionName: '@o1/e1',
           organizationName: 'o1',
           trusted: false,
           toBeCreated: { frontend: true, backend: true }
         }
 
-        new ExtensionAction().getUserInput(options, types, externalUserInput).then(() => {
-          assert.deepEqual(externalUserInput, expected)
-          done()
-        })
+        return new ExtensionAction()
+          ._getUserInput(options, types, externalUserInput)
+          .then(() => {
+            assert.deepEqual(externalUserInput, expected)
+          })
       })
     })
 
-    describe('downloadBoilerplate', () => {
-      it('should download and unzip the boilerplate', (done) => {
+    describe('_checkIfExtensionExists', () => {
+      let tempFolder
+      let folderPath
+      beforeEach(() => {
+        tempFolder = fsEx.mkdtempSync('checkIfExtensionExists')
+        folderPath = path.join(tempFolder, AppSettings.EXTENSIONS_FOLDER, 'testExtension')
+        fsEx.ensureDirSync(folderPath)
+      })
+
+      afterEach(() => {
+        fsEx.removeSync(tempFolder)
+      })
+
+      it('should get the user input by command', () => {
+        const extensionAction = new ExtensionAction()
+        extensionAction.settings = {getApplicationFolder: () => tempFolder}
+
+        return extensionAction._checkIfExtensionExists('testExtension')
+          .then(() => {
+            assert.fail('Should not be called')
+          })
+          .catch((err) => {
+            assert.equal(err.message, 'The extension \'testExtension\' already exists')
+          })
+      })
+    })
+
+    describe('_downloadBoilerplate', () => {
+      it('should download and unzip the boilerplate', () => {
         const state = {}
 
         const n = nock('https://github.com')
           .get('/shopgate/cloud-sdk-boilerplate-extension/archive/master.zip')
           .replyWithFile(200, path.join('test', 'testfiles', 'cloud-sdk-boilerplate-extension.zip'), {'Content-Type': 'application/zip'})
 
-        new ExtensionAction().downloadBoilerplate(extensionFolder, state).then(() => {
-          assert.ok(fsEx.existsSync(path.join(extensionFolder, 'cloud-sdk-boilerplate-extension-master')))
-          assert.ok(state.cloned)
-          n.done()
-          done()
-        })
+        return new ExtensionAction()
+          ._downloadBoilerplate(extensionFolder, state)
+          .then(() => {
+            assert.ok(fsEx.existsSync(path.join(extensionFolder, 'cloud-sdk-boilerplate-extension-master')))
+            assert.ok(state.cloned)
+            n.done()
+          })
       })
 
-      it('should fail because of error while loading or unzipping', (done) => {
+      it('should fail because of error while loading or unzipping', () => {
         const state = {}
 
         const n = nock('https://github.com')
         .get('/shopgate/cloud-sdk-boilerplate-extension/archive/master.zip')
         .reply(404, {error: 'error'})
 
-        new ExtensionAction().downloadBoilerplate(extensionFolder, state).catch((err) => {
-          assert.ok(err.message.startsWith('Error while downloading boilerplate'))
-          n.done()
-          done()
-        })
+        return new ExtensionAction()
+          ._downloadBoilerplate(extensionFolder, state)
+          .catch((err) => {
+            assert.ok(err.message.startsWith('Error while downloading boilerplate'))
+            n.done()
+          })
       })
     })
 
-    describe('renameBoilerplate', () => {
+    describe('_renameBoilerplate', () => {
       const oldName = 'foo'
       const newName = 'bar'
 
@@ -331,7 +360,7 @@ describe('ExtensionAction', () => {
         fsEx.ensureDirSync(path.join(extensionFolder, oldName))
 
         return new ExtensionAction()
-          .renameBoilerplate(userInput, defaultPath, extensionFolder, state)
+          ._renameBoilerplate(userInput, defaultPath, extensionFolder, state)
           .then(() => {
             const newPath = path.join(extensionFolder, 'bar')
             assert.equal(state.extensionPath, newPath)
@@ -345,19 +374,21 @@ describe('ExtensionAction', () => {
         fsEx.ensureDirSync(path.join(extensionFolder, newName, 'test'))
 
         return new ExtensionAction()
-          .renameBoilerplate(userInput, defaultPath, extensionFolder, state)
+          ._renameBoilerplate(userInput, defaultPath, extensionFolder, state)
           .then(() => {
             assert.fail('It should fail')
           }).catch((err) => {
-            assert.ok(err.message.indexOf('ENOTEMPTY') !== -1)
+            if (/^win/.test(process.platform)) return assert.ok(err.message.indexOf('EPERM') !== -1)
+            if (/^darwin/.test(process.platform)) return assert.ok(err.message.indexOf('ENOTEMPTY') !== -1)
+            assert.ok(err.message.indexOf('EEXIST') !== -1)
           })
       })
     })
 
-    describe('removeUnusedDirs', () => {
+    describe('_removeUnusedDirs', () => {
       const extensionPath = path.join(extensionFolder, 'ex1')
 
-      it('should remove the unused dirs', (done) => {
+      it('should remove the unused dirs', () => {
         const userInput = {
           toBeCreated: {
             backend: false,
@@ -375,10 +406,11 @@ describe('ExtensionAction', () => {
 
         dirs.forEach((dir) => fsEx.ensureDirSync(dir))
 
-        new ExtensionAction().removeUnusedDirs(userInput, state).then(() => {
-          dirs.forEach((dir) => assert.ok(!fsEx.existsSync(dir)))
-          done()
-        })
+        return new ExtensionAction()
+          ._removeUnusedDirs(userInput, state)
+          .then(() => {
+            dirs.forEach((dir) => assert.ok(!fsEx.existsSync(dir)))
+          })
       })
     })
 
@@ -395,9 +427,9 @@ describe('ExtensionAction', () => {
         done()
       })
 
-      it('should remove all occurences of /awesomeExtension/ and /awesomeOrgani[s|z]ation/', (done) => {
+      it('should remove all occurences of /@awesomeOrganization/awesomeExtension and /awesomeOrganization/', () => {
         const userInput = {
-          extensionName: 'e1',
+          extensionName: '@o1/e1',
           organizationName: 'o1'
         }
 
@@ -408,18 +440,20 @@ describe('ExtensionAction', () => {
           path.join(extensionPath, 'sth.js')
         ]
 
-        files.forEach((file) => fsEx.writeJsonSync(file, {awesomeExtension: 'awesomeOrganization'}))
+        const currentFileContent = {extensionId: '@awesomeOrganization/awesomeExtension', pipelineId: 'awesomeOrganization.somePipeline'}
+        files.forEach((file) => fsEx.writeJsonSync(file, currentFileContent))
 
-        new ExtensionAction().removePlaceHolders(userInput, state).then(() => {
-          files.forEach((file) => assert.deepEqual(fsEx.readJsonSync(file), {e1: 'o1'}))
-          done()
-        })
+        return new ExtensionAction()
+          ._removePlaceholders(userInput, state)
+          .then(() => {
+            const expectedFileContent = {extensionId: '@o1/e1', pipelineId: 'o1.somePipeline'}
+            files.forEach((file) => assert.deepEqual(fsEx.readJsonSync(file), expectedFileContent))
+          })
       })
 
-      it('should catch the "No files match the pattern" error', (done) => {
+      it('should catch the "No files match the pattern" error', () => {
         const userInput = {
-          extensionName: 'e1',
-          organizationName: 'o1'
+          extensionName: '@o1/e1'
         }
 
         const state = { extensionPath }
@@ -427,10 +461,11 @@ describe('ExtensionAction', () => {
         const file = path.join(extensionPath, 'sth.jsx')
         fsEx.writeJsonSync(file, {awesomeExtension: 'awesomeOrganization'})
 
-        new ExtensionAction().removePlaceHolders(userInput, state).then(() => {
-          assert.deepEqual(fsEx.readJsonSync(file), {awesomeExtension: 'awesomeOrganization'})
-          done()
-        })
+        return new ExtensionAction()
+          ._removePlaceholders(userInput, state)
+          .then(() => {
+            assert.deepEqual(fsEx.readJsonSync(file), {awesomeExtension: 'awesomeOrganization'})
+          })
       })
     })
 
@@ -447,7 +482,7 @@ describe('ExtensionAction', () => {
         done()
       })
 
-      it('should update/rename backend files', (done) => {
+      it('should update/rename backend files', () => {
         const userInput = {
           trusted: true,
           organizationName: 'o1',
@@ -464,15 +499,16 @@ describe('ExtensionAction', () => {
         const exConfFile = path.join(extensionPath, 'extension-config.json')
         fsEx.writeJSON(exConfFile, {})
 
-        new ExtensionAction().updateBackendFiles(userInput, state).then(() => {
-          assert.ok(fsEx.exists(path.join(extensionPath, 'pipelines', 'o1.awesomePipeline.json')))
-          assert.deepEqual(fsEx.readJsonSync(exConfFile), {trusted: true})
-          done()
-        })
+        return new ExtensionAction()
+          ._updateBackendFiles(userInput, state)
+          .then(() => {
+            assert.ok(fsEx.exists(path.join(extensionPath, 'pipelines', 'o1.awesomePipeline.json')))
+            assert.deepEqual(fsEx.readJsonSync(exConfFile), {trusted: true})
+          })
       })
 
       it('should return early because the function has nothing to do', () => {
-        assert.doesNotThrow(() => new ExtensionAction().updateBackendFiles({toBeCreated: {}}, {}))
+        assert.doesNotThrow(() => new ExtensionAction()._updateBackendFiles({toBeCreated: {}}, {}))
       })
     })
 
@@ -490,7 +526,7 @@ describe('ExtensionAction', () => {
         done()
       })
 
-      it('should install the frontend dependencies', (done) => {
+      it('should install the frontend dependencies', () => {
         const state = { extensionPath }
         const userInput = {
           toBeCreated: {
@@ -506,16 +542,15 @@ describe('ExtensionAction', () => {
           params: ['-v']
         }
 
-        new ExtensionAction().installFrontendDependencies(userInput, state, c).then(() => {
-          done()
-        })
+        return new ExtensionAction()
+          ._installFrontendDependencies(userInput, state, c)
       })
 
       it('should return early because the function has nothing to do', () => {
-        assert.doesNotThrow(() => new ExtensionAction().installFrontendDependencies({toBeCreated: {}}, {}, {}))
+        assert.doesNotThrow(() => new ExtensionAction()._installFrontendDependencies({toBeCreated: {}}, {}, {}))
       })
 
-      it('should fail because the command failed', (done) => {
+      it('should fail because the command failed', () => {
         const state = { extensionPath }
         const userInput = {
           toBeCreated: {
@@ -530,10 +565,11 @@ describe('ExtensionAction', () => {
           params: ['i', 'nonExistentPackage']
         }
 
-        new ExtensionAction().installFrontendDependencies(userInput, state, c).catch((err) => {
-          assert.ok(err.message.startsWith('Install process exited with code'))
-          done()
-        })
+        return new ExtensionAction()
+          ._installFrontendDependencies(userInput, state, c)
+          .catch((err) => {
+            assert.ok(err.message.startsWith('Install process exited with code'))
+          })
       }).timeout(10000)
     })
 
@@ -559,7 +595,7 @@ describe('ExtensionAction', () => {
 
         assert.ok(fsEx.existsSync(extensionPath))
 
-        new ExtensionAction().cleanUp(state, 'doesNotExist')
+        new ExtensionAction()._cleanUp(state, 'doesNotExist')
 
         assert.ok(!fsEx.existsSync(extensionPath))
       })

@@ -6,6 +6,7 @@ const glob = require('glob')
 const StepExecutor = require('../../../../lib/app/backend/extensionRuntime/StepExecutor')
 const AppSettings = require('../../../../lib/app/AppSettings')
 const UserSettings = require('../../../../lib/user/UserSettings')
+const utils = require('../../../../lib/utils/utils')
 const appPath = path.join('build', 'appsettings')
 const proxyquire = require('proxyquire').noPreserveCache()
 
@@ -24,13 +25,13 @@ describe('StepExecutor', () => {
 
       const StepExecutorMocked = proxyquire('../../../../lib/app/backend/extensionRuntime/StepExecutor', {
         chokidar: {
-          watch: (path, options) => {
-            assert.equal(path, 'extensions')
+          watch: (actualPath, options) => {
+            assert.equal(actualPath, path.join(utils.getApplicationFolder(), 'extensions'))
             return watcher
           }
         }
       })
-      const stepExecutor = new StepExecutorMocked({info: () => {}})
+      const stepExecutor = new StepExecutorMocked({info: () => {}}, {getApplicationFolder: utils.getApplicationFolder})
       stepExecutor.start = (cb) => {
         done()
         cb()

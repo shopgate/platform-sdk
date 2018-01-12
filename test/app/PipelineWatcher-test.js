@@ -2,6 +2,7 @@ const assert = require('assert')
 const path = require('path')
 const fsEx = require('fs-extra')
 const PipelineWatcher = require('../../lib/app/backend/PipelineWatcher')
+const utils = require('../../lib/utils/utils')
 
 const appPath = path.join('build', 'appsettings')
 
@@ -10,7 +11,7 @@ describe('PipelineWatcher', () => {
 
   beforeEach((done) => {
     process.env.APP_PATH = appPath
-    pipelineWatcher = new PipelineWatcher()
+    pipelineWatcher = new PipelineWatcher({getApplicationFolder: utils.getApplicationFolder})
     fsEx.emptyDirSync(path.join(pipelineWatcher.appFolder, 'pipelines'))
     pipelineWatcher.start(done)
   })
