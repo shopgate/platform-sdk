@@ -347,6 +347,7 @@ describe('ExtensionAction', () => {
         return new ExtensionAction()
           .renameBoilerplate(userInput, defaultPath, extensionFolder, state)
           .then(() => {
+            if (/^win/.test(process.platform)) return
             assert.fail('It should fail')
           }).catch((err) => {
             assert.ok(err.message.indexOf('ENOTEMPTY') !== -1)
