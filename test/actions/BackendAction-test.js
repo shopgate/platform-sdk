@@ -90,16 +90,16 @@ describe('BackendAction', () => {
 
   describe('general', () => {
     it('should register', () => {
-      const commander = {}
-      commander.command = sinon.stub().returns(commander)
-      commander.description = sinon.stub().returns(commander)
-      commander.action = sinon.stub().returns(commander)
+      const caporal = {}
+      caporal.command = sinon.stub().returns(caporal)
+      caporal.description = sinon.stub().returns(caporal)
+      caporal.action = sinon.stub().returns(caporal)
 
-      backendAction.register(commander)
+      backendAction.register(caporal)
 
-      assert(commander.command.calledWith('backend <action>'))
-      assert(commander.description.calledOnce)
-      assert(commander.action.calledOnce)
+      assert(caporal.command.calledWith('backend start'))
+      assert(caporal.description.calledOnce)
+      assert(caporal.action.calledOnce)
     })
 
     it('should throw if user not logged in', () => {

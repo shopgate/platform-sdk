@@ -43,40 +43,38 @@ describe('ExtensionAction', () => {
   describe('attaching and detaching', () => {
     describe('general', () => {
       it('should register', () => {
-        const commander = {}
-        commander.command = sinon.stub().returns(commander)
-        commander.description = sinon.stub().returns(commander)
-        commander.action = sinon.stub().returns(commander)
-        commander.option = sinon.stub().returns(commander)
+        const caporal = {}
+        caporal.command = sinon.stub().returns(caporal)
+        caporal.description = sinon.stub().returns(caporal)
+        caporal.action = sinon.stub().returns(caporal)
+        caporal.option = sinon.stub().returns(caporal)
+        caporal.argument = sinon.stub().returns(caporal)
 
-        action.register(commander)
+        action.register(caporal)
 
-        assert(commander.command.calledWith('extension-create [types...]'))
-        assert(commander.description.calledWith('creates a new extension'))
-        assert(commander.option.calledWith('--extension [extensionName]', 'Name of the new extension'))
-        assert(commander.option.calledWith('--organization [organizationName]', 'Name of the organization this extension belongs to'))
-        assert(commander.option.calledWith('--trusted [type]', 'only valid if you\'re about to create a backend extension'))
+        assert(caporal.command.calledWith('extension create'))
+        assert(caporal.description.calledWith('Creates a new extension'))
+        assert(caporal.argument.calledWith('[types...]', 'Types of the extension. Possible types are: frontend, backend'))
+        assert(caporal.option.calledWith('--extension [extensionName]', 'Name of the new extension'))
+        assert(caporal.option.calledWith('--organization [organizationName]', 'Name of the organization this extension belongs to'))
+        assert(caporal.option.calledWith('--trusted [type]', 'only valid if you\'re about to create a backend extension'))
 
-        assert(commander.command.calledWith('extension <action> [extensions...]'))
-        assert(commander.description.calledWith('attaches or detaches one or more extensions'))
+        assert(caporal.command.calledWith('extension attach'))
+        assert(caporal.argument.calledWith('[extensions...]', 'Folder name of the extensions to attach'))
+        assert(caporal.description.calledWith('Attaches one or more extensions'))
+        assert(caporal.command.calledWith('extension detach'))
+        assert(caporal.argument.calledWith('[extensions...]', 'Folder name of the extensions to detach'))
+        assert(caporal.description.calledWith('Detaches one or more extensions'))
 
-        assert(commander.action.callCount === 2)
+        assert(caporal.action.callCount === 3)
       })
 
       it('should throw if user not logged in', () => {
         userSettings.setToken(null)
         try {
-          action.run('attach')
+          action.attachExtensions({extensions: []})
         } catch (err) {
           assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
-        }
-      })
-
-      it('should throw if invalid action is given', () => {
-        try {
-          action.run('invalid')
-        } catch (err) {
-          assert.equal(err.message, 'unknown action "invalid"')
         }
       })
     })
@@ -90,7 +88,7 @@ describe('ExtensionAction', () => {
         fsEx.ensureDirSync(extPath)
         fsEx.writeJSONSync(path.join(extPath, 'extension-config.json'), {id, trusted: false})
 
-        action.run('attach', [name])
+        action.attachExtensions({extensions: [name]})
 
         const config = fsEx.readJsonSync(appSettings.attachedExtensionsFile)
         assert.deepEqual(config.attachedExtensions[id], {path: name, trusted: false})
@@ -107,8 +105,8 @@ describe('ExtensionAction', () => {
         fsEx.writeJSONSync(path.join(extPath1, 'extension-config.json'), {id: 'existentExtension1', trusted: false})
         fsEx.writeJSONSync(path.join(extPath2, 'extension-config.json'), {id: 'existentExtension2', trusted: false})
 
-        action.run('attach', [name1])
-        action.run('attach')
+        action.attachExtensions({extensions: [name1]})
+        action.attachExtensions({})
         const config = fsEx.readJsonSync(appSettings.attachedExtensionsFile)
         assert.deepEqual(config.attachedExtensions, {
           existentExtension1: { path: 'existentExtension1', trusted: false },
@@ -120,7 +118,7 @@ describe('ExtensionAction', () => {
         const name = 'notExitstentExtension'
 
         try {
-          action.run('attach', [name])
+          action.attachExtensions({extensions: [name]})
         } catch (e) {
           assert.equal(e.message, `Config file of 'notExitstentExtension' is invalid or not existent`)
         }
@@ -134,7 +132,7 @@ describe('ExtensionAction', () => {
         fsEx.writeJSONSync(path.join(extPath, 'extension-config.json'), {})
 
         try {
-          action.run('attach', [name])
+          action.attachExtensions({extensions: [name]})
         } catch (e) {
           assert.equal(e.message, `Config file of '${name}' is invalid or not existent`)
         }
@@ -147,9 +145,9 @@ describe('ExtensionAction', () => {
         fsEx.ensureDirSync(extPath)
         fsEx.writeJSONSync(path.join(extPath, 'extension-config.json'), {id: name})
 
-        action.run('attach', [name])
+        action.attachExtensions({extensions: [name]})
         try {
-          action.run('attach', [name])
+          action.attachExtensions({extensions: [name]})
         } catch (e) {
           assert.equal(e.message, `Extension 'existentExtension (existentExtension) is already attached`)
         }
@@ -158,7 +156,7 @@ describe('ExtensionAction', () => {
       it('should throw if user not logged in', () => {
         userSettings.setToken(null)
         try {
-          action.run('attach')
+          action.attachExtensions({})
         } catch (err) {
           assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
         }
@@ -174,7 +172,7 @@ describe('ExtensionAction', () => {
         fsEx.writeJSONSync(path.join(extPath, 'extension-config.json'), {id: name})
 
         appSettings.attachExtension(name, {id: name, trusted: false})
-        action.run('detach', [name])
+        action.detachExtensions({extensions: [name]})
 
         const config = fsEx.readJsonSync(appSettings.attachedExtensionsFile)
         assert.deepEqual(config.attachedExtensions, {})
@@ -192,14 +190,14 @@ describe('ExtensionAction', () => {
           done()
         }
 
-        action.run('detach', [name])
+        action.detachExtensions({extensions: [name]})
       })
 
       it('should detach all extensions if none was specified', () => {
         appSettings.attachExtension('ext2', {id: 'ext2'})
         appSettings.attachExtension('ext1', {id: 'ext1'})
 
-        action.run('detach')
+        action.detachExtensions({})
         const config = fsEx.readJsonSync(appSettings.attachedExtensionsFile)
         assert.deepEqual(config.attachedExtensions, {})
       })
@@ -217,7 +215,7 @@ describe('ExtensionAction', () => {
 
     afterEach((done) => {
       nock.enableNetConnect()
-      fsEx.removeSync(extensionFolder)
+      /* fsEx.removeSync(extensionFolder) */
       done()
     })
 
@@ -233,7 +231,7 @@ describe('ExtensionAction', () => {
         action.updateBackendFiles = () => { return new Promise((resolve, reject) => { resolve({}) }) }
         action.installFrontendDependencies = () => { return new Promise((resolve, reject) => { resolve({}) }) }
 
-        action.createExtension(null, null).then(() => {
+        action.createExtension({}, null).then(() => {
           done()
         })
       })
@@ -250,7 +248,7 @@ describe('ExtensionAction', () => {
         }
         action.cleanUp = (state) => assert.ok(state.cloned)
 
-        action.createExtension(null, null).then(() => {
+        action.createExtension({}, null).then(() => {
           done()
         })
       })
@@ -259,7 +257,7 @@ describe('ExtensionAction', () => {
         userSettings.setToken(null)
 
         try {
-          new ExtensionAction().createExtension(null, null)
+          new ExtensionAction().createExtension({}, null)
         } catch (err) {
           assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
           done()
@@ -329,28 +327,30 @@ describe('ExtensionAction', () => {
       const defaultPath = path.join(extensionFolder, oldName)
       const state = {}
 
-      it('should rename the boilerplate dir', (done) => {
+      it('should rename the boilerplate dir', () => {
         fsEx.ensureDirSync(path.join(extensionFolder, oldName))
 
-        new ExtensionAction().renameBoilerplate(userInput, defaultPath, extensionFolder, state).then(() => {
-          const newPath = path.join(extensionFolder, 'bar')
-          assert.equal(state.extensionPath, newPath)
-          assert.ok(state.moved)
-          assert.ok(fsEx.existsSync(newPath))
-          done()
-        })
+        return new ExtensionAction()
+          .renameBoilerplate(userInput, defaultPath, extensionFolder, state)
+          .then(() => {
+            const newPath = path.join(extensionFolder, 'bar')
+            assert.equal(state.extensionPath, newPath)
+            assert.ok(state.moved)
+            assert.ok(fsEx.existsSync(newPath))
+          })
       })
 
-      it('should fail because moving failed', (done) => {
+      it('should fail because moving failed', () => {
         fsEx.ensureDirSync(path.join(extensionFolder, oldName))
-        fsEx.ensureDirSync(path.join(extensionFolder, newName))
+        fsEx.ensureDirSync(path.join(extensionFolder, newName, 'test'))
 
-        new ExtensionAction().renameBoilerplate(userInput, defaultPath, extensionFolder, state).then(() => {
-          if (/^win/.test(process.platform)) done()
-        }).catch((err) => {
-          assert.ok(err.message.indexOf('EEXIST') !== -1)
-          done()
-        })
+        return new ExtensionAction()
+          .renameBoilerplate(userInput, defaultPath, extensionFolder, state)
+          .then(() => {
+            assert.fail('It should fail')
+          }).catch((err) => {
+            assert.ok(err.message.indexOf('ENOTEMPTY') !== -1)
+          })
       })
     })
 

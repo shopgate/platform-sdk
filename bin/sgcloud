@@ -2,7 +2,7 @@
 
 'use strict'
 
-const commander = require('commander')
+const caporal = require('caporal')
 const semver = require('semver')
 const updateNotifier = require('update-notifier')
 const logger = require('../lib/logger')
@@ -23,25 +23,11 @@ if (notifier.update) {
   process.exit(0)
 }
 
-commander.version(pkg.version)
+caporal.version(pkg.version)
 
 // load all custom actions
 const actions = require('../')
-Object.keys(actions).forEach(a => new actions[a]().register(commander))
+Object.keys(actions).forEach(a => new actions[a]().register(caporal))
 
 // activate argument parsing
-
-// NOTE: the following is a commander workaround
-const indexOfExtension = process.argv.indexOf('extension')
-const indexOfCreate = process.argv.indexOf('create')
-if (indexOfExtension - indexOfCreate === -1) {
-  process.argv[indexOfExtension] = 'extension-create'
-  process.argv.splice(indexOfCreate, 1)
-}
-
-commander.parse(process.argv)
-
-// undefined if no cmd is given on cli, object if a cmd was found, string if not
-const executedCommand = commander.args.pop()
-if (typeof executedCommand === 'string') logger.error(`Unknonwn command ${commander.args.join(' ')} ${executedCommand}`)
-if (!executedCommand || typeof executedCommand === 'string') commander.help()
+caporal.parse(process.argv)
