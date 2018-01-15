@@ -74,11 +74,12 @@ describe('FrontendAction', () => {
         assert.equal(templateFolder, expectedTemplateFolder)
         return null
       }
+
       try {
         frontendAction.run('start', options)
         assert.fail()
       } catch (err) {
-        assert.equal(err.message, `Can't find theme ${options.theme}. Please make sure you passed the right theme.`)
+        assert.equal(err.message, 'Please pass the folder of the desired theme. Run `sgcloud frontend start -t <foldername of the theme>`')
       }
     })
 
@@ -103,7 +104,7 @@ describe('FrontendAction', () => {
         done()
       }
 
-      frontendAction.run('start', options)
+      frontendAction.run('start', {}, options)
     })
 
     it('should throw an error if the extension generation has an error', function () {

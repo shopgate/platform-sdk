@@ -12,6 +12,7 @@
 * Better error log, when something's wrong in a step file
 * Improve logger output of extension logger
 * Project dependend console commands are usable in all subdirectories of a project
+* Add extension create command
 
 ## v1.1.1
 * Update `cloud-sdk-webpack` module to v1.5.6.
