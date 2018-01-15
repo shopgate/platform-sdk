@@ -11,21 +11,6 @@ const AppSettings = require('../../lib/app/AppSettings')
 const userSettingsFolder = path.join('build', 'usersettings')
 const appPath = path.join('build', 'appsettings')
 
-const callbacks = {
-  connect: (cb) => cb(),
-  selectApplication: (id, cb) => cb()
-}
-
-class BackendProcess {
-  connect (cb) {
-    process.nextTick(() => callbacks.connect(cb))
-  }
-
-  selectApplication (id, cb) {
-    process.nextTick(() => callbacks.selectApplication(id, cb))
-  }
-}
-
 describe('BackendAction', () => {
   /**
    * @type {BackendAction}
@@ -33,7 +18,6 @@ describe('BackendAction', () => {
   let backendAction
   let logger = {}
   const BackendAction = proxyquire('../../lib/actions/BackendAction', {
-    '../app/backend/BackendProcess': BackendProcess,
     '../logger': logger
   })
 
@@ -61,17 +45,19 @@ describe('BackendAction', () => {
 
     fsEx.emptyDirSync(backendAction.pipelinesFolder)
     backendAction.pipelineWatcher = {
-      start: (cb) => cb(),
+      start: sinon.stub().resolves(),
       close: () => {},
       on: (event, fn) => fn(event, path.join(backendAction.pipelinesFolder, 'testPipeline.json'))
     }
     backendAction.extensionConfigWatcher = {
-      stop: (cb) => cb()
+      start: () => sinon.stub().resolves(),
+      on: () => sinon.stub().resolves(),
+      stop: () => sinon.stub().resolves()
     }
 
     backendAction.cliProxy = {
-      start: (cb) => cb(),
-      close: (cb) => cb()
+      start: () => sinon.stub().resolves(),
+      close: () => sinon.stub().resolves()
     }
 
     backendAction.attachedExtensionsWatcher = {
@@ -86,9 +72,9 @@ describe('BackendAction', () => {
     done()
   })
 
-  afterEach((done) => {
+  afterEach(async () => {
     backendAction.pipelineWatcher.close()
-    backendAction.extensionConfigWatcher.stop(done)
+    return backendAction.extensionConfigWatcher.stop()
   })
 
   after(() => {
@@ -160,34 +146,46 @@ describe('BackendAction', () => {
 
   describe('watching', () => {
     it('should update pipelines', (done) => {
-      backendAction.backendProcess = new BackendProcess()
-
-      backendAction.extensionConfigWatcher = {
-        start: (cb) => cb(),
-        stop: (cb) => cb(),
-        on: (name, fn) => fn()
+      backendAction.backendProcess = {
+        connect: sinon.stub().resolves(),
+        selectApplication: sinon.stub().resolves(),
+        resetPipelines: sinon.stub().resolves(),
+        startStepExecutor: sinon.stub().resolves(),
+        reloadPipelineController: sinon.stub().resolves()
       }
 
-      backendAction.dcClient.downloadPipelines = (appId, trusted, cb) => cb(null, [{pipeline: {id: 'testPipeline'}}])
-      backendAction.dcClient.removePipeline = (pId, aId, trusted, cb) => cb()
-      backendAction._extensionChanged = (cfg, cb = () => {}) => cb()
-
-      try {
-        backendAction._startSubProcess()
-      } catch (err) {
-        assert.ifError(err)
+      backendAction.dcClient = {
+        downloadPipelines: sinon.stub().resolves([{pipeline: {id: 'testPipeline'}}]),
+        removePipeline: sinon.stub().resolves(),
+        uploadMultiplePipelines: sinon.stub().resolves()
       }
 
-      setTimeout(() => {
+      backendAction.attachedExtensionsWatcher = {
+        attachedExtensions: [],
+        start: () => sinon.stub().resolves(),
+        on: () => sinon.stub().resolves()
+      }
+
+      backendAction._extensionChanged = sinon.stub().resolves()
+
+      backendAction._startSubProcess().then(() => {
         assert.deepEqual(
           fsEx.readJsonSync(path.join(process.env.APP_PATH, 'pipelines', 'testPipeline.json')),
           {pipeline: {id: 'testPipeline'}}
         )
         done()
-      }, 50)
+      })
     })
 
     it('should call dcClient if pipelines were updated', (done) => {
+      backendAction.backendProcess = {
+        connect: sinon.stub().resolves(),
+        selectApplication: sinon.stub().resolves(),
+        resetPipelines: sinon.stub().resolves(),
+        startStepExecutor: sinon.stub().resolves(),
+        reloadPipelineController: sinon.stub().resolves()
+      }
+
       const pipeline = {pipeline: {id: 'plFooBarline1'}}
       const appId = 'foobarAppIdDcTestBackendAction'
       appSettings.setId(appId)
@@ -195,26 +193,27 @@ describe('BackendAction', () => {
       const file = path.join(backendAction.pipelinesFolder, 'plFooBarline1.json')
       assert.equal(backendAction.pipelines[file], undefined)
 
-      backendAction.dcClient.uploadPipeline = (f, aId, trusted, cb) => {
+      backendAction.dcClient.uploadPipeline = (f, aId, trusted) => {
         assert.deepEqual(backendAction.pipelines[file].id, pipeline.pipeline.id)
         assert.deepEqual(f, pipeline)
         assert.equal(aId, appId)
-        cb()
       }
 
       fsEx.writeJson(file, pipeline, (err) => {
         assert.ifError(err)
-        backendAction._pipelineChanged(file, done)
+        backendAction._pipelineChanged(file).then(() => {
+          done()
+        })
       })
     })
 
     it('should write generated extension-config if backend-extension was updated', (done) => {
-      let generated = { backend: {id: 'myGeneratedExtension'} }
+      let generated = {backend: {id: 'myGeneratedExtension'}}
       backendAction.dcClient.generateExtensionConfig = (config, appId, cb) => cb(null, generated)
 
       const cfgPath = path.join(process.env.APP_PATH, 'extensions', 'testExt')
 
-      backendAction._extensionChanged({ file: generated, path: cfgPath }, (err) => {
+      backendAction._extensionChanged({file: generated, path: cfgPath}, (err) => {
         assert.ifError(err)
         let cfg = fsEx.readJsonSync(path.join(cfgPath, 'extension', 'config.json'))
         assert.deepEqual(cfg, {id: 'myGeneratedExtension'})
@@ -223,12 +222,12 @@ describe('BackendAction', () => {
     })
 
     it('should write generated extension-config if frontend-extension was updated', (done) => {
-      let generated = { frontend: {id: 'myGeneratedExtension'} }
+      let generated = {frontend: {id: 'myGeneratedExtension'}}
       backendAction.dcClient.generateExtensionConfig = (config, appId, cb) => cb(null, generated)
 
       const cfgPath = path.join(process.env.APP_PATH, 'extension', 'testExt')
 
-      backendAction._extensionChanged({ file: generated, path: cfgPath }, (err) => {
+      backendAction._extensionChanged({file: generated, path: cfgPath}, (err) => {
         assert.ifError(err)
         let cfg = fsEx.readJsonSync(path.join(cfgPath, 'frontend', 'config.json'))
         assert.deepEqual(cfg, {id: 'myGeneratedExtension'})
@@ -238,12 +237,14 @@ describe('BackendAction', () => {
 
     it('should throw error if dcClient is not reachable', (done) => {
       const pipeline = {pipeline: {id: 'dCPlTest2'}}
-      backendAction.dcClient.uploadPipeline = (pl, id, trusted, cb) => cb(new Error('error'))
+      backendAction.dcClient = {
+        uploadPipeline: sinon.stub().rejects(new Error('error'))
+      }
 
       const file = path.join(backendAction.pipelinesFolder, 'dCPlTest2.json')
       fsEx.writeJson(file, pipeline, (err) => {
         assert.ifError(err)
-        backendAction._pipelineChanged(file, (err) => {
+        backendAction._pipelineChanged(file).catch(err => {
           assert.ok(err)
           assert.equal(err.message, `error`)
           done()
@@ -253,12 +254,23 @@ describe('BackendAction', () => {
 
     it('should return if pipeline was changed', (done) => {
       const pipeline = {pipeline: {id: 'dCPlTest3'}}
-      backendAction.dcClient.uploadPipeline = (pl, id, trusted, cb) => cb()
-
       const file = path.join(backendAction.pipelinesFolder, 'dCPlTest3.json')
+
+      backendAction.dcClient = {
+        uploadPipeline: sinon.stub().resolves()
+      }
+
+      backendAction.backendProcess = {
+        connect: sinon.stub().resolves(),
+        selectApplication: sinon.stub().resolves(),
+        resetPipelines: sinon.stub().resolves(),
+        startStepExecutor: sinon.stub().resolves(),
+        reloadPipelineController: sinon.stub().resolves()
+      }
+
       fsEx.writeJson(file, pipeline, (err) => {
         assert.ifError(err)
-        backendAction._pipelineChanged(file, (err) => {
+        backendAction._pipelineChanged(file).then(err => {
           assert.ifError(err)
           done()
         })
@@ -267,12 +279,11 @@ describe('BackendAction', () => {
 
     it('should throw an error if pipeline id is not matching with the filename', (done) => {
       const pipeline = {pipeline: {id: 'nonMatchingId'}}
-      backendAction.dcClient.uploadPipeline = (pl, id, trusted, cb) => cb()
 
       const file = path.join(backendAction.pipelinesFolder, 'dCPlTest3.json')
       fsEx.writeJson(file, pipeline, (err) => {
         assert.ifError(err)
-        backendAction._pipelineChanged(file, (err) => {
+        backendAction._pipelineChanged(file).catch(err => {
           assert.ok(err)
           assert.equal(err.message, 'The pipeline id and the file name need to be equal! Please make sure you changed both places')
           done()
@@ -282,12 +293,11 @@ describe('BackendAction', () => {
 
     it('should throw an error if pipeline is invalid', (done) => {
       const pipeline = {}
-      backendAction.dcClient.uploadPipeline = (pl, id, trusted, cb) => cb()
-
       const file = path.join(backendAction.pipelinesFolder, 'dCPlTest3.json')
+
       fsEx.writeJson(file, pipeline, (err) => {
         assert.ifError(err)
-        backendAction._pipelineChanged(file, (err) => {
+        backendAction._pipelineChanged(file).catch(err => {
           assert.ok(err)
           assert.equal(err.message, `invalid pipeline; check the pipeline.id property in ${file}`)
           done()
@@ -297,12 +307,11 @@ describe('BackendAction', () => {
 
     it('should throw an error if pipeline has invalid json', (done) => {
       const pipeline = '{someInvalid: content}'
-      backendAction.dcClient.uploadPipeline = (pl, id, trusted, cb) => cb()
-
       const file = path.join(backendAction.pipelinesFolder, 'dCPlTest5.json')
+
       fsEx.writeFile(file, pipeline, (err) => {
         assert.ifError(err)
-        backendAction._pipelineChanged(file, (err) => {
+        backendAction._pipelineChanged(file).catch(err => {
           assert.ok(err)
           assert.equal(err.message, 'Parse error on line 1:\n{someInvalid: content\n-^\nExpecting \'STRING\', \'}\', got \'undefined\'')
           done()
@@ -313,19 +322,19 @@ describe('BackendAction', () => {
     it('should return if pipeline was removed', (done) => {
       const pipelineId = 'dCPlTest4'
       let called = false
-      backendAction.dcClient.removePipeline = (plId, id, trusted, cb) => {
+      backendAction.dcClient.removePipeline = (plId, id, trusted) => {
         assert.equal(plId, pipelineId)
         called = true
-        cb()
       }
 
       const file = path.join(backendAction.pipelinesFolder, 'dCPlTest4.json')
       backendAction.pipelines[file] = {id: pipelineId}
 
-      backendAction._pipelineRemoved(file, (err) => {
-        assert.ifError(err)
+      backendAction._pipelineRemoved(file).then(() => {
         assert.ok(called)
         done()
+      }).catch(err => {
+        assert.ifError(err)
       })
     })
 
