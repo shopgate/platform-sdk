@@ -9,6 +9,7 @@ const fsEx = require('fs-extra')
 
 describe('LoginAction', () => {
   let stdin
+  let userSettings
 
   beforeEach(() => {
     process.env.USER_PATH = settingsFolder
@@ -18,6 +19,7 @@ describe('LoginAction', () => {
     process.env.SGCLOUD_PASS = ''
     stdin = require('mock-stdin').stdin()
     fsEx.emptyDirSync(settingsFolder)
+    userSettings = new UserSettings()
   })
 
   afterEach((done) => {
@@ -25,7 +27,6 @@ describe('LoginAction', () => {
     delete process.env.SGCLOUD_DC_ADDRESS
     delete process.env.SGCLOUD_USER
     delete process.env.SGCLOUD_PASS
-    UserSettings.setInstance()
     nock.enableNetConnect()
     fsEx.remove(settingsFolder, done)
   })
@@ -37,7 +38,7 @@ describe('LoginAction', () => {
     commander.option = sinon.stub().returns(commander)
     commander.action = sinon.stub().returns(commander)
 
-    new LoginAction().register(commander)
+    LoginAction.register(commander)
 
     assert(commander.command.calledWith('login'))
     assert(commander.option.calledWith('--username [email]'))
@@ -56,7 +57,7 @@ describe('LoginAction', () => {
     login.run(options, err => {
       assert.ifError(err)
       api.done()
-      assert.equal(UserSettings.getInstance().getSession().token, 'token')
+      assert.equal(userSettings.getToken(), 'token')
       done()
     })
   })
@@ -70,7 +71,7 @@ describe('LoginAction', () => {
     login.run({}, err => {
       assert.ifError(err)
       api.done()
-      assert.equal(UserSettings.getInstance().getSession().token, 'token2')
+      assert.equal(userSettings.getToken(), 'token2')
       done()
     })
 
@@ -90,7 +91,7 @@ describe('LoginAction', () => {
     login.run({}, err => {
       assert.ifError(err)
       api.done()
-      assert.equal(UserSettings.getInstance().getSession().token, 'token3')
+      assert.equal(userSettings.getToken(), 'token3')
       done()
     })
 
@@ -107,14 +108,14 @@ describe('LoginAction', () => {
     login.run(options, err => {
       assert.ifError(err)
       api.done()
-      assert.equal(UserSettings.getInstance().getSession().token, 'token4')
+      assert.equal(userSettings.getToken(), 'token4')
       done()
     })
 
     setTimeout(() => stdin.send('foo\n'), 10)
   })
 
-  it('should fail loggin in with invalid credentials', (done) => {
+  it('should fail login in with invalid credentials', (done) => {
     const api = nock('http://dc.shopgate.cloud')
       .post('/login', {username: 'foo', password: 'bar'})
       .reply(400)
@@ -125,7 +126,6 @@ describe('LoginAction', () => {
       assert.ok(err)
       assert.equal(err.message, 'Login failed')
       api.done()
-      assert.equal(UserSettings.getInstance().getSession().token, null)
       done()
     })
   })

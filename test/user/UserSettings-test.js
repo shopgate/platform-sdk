@@ -13,7 +13,6 @@ describe('UserSettings', () => {
 
   afterEach((done) => {
     delete process.env.USER_PATH
-    UserSettings.setInstance()
     fsEx.remove(testFolder, done)
   })
 
@@ -29,19 +28,20 @@ describe('UserSettings', () => {
   })
 
   it('should return session loaded from file', () => {
-    const userSettings = new UserSettings().save()
+    const userSettings = new UserSettings()
     const session = {token: 'foo'}
+    fsEx.ensureDirSync(userSettings.settingsFolder)
     fsEx.writeJsonSync(userSettings.sessionFile, {token: 'foo'})
 
-    assert.equal(session.token, new UserSettings().getSession().token)
+    assert.equal(session.token, userSettings.getToken())
   })
 
   it('should save all settings', () => {
     const token = {foo: 'bar'}
 
     const userSettings = new UserSettings()
-    userSettings.getSession().setToken(token)
-    userSettings.save()
+    userSettings.setToken(token)
+    userSettings.validate()
 
     assert.deepEqual(fsEx.readJsonSync(userSettings.sessionFile).token, token)
   })

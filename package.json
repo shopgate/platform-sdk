@@ -42,22 +42,29 @@
   "standard": {
     "env": [
       "mocha"
+    ],
+    "ignore": [
+      "test/app/backend/extensionRuntime/fakeSteps"
     ]
   },
   "dependencies": {
-    "@shopgate/cloud-sdk-webpack": "^1.5.6",
+    "@shopgate/cloud-sdk-webpack": "^1.6.0",
+    "ansicolors": "^0.3.2",
+    "ansistyles": "^0.1.3",
     "bunyan": "^1.8.12",
-    "bunyan-format": "^0.2.1",
     "chalk": "^2.3.0",
     "chokidar": "^1.7.0",
     "commander": "^2.12.2",
     "errio": "^1.2.2",
-    "fs-extra": "^5.0.0",
+    "find-root": "^1.1.0",
+    "fs-extra": "^4.0.3",
     "glob": "^7.1.2",
     "inquirer": "^4.0.1",
+    "jsonlint": "^1.6.2",
     "morgan": "^1.9.0",
     "neo-async": "^2.5.0",
     "os": "^0.1.1",
+    "os-locale": "^2.1.0",
     "request": "^2.83.0",
     "restify": "^6.3.4",
     "restify-cors-middleware": "^1.1.0",
@@ -76,12 +83,12 @@
     "portfinder": "^1.0.13",
     "pre-commit": "^1.2.2",
     "proxyquire": "^1.8.0",
-    "sinon": "^4.1.3",
+    "sinon": "^4.1.2",
     "socket.io": "^2.0.4",
     "standard": "^10.0.3"
   },
   "engines": {
-    "node": ">= 8.0.0"
+    "node": ">= 8.4.0"
   },
   "pre-commit": [
     "lint-staged",
