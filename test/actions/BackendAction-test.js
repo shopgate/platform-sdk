@@ -27,14 +27,14 @@ class BackendProcess {
 }
 
 describe('BackendAction', () => {
+  /**
+   * @type {BackendAction}
+   */
   let backendAction
+  let logger = {}
   const BackendAction = proxyquire('../../lib/actions/BackendAction', {
     '../app/backend/BackendProcess': BackendProcess,
-    '../logger': {
-      info: () => {},
-      error: () => {},
-      debug: () => {}
-    }
+    '../logger': logger
   })
 
   let userSettings
@@ -74,7 +74,15 @@ describe('BackendAction', () => {
       close: (cb) => cb()
     }
 
+    backendAction.attachedExtensionsWatcher = {
+      attachedExtensions: []
+    }
+
     backendAction.dcClient = {}
+
+    logger.info = () => {}
+    logger.error = () => {}
+    logger.debug = () => {}
     done()
   })
 
@@ -132,6 +140,21 @@ describe('BackendAction', () => {
         assert.equal(err.message, `Backend process is already running with pid: ${pid}. Please quit this process first.`)
         done()
       }
+    })
+  })
+
+  describe('_pipelineEvent', () => {
+    it('should not do anything when the extension is not attached', (done) => {
+      backendAction._pipelineRemoved = sinon.stub().resolves()
+      backendAction._pipelineChanged = sinon.stub().resolves()
+
+      logger.debug = (msg) => {
+        assert.equal(msg, 'The extension of the pipeline is not attached --> skip')
+        assert.ok(!backendAction._pipelineRemoved.called, '_pipelineRemoved should not be called')
+        assert.ok(!backendAction._pipelineChanged.called, '_pipelineChanged should not be called')
+        done()
+      }
+      backendAction._pipelineEvent('test', 'somefile')
     })
   })
 

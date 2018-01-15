@@ -20,6 +20,11 @@ function formatException (err) {
   logger.error(err.message)
 }
 
+process.on('unhandledRejection', function (err) {
+  formatException(err)
+  process.exit(1)
+})
+
 process.on('uncaughtException', function (err) {
   formatException(err)
   process.exit(1)
