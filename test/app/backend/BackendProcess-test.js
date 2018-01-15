@@ -83,8 +83,8 @@ describe('BackendProcess', () => {
         cb()
       })
 
-      socketIOMock.on('reset', (data, cb) => cb())
-      socketIOMock.on('reload', (data, cb) => cb())
+      socketIOMock.on('resetPipelines', (data, cb) => cb())
+      socketIOMock.on('reloadPipelines', (data, cb) => cb())
 
       backendProcess.connect(done)
     })
@@ -108,7 +108,7 @@ describe('BackendProcess', () => {
         cb()
       })
 
-      socketIOMock.on('reset', (data, cb) => cb(new Error('error')))
+      socketIOMock.on('resetPipelines', (data, cb) => cb(new Error('error')))
       backendProcess.connect((err) => {
         assert.ok(err)
         assert.equal(err.message, 'error')
@@ -122,8 +122,8 @@ describe('BackendProcess', () => {
         cb()
       })
 
-      socketIOMock.on('reset', (data, cb) => cb())
-      socketIOMock.on('reload', (data, cb) => cb(new Error('error')))
+      socketIOMock.on('resetPipelines', (data, cb) => cb())
+      socketIOMock.on('reloadPipelines', (data, cb) => cb(new Error('error')))
 
       backendProcess.connect((err) => {
         assert.ok(err)
@@ -138,8 +138,8 @@ describe('BackendProcess', () => {
         cb()
       })
 
-      socketIOMock.on('reset', (data, cb) => cb())
-      socketIOMock.on('reload', (data, cb) => cb())
+      socketIOMock.on('resetPipelines', (data, cb) => cb())
+      socketIOMock.on('reloadPipelines', (data, cb) => cb())
 
       socketIOMock.on('registerExtension', (data, cb) => {
         assert.deepEqual(data, {extensionId: 'testExt', trusted: false})
@@ -158,8 +158,8 @@ describe('BackendProcess', () => {
         cb()
       })
 
-      socketIOMock.on('reset', (data, cb) => cb())
-      socketIOMock.on('reload', (data, cb) => cb())
+      socketIOMock.on('resetPipelines', (data, cb) => cb())
+      socketIOMock.on('reloadPipelines', (data, cb) => cb())
 
       socketIOMock.on('deregisterExtension', (data, cb) => {
         assert.deepEqual(data, {extensionId: 'testExt', trusted: false})
