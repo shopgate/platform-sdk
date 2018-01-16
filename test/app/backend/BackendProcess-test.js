@@ -17,12 +17,6 @@ class SocketIOMock extends EventEmitter {
   removeListener () {}
 }
 
-class WatcherMock extends EventEmitter {
-  start (cb) { cb() }
-
-  stop () {}
-}
-
 describe('BackendProcess', () => {
   let backendProcess
   let stepExecutor
@@ -30,6 +24,7 @@ describe('BackendProcess', () => {
   let appTestFolder
   let userSettings
   let appSettings
+  let logger
 
   const socketIOMock = new SocketIOMock()
 
@@ -57,10 +52,9 @@ describe('BackendProcess', () => {
       assert.ifError(err)
 
       process.env.SGCLOUD_DC_ADDRESS = `http://localhost:${port}`
-      const logger = {info: () => {}, error: () => {}, debug: () => {}}
+      logger = {info: () => {}, error: () => {}, debug: () => {}}
       backendProcess = new BackendProcess(userSettings, appSettings, logger)
       backendProcess.executor = stepExecutor
-      backendProcess.attachedExtensionsWatcher = new WatcherMock()
       done()
     })
   })
@@ -172,6 +166,32 @@ describe('BackendProcess', () => {
       await backendProcess.detachExtension({id: 'testExt', trusted: false})
 
       assert.equal(wasCalled, 1)
+    })
+  })
+
+  describe('attachExtension', () => {
+    it('should log an error', (done) => {
+      logger.error = (message) => {
+        assert.ok(message.startsWith('Error while attaching the extension'))
+        done()
+      }
+
+      backendProcess._emitToSocket = () => new Promise((resolve, reject) => reject(new Error('error')))
+
+      backendProcess.attachExtension({id: 'null', trusted: false})
+    })
+  })
+
+  describe('detachExtension', () => {
+    it('should log an error', (done) => {
+      logger.error = (message) => {
+        assert.ok(message.startsWith('Error while detaching the extension'))
+        done()
+      }
+
+      backendProcess._emitToSocket = () => new Promise((resolve, reject) => reject(new Error('error')))
+
+      backendProcess.detachExtension({id: 'null', trusted: false})
     })
   })
 
