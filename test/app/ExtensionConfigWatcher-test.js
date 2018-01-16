@@ -16,12 +16,11 @@ describe('ExtensionConfigWatcher', () => {
     fsEx.emptyDir(path.join(appPath, 'extensions'), done)
   })
 
-  afterEach((done) => {
+  afterEach(async () => {
     delete process.env.APP_PATH
 
-    extensionConfigWatcher.stop(() => {
-      fsEx.remove(appPath, done)
-    })
+    await extensionConfigWatcher.stop()
+    fsEx.remove(appPath)
   })
 
   it('should emit changed config', (done) => {
@@ -34,7 +33,7 @@ describe('ExtensionConfigWatcher', () => {
       done()
     })
 
-    extensionConfigWatcher.start(() => {
+    extensionConfigWatcher.start().then(() => {
       fsEx.ensureDir(path.join(extensionConfigWatcher.watchFolder, 'testExt'), (err) => {
         assert.ifError(err)
         fsEx.writeJson(path.join(extensionConfigWatcher.watchFolder, 'testExt', 'extension-config.json'), writtenConfig, () => {})
@@ -42,8 +41,8 @@ describe('ExtensionConfigWatcher', () => {
     })
   })
 
-  it('should stop watching on command', (done) => {
+  it('should stop watching on command', async () => {
     extensionConfigWatcher.start()
-    extensionConfigWatcher.stop(done)
+    await extensionConfigWatcher.stop()
   })
 })
