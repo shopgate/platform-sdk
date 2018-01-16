@@ -81,17 +81,17 @@ describe('BackendProcess', () => {
 
   describe('select application', () => {
     it('should select an application', async () => {
-      let wasCalled = false
+      let wasCalled = 0
       socketIOMock.on('selectApplication', (data, cb) => {
         assert.deepEqual(data, {applicationId: 'shop_10006'})
         cb()
-        wasCalled = true
+        wasCalled++
       })
 
       await backendProcess.connect()
       await backendProcess.selectApplication('shop_10006')
 
-      assert.ok(wasCalled)
+      assert.equal(wasCalled, 1)
     })
 
     it('should fail if socket sends error', async () => {
@@ -147,31 +147,31 @@ describe('BackendProcess', () => {
     })
 
     it('should forward on extensions attach', async () => {
-      let wasCalled = false
+      let wasCalled = 0
       socketIOMock.on('registerExtension', (data, cb) => {
         assert.deepEqual(data, {extensionId: 'testExt', trusted: false})
         cb()
-        wasCalled = true
+        wasCalled++
       })
 
       await backendProcess.connect()
       await backendProcess.attachExtension({id: 'testExt', trusted: false})
 
-      assert.ok(wasCalled)
+      assert.equal(wasCalled, 1)
     })
 
     it('should forward on extensions detach', async () => {
-      let wasCalled = false
+      let wasCalled = 0
       socketIOMock.on('deregisterExtension', (data, cb) => {
         assert.deepEqual(data, {extensionId: 'testExt', trusted: false})
         cb()
-        wasCalled = true
+        wasCalled++
       })
 
       await backendProcess.connect()
       await backendProcess.detachExtension({id: 'testExt', trusted: false})
 
-      assert.ok(wasCalled)
+      assert.equal(wasCalled, 1)
     })
   })
 
