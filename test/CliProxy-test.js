@@ -1,4 +1,5 @@
 const assert = require('assert')
+const sinon = require('sinon')
 const request = require('request')
 const path = require('path')
 const fsEx = require('fs-extra')
@@ -19,9 +20,9 @@ describe('CliProxy', () => {
     nock.disableNetConnect()
   })
 
-  afterEach((done) => {
+  afterEach(async () => {
     nock.enableNetConnect()
-    cliProxy.close(done)
+    await cliProxy.close()
   })
 
   after(() => {
@@ -30,18 +31,19 @@ describe('CliProxy', () => {
   })
 
   describe('start()', () => {
-    it('should run through', (done) => {
-      cliProxy._getIdsFromRapid = (rapidUrl, shopNumber, cb) => cb(null, {sessionId: 0, deviceId: 0})
-      cliProxy._startPipelineServer = (rapidPort, rapidUrl, sessionId, deviceId, shopNumber, cb) => cb()
-      cliProxy.start(done)
+    it('should run through', () => {
+      cliProxy._getIdsFromRapid = sinon.stub().resolves({sessionId: 0, deviceId: 0})
+      cliProxy._startPipelineServer = sinon.stub().resolves()
+      return cliProxy.start()
     })
 
-    it('should return an error', (done) => {
-      cliProxy._getIdsFromRapid = (rapidUrl, shopNumber, cb) => cb(new Error())
-      cliProxy._startPipelineServer = (rapidPort, rapidUrl, sessionId, deviceId, shopNumber, cb) => cb()
-      cliProxy.start((err) => {
+    it('should return an error', () => {
+      cliProxy._getIdsFromRapid = sinon.stub().rejects(new Error('error'))
+      cliProxy._startPipelineServer = sinon.stub().resolves()
+
+      return cliProxy.start().catch(err => {
         assert.ok(err)
-        done()
+        assert.equal(err.message, 'error')
       })
     })
   })
@@ -49,60 +51,55 @@ describe('CliProxy', () => {
   describe('_getIdsFromRapid()', () => {
     let returnObj = {
       cmds: [
-        {p: {
-          value: {}
-        }}
+        {
+          p: {
+            value: {}
+          }
+        }
       ]
     }
 
     let rapidUrl = 'http://localhost:1234'
 
-    it('should run through', (done) => {
+    it('should run through', () => {
       const api = nock(rapidUrl)
         .post('/')
         .reply(200, returnObj, {
           'sg-device-id': 1
         })
 
-      cliProxy._getIdsFromRapid(rapidUrl, 10006, (err) => {
-        assert.ifError(err)
-        api.done()
-        done()
-      })
+      return cliProxy._getIdsFromRapid(rapidUrl, 10006).then(() => { api.done() })
     })
 
-    it('should return error on missing body', (done) => {
+    it('should return error on missing body', () => {
       const api = nock(rapidUrl)
         .post('/')
         .reply(200, {}, {
           'sg-device-id': 1
         })
 
-      cliProxy._getIdsFromRapid(rapidUrl, 10006, (err) => {
+      cliProxy._getIdsFromRapid(rapidUrl, 10006).catch(err => {
         assert.ok(err)
         api.done()
-        done()
       })
     })
 
-    it('should return error on missing header', (done) => {
+    it('should return error on missing header', () => {
       const api = nock(rapidUrl)
         .post('/')
         .reply(200, returnObj)
 
-      cliProxy._getIdsFromRapid(rapidUrl, 10006, (err) => {
+      return cliProxy._getIdsFromRapid(rapidUrl, 10006).catch(err => {
         assert.ok(err)
         api.done()
-        done()
       })
     })
   })
 
   describe('_startPipelineServer()', () => {
-    it('should start server', (done) => {
-      cliProxy._startPipelineServer(1238, 'rapidUrl', 1, 1, 10006, (err, server) => {
-        assert.ifError(err)
-        done()
+    it('should start server', () => {
+      return cliProxy._startPipelineServer(1238, 'rapidUrl', 1, 1, 10006).then(server => {
+        assert.ok(server)
       })
     })
   })
@@ -128,9 +125,7 @@ describe('CliProxy', () => {
         .post('/')
         .reply(200, result)
 
-      cliProxy._startPipelineServer(port, `http://localhost:${port + 1}`, 1, 1, 10006, (err, server) => {
-        assert.ifError(err)
-
+      cliProxy._startPipelineServer(port, `http://localhost:${port + 1}`, 1, 1, 10006).then(server => {
         request({
           url: `http://localhost:${port}/pipelines/somePipeline`,
           method: 'POST',
@@ -145,7 +140,7 @@ describe('CliProxy', () => {
       })
     })
 
-    it('should return error on rapid error', (done) => {
+    it('should return HTTP error on rapid error', (done) => {
       const port = 1262
       const result = {message: 'Custom Error'}
       nock.enableNetConnect()
@@ -154,9 +149,7 @@ describe('CliProxy', () => {
         .post('/')
         .reply(403, result)
 
-      cliProxy._startPipelineServer(port, `http://localhost:${port + 1}`, 1, 1, 10006, (err, server) => {
-        assert.ifError(err)
-
+      cliProxy._startPipelineServer(port, `http://localhost:${port + 1}`, 1, 1, 10006).then(() => {
         request({
           url: `http://localhost:${port}/pipelines/somePipeline`,
           method: 'POST',
@@ -172,7 +165,7 @@ describe('CliProxy', () => {
       })
     })
 
-    it('should return error on plc error', (done) => {
+    it('should return HTTP error on plc error', (done) => {
       const port = 1262
       const result = {
         'cmds': [
@@ -192,9 +185,7 @@ describe('CliProxy', () => {
         .post('/')
         .reply(200, result)
 
-      cliProxy._startPipelineServer(port, `http://localhost:${port + 1}`, 1, 1, 10006, (err, server) => {
-        assert.ifError(err)
-
+      cliProxy._startPipelineServer(port, `http://localhost:${port + 1}`, 1, 1, 10006).then(server => {
         request({
           url: `http://localhost:${port}/pipelines/somePipeline`,
           method: 'POST',
