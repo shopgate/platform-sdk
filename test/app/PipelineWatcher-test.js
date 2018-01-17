@@ -11,12 +11,12 @@ describe('PipelineWatcher', () => {
   let pipelineWatcher
   let extensionsPipelineFolder
 
-  beforeEach(async () => {
+  beforeEach(() => {
     process.env.APP_PATH = appPath
     extensionsPipelineFolder = path.join(utils.getApplicationFolder(), AppSettings.EXTENSIONS_FOLDER, 'testExtension', 'pipelines')
     pipelineWatcher = new PipelineWatcher({getApplicationFolder: utils.getApplicationFolder})
-    fsEx.emptyDirSync(extensionsPipelineFolder)
-    await pipelineWatcher.start()
+    return fsEx.emptyDir(extensionsPipelineFolder)
+      .then(() => pipelineWatcher.start())
   })
 
   afterEach((done) => {

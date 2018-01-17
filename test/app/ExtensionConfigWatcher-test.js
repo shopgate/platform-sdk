@@ -30,7 +30,9 @@ describe('ExtensionConfigWatcher', () => {
 
     extensionConfigWatcher.on('configChange', (config) => {
       assert.deepEqual(config.file, writtenConfig)
-      done()
+      extensionConfigWatcher.stop().then(() => {
+        done()
+      })
     })
 
     extensionConfigWatcher.start()
