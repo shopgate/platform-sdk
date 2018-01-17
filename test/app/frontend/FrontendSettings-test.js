@@ -11,15 +11,16 @@ const FrontendSettings = require('../../../lib/app/frontend/FrontendSettings')
 describe('FrontendSettings', () => {
   let settingsPath
   let settings
+
   beforeEach(() => {
     settingsPath = 'foobar'
     settings = new FrontendSettings(settingsPath)
-    fsEx.ensureDirSync(settings.settingsFolder)
-    fsEx.writeJsonSync(settings.frontendSettingsFile, {})
+    return fsEx.ensureDir(settings.settingsFolder)
+      .then(fsEx.writeJson(settings.frontendSettingsFile, {}))
   })
 
   afterEach(() => {
-    fsEx.removeSync(settings.settingsFolder)
+    return fsEx.remove(settings.settingsFolder)
   })
 
   it('can be instanciated', () => {
