@@ -168,13 +168,12 @@ describe('BackendAction', () => {
 
       backendAction._extensionChanged = sinon.stub().resolves()
 
-      backendAction._startSubProcess().then(() => {
-        assert.deepEqual(
-          fsEx.readJsonSync(path.join(process.env.APP_PATH, 'pipelines', 'testPipeline.json')),
-          {pipeline: {id: 'testPipeline'}}
-        )
-        done()
-      })
+      backendAction._startSubProcess()
+        .then(() => fsEx.readJson(path.join(process.env.APP_PATH, 'pipelines', 'testPipeline.json')))
+        .then((content) => {
+          assert.deepEqual(content, {pipeline: {id: 'testPipeline'}})
+          done()
+        })
     })
 
     it('should call dcClient if pipelines were updated', (done) => {
