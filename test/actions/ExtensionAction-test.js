@@ -381,7 +381,10 @@ describe('ExtensionAction', () => {
           }).catch((err) => {
             if (/^win/.test(process.platform)) return assert.ok(err.message.indexOf('EPERM') !== -1)
             if (/^darwin/.test(process.platform)) return assert.ok(err.message.indexOf('ENOTEMPTY') !== -1)
-            assert.ok(err.message.indexOf('EEXIST') !== -1)
+            assert.ok(
+              (err.message.indexOf('EEXIST') !== -1) ||
+              (err.message.indexOf('ENOTEMPTY') !== -1)
+            )
           })
       })
     })
