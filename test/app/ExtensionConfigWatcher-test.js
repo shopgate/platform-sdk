@@ -20,7 +20,7 @@ describe('ExtensionConfigWatcher', () => {
     delete process.env.APP_PATH
 
     await extensionConfigWatcher.stop()
-    fsEx.remove(appPath)
+    await fsEx.remove(appPath)
   })
 
   it('should emit changed config', (done) => {
