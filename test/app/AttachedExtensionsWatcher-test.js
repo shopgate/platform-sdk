@@ -39,12 +39,12 @@ describe('AttachedExtensionsWatcher', () => {
       done()
     })
 
-    attachedExtensionsWatcher.start().then(() => {
-      fsEx.ensureDir(path.dirname(attachedExtensionsWatcher.configPath), (err) => {
+    attachedExtensionsWatcher.start()
+      .then(() => fsEx.ensureDir(path.dirname(attachedExtensionsWatcher.configPath)))
+      .then(() => fsEx.writeFile(path.join(attachedExtensionsWatcher.configPath), attachedExtensionsFileContents))
+      .catch((err) => {
         assert.ifError(err)
-        fsEx.writeFile(path.join(attachedExtensionsWatcher.configPath), attachedExtensionsFileContents, () => {})
       })
-    })
   })
 
   it('should emit "detach" event', (done) => {
@@ -59,11 +59,11 @@ describe('AttachedExtensionsWatcher', () => {
       done()
     })
 
-    attachedExtensionsWatcher.start().then(() => {
-      fsEx.ensureDir(path.dirname(attachedExtensionsWatcher.configPath), (err) => {
+    attachedExtensionsWatcher.start()
+      .then(() => fsEx.ensureDir(path.dirname(attachedExtensionsWatcher.configPath)))
+      .then(() => fsEx.writeFile(path.join(attachedExtensionsWatcher.configPath), attachedExtensionsFileContents))
+      .catch((err) => {
         assert.ifError(err)
-        fsEx.writeFile(path.join(attachedExtensionsWatcher.configPath), attachedExtensionsFileContents, () => {})
       })
-    })
   })
 })
