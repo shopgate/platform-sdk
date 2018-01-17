@@ -11,8 +11,8 @@ describe('CliProxy', () => {
   let cliProxy
 
   before(() => {
-    process.env.APP_PATH = path.join('build', 'appsettings')
-    fsEx.emptyDirSync(process.env.APP_PATH)
+    process.env.APP_PATH = path.join('build', 'cli-test')
+    return fsEx.emptyDir(process.env.APP_PATH)
   })
 
   beforeEach(() => {
@@ -26,8 +26,8 @@ describe('CliProxy', () => {
   })
 
   after(() => {
-    fsEx.removeSync(process.env.APP_PATH)
-    delete process.env.APP_PATH
+    return fsEx.remove(process.env.APP_PATH)
+      .then(() => delete process.env.APP_PATH)
   })
 
   describe('start()', () => {

@@ -27,49 +27,55 @@ describe('BackendAction', () => {
   before(() => {
     process.env.USER_PATH = userSettingsFolder
     process.env.APP_PATH = appPath
-    fsEx.emptyDirSync(userSettingsFolder)
-    fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
+    fsEx.emptyDir(userSettingsFolder)
+      .then(() => fsEx.emptyDir(path.join(appPath, AppSettings.SETTINGS_FOLDER)))
   })
 
-  beforeEach(function (done) {
-    fsEx.emptyDirSync(userSettingsFolder)
+  beforeEach(function () {
     process.env.USER_PATH = userSettingsFolder
-    fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
 
-    userSettings = new UserSettings().setToken({})
-    appSettings = new AppSettings().setId('foobarTest')
+    return fsEx.emptyDir(userSettingsFolder)
+      .then(() => fsEx.emptyDir(path.join(appPath, AppSettings.SETTINGS_FOLDER)))
+      .then(() => {
+        return new Promise((resolve, reject) => {
+          userSettings = new UserSettings().setToken({})
+          appSettings = new AppSettings().setId('foobarTest')
 
-    backendAction = new BackendAction()
-    backendAction.userSettings = userSettings
-    backendAction.appSettings = appSettings
+          backendAction = new BackendAction()
 
-    fsEx.emptyDirSync(backendAction.pipelinesFolder)
-    backendAction.pipelineWatcher = {
-      start: sinon.stub().resolves(),
-      close: () => {},
-      on: (event, fn) => fn(event, path.join(backendAction.pipelinesFolder, 'testPipeline.json'))
-    }
-    backendAction.extensionConfigWatcher = {
-      start: () => sinon.stub().resolves(),
-      on: () => sinon.stub().resolves(),
-      stop: () => sinon.stub().resolves()
-    }
+          backendAction.userSettings = userSettings
+          backendAction.appSettings = appSettings
+          resolve()
+        })
+      })
+      .then(() => fsEx.emptyDir(backendAction.pipelinesFolder))
+      .then(() => {
+        backendAction.pipelineWatcher = {
+          start: sinon.stub().resolves(),
+          close: () => {},
+          on: (event, fn) => fn(event, path.join(backendAction.pipelinesFolder, 'testPipeline.json'))
+        }
+        backendAction.extensionConfigWatcher = {
+          start: () => sinon.stub().resolves(),
+          on: () => sinon.stub().resolves(),
+          stop: () => sinon.stub().resolves()
+        }
 
-    backendAction.cliProxy = {
-      start: () => sinon.stub().resolves(),
-      close: () => sinon.stub().resolves()
-    }
+        backendAction.cliProxy = {
+          start: () => sinon.stub().resolves(),
+          close: () => sinon.stub().resolves()
+        }
 
-    backendAction.attachedExtensionsWatcher = {
-      attachedExtensions: []
-    }
+        backendAction.attachedExtensionsWatcher = {
+          attachedExtensions: []
+        }
 
-    backendAction.dcClient = {}
+        backendAction.dcClient = {}
 
-    logger.info = () => {}
-    logger.error = () => {}
-    logger.debug = () => {}
-    done()
+        logger.info = () => {}
+        logger.error = () => {}
+        logger.debug = () => {}
+      })
   })
 
   afterEach(async () => {
@@ -78,8 +84,8 @@ describe('BackendAction', () => {
   })
 
   after(() => {
-    fsEx.removeSync(userSettingsFolder)
-    fsEx.removeSync(appPath)
+    return fsEx.remove(userSettingsFolder)
+      .then(() => fsEx.remove(appPath))
   })
 
   describe('general', () => {
@@ -214,9 +220,11 @@ describe('BackendAction', () => {
 
       backendAction._extensionChanged({file: generated, path: cfgPath}, (err) => {
         assert.ifError(err)
-        let cfg = fsEx.readJsonSync(path.join(cfgPath, 'extension', 'config.json'))
-        assert.deepEqual(cfg, {id: 'myGeneratedExtension'})
-        done()
+        fsEx.readJson(path.join(cfgPath, 'extension', 'config.json'))
+          .then(cfg => {
+            assert.deepEqual(cfg, {id: 'myGeneratedExtension'})
+            done()
+          })
       })
     })
 
@@ -228,9 +236,11 @@ describe('BackendAction', () => {
 
       backendAction._extensionChanged({file: generated, path: cfgPath}, (err) => {
         assert.ifError(err)
-        let cfg = fsEx.readJsonSync(path.join(cfgPath, 'frontend', 'config.json'))
-        assert.deepEqual(cfg, {id: 'myGeneratedExtension'})
-        done()
+        fsEx.readJson(path.join(cfgPath, 'frontend', 'config.json'))
+          .then(cfg => {
+            assert.deepEqual(cfg, {id: 'myGeneratedExtension'})
+            done()
+          })
       })
     })
 
