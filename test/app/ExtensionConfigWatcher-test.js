@@ -43,8 +43,9 @@ describe('ExtensionConfigWatcher', () => {
     })
   })
 
-  it('should stop watching on command', async () => {
-    extensionConfigWatcher.start()
-    await extensionConfigWatcher.stop()
+  it('should stop watching', () => {
+    return extensionConfigWatcher.start().then(() => {
+      extensionConfigWatcher.stop().then(() => assert.ok(extensionConfigWatcher.watcher.closed))
+    })
   })
 })
