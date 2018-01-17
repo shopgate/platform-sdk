@@ -4,7 +4,7 @@ const fsEx = require('fs-extra')
 const ExtensionConfigWatcher = require('../../lib/app/ExtensionConfigWatcher')
 const utils = require('../../lib/utils/utils')
 
-const appPath = path.join('test', 'appsettings')
+const appPath = path.join('build', 'appsettings')
 
 describe('ExtensionConfigWatcher', () => {
   let extensionConfigWatcher
