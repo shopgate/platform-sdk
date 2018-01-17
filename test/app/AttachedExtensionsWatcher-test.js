@@ -41,7 +41,17 @@ describe('AttachedExtensionsWatcher', () => {
 
     attachedExtensionsWatcher.start()
       .then(() => fsEx.ensureDir(path.dirname(attachedExtensionsWatcher.configPath)))
-      .then(() => fsEx.writeFile(path.join(attachedExtensionsWatcher.configPath), attachedExtensionsFileContents))
+      .then(() => {
+        return new Promise((resolve, reject) => {
+          // Workaround for race condition ...
+          setTimeout(() => {
+            fsEx.writeFile(path.join(attachedExtensionsWatcher.configPath), attachedExtensionsFileContents, (err) => {
+              if (err) reject(err)
+              resolve()
+            })
+          }, 500)
+        })
+      })
       .catch((err) => {
         assert.ifError(err)
       })
