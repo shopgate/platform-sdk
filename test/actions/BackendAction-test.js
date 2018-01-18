@@ -111,15 +111,6 @@ describe('BackendAction', () => {
       }
     })
 
-    it('should throw if invalid action is given', (done) => {
-      try {
-        backendAction.run('invalid')
-      } catch (err) {
-        assert.equal(err.message, 'unknown action "invalid"')
-        done()
-      }
-    })
-
     it('should fail because a backend process is already running', (done) => {
       const pid = process.pid
       const processFile = path.join(appPath, AppSettings.SETTINGS_FOLDER)

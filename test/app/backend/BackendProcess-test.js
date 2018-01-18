@@ -213,14 +213,14 @@ describe('BackendProcess', () => {
         done()
       }
 
-      socketIOMock.on('reset', (data, cb) => cb(null))
+      socketIOMock.on('reset', (cb) => cb(null))
 
       backendProcess.connect()
       .then(() => backendProcess.resetPipelines())
     })
 
     it('should fail if socket sends error (resetPipelines)', (done) => {
-      socketIOMock.on('reset', (data, cb) => cb(new Error('error')))
+      socketIOMock.on('reset', (cb) => cb(new Error('error')))
 
       backendProcess.connect()
         .then(() => backendProcess.resetPipelines())
@@ -241,14 +241,14 @@ describe('BackendProcess', () => {
         done()
       }
 
-      socketIOMock.on('reloadPipelines', (data, cb) => cb(null))
+      socketIOMock.on('reloadPipelines', (cb) => cb(null))
 
       backendProcess.connect()
       .then(() => backendProcess.reloadPipelineController())
     })
 
     it('should fail if socket sends error (reload)', (done) => {
-      socketIOMock.on('reloadPipelines', (data, cb) => cb(new Error('error')))
+      socketIOMock.on('reloadPipelines', (cb) => cb(new Error('error')))
 
       backendProcess.connect()
         .then(() => backendProcess.reloadPipelineController())
