@@ -213,14 +213,14 @@ describe('BackendProcess', () => {
         done()
       }
 
-      socketIOMock.on('reset', (cb) => cb(null))
+      socketIOMock.on('resetPipelines', (cb) => cb(null))
 
       backendProcess.connect()
       .then(() => backendProcess.resetPipelines())
     })
 
     it('should fail if socket sends error (resetPipelines)', (done) => {
-      socketIOMock.on('reset', (cb) => cb(new Error('error')))
+      socketIOMock.on('resetPipelines', (cb) => cb(new Error('error')))
 
       backendProcess.connect()
         .then(() => backendProcess.resetPipelines())
