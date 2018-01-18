@@ -9,8 +9,6 @@ const { join } = require('path')
 const sinon = require('sinon')
 const assert = require('assert')
 const proxyquire = require('proxyquire')
-const UserSettings = require('../../../lib/user/UserSettings')
-const AppSettings = require('../../../lib/app/AppSettings')
 const fsEx = require('fs-extra')
 
 let requestSpyFail = false
@@ -71,6 +69,11 @@ const defaultConfig = {
 }
 const runError = 'Had an error'
 
+let frontendSettings = null
+let appSettings = {
+  getFrontendSettings: () => frontendSettings
+}
+
 let frontendSetup
 
 describe('FrontendSetup', () => {
@@ -78,11 +81,21 @@ describe('FrontendSetup', () => {
     process.env.USER_PATH = userSettingsPath
     process.env.APP_PATH = appSettingsPath
 
-    fsEx.emptyDirSync(join(appSettingsPath, AppSettings.SETTINGS_FOLDER))
-    const appSettings = new AppSettings().setId(appId)
-    appSettings.getFrontendSettings()._saveSettings(defaultConfig)
-    fsEx.emptyDirSync(userSettingsPath)
-    new UserSettings().setToken({})
+    appSettings.getId = () => {}
+    frontendSettings = {}
+
+    frontendSettings.getIpAddress = () => Promise.resolve(defaultConfig.ip)
+    frontendSettings.getPort = () => Promise.resolve(defaultConfig.port)
+    frontendSettings.getApiPort = () => Promise.resolve(defaultConfig.apiPort)
+    frontendSettings.getHmrPort = () => Promise.resolve(defaultConfig.hmrPort)
+    frontendSettings.getRemotePort = () => Promise.resolve(defaultConfig.remotePort)
+    frontendSettings.getSourceMapsType = () => Promise.resolve(defaultConfig.sourceMapsType)
+    frontendSettings.setIpAddress = () => Promise.reject(new Error('error'))
+    frontendSettings.setPort = () => Promise.reject(new Error('error'))
+    frontendSettings.setApiPort = () => Promise.reject(new Error('error'))
+    frontendSettings.setHmrPort = () => Promise.reject(new Error('error'))
+    frontendSettings.setRemotePort = () => Promise.reject(new Error('error'))
+    frontendSettings.setSourceMapsType = () => Promise.reject(new Error('error'))
 
     frontendSetup = new FrontendSetup(null, appSettings)
     frontendSetup.defaultConfig = defaultConfig
@@ -103,6 +116,8 @@ describe('FrontendSetup', () => {
 
   describe('run()', () => {
     beforeEach(() => {
+      appSettings.getId = () => 'shop_10006'
+
       frontendSetup.registerSettings = () => {}
       frontendSetup.save = () => {}
     })
@@ -169,10 +184,11 @@ describe('FrontendSetup', () => {
 
   describe('registerSettings()', () => {
     beforeEach(() => {
+      appSettings.getId = () => appId
       frontendSetup.save = () => {}
     })
 
-    it('should set the startPageUrl at the developer connector', (done) => {
+    it('should set the startPageUrl at the developer connector', () => {
       frontendSetup.dcClient = {
         setStartPageUrl: (actualAppId, startPageUrl, cb) => {
           assert.equal(actualAppId, appId)
@@ -180,13 +196,8 @@ describe('FrontendSetup', () => {
           cb()
         }
       }
-      frontendSetup.run()
-        .then(() => {
-          done()
-        })
-        .catch((error) => {
-          done(error)
-        })
+      return frontendSetup.run()
+        .catch((err) => assert.ifError(err))
     })
 
     it('should throw an error if startPageUrl cant be set at the developer connector', (done) => {
@@ -228,6 +239,36 @@ describe('FrontendSetup', () => {
     beforeEach(() => {
       saveSpy = sinon.spy()
       loggerSpy.reset()
+
+      frontendSettings.setIpAddress = (ip) => {
+        assert.equal(ip, defaultConfig.ip)
+        return Promise.resolve()
+      }
+
+      frontendSettings.setPort = (port) => {
+        assert.equal(port, defaultConfig.port)
+        return Promise.resolve()
+      }
+
+      frontendSettings.setApiPort = (apiPort) => {
+        assert.equal(apiPort, defaultConfig.apiPort)
+        return Promise.resolve()
+      }
+
+      frontendSettings.setHmrPort = (hmrPort) => {
+        assert.equal(hmrPort, defaultConfig.hmrPort)
+        return Promise.resolve()
+      }
+
+      frontendSettings.setRemotePort = (remotePort) => {
+        assert.equal(remotePort, defaultConfig.remotePort)
+        return Promise.resolve()
+      }
+
+      frontendSettings.setSourceMapsType = (sourceMapsType) => {
+        assert.equal(sourceMapsType, defaultConfig.sourceMapsType)
+        return Promise.resolve()
+      }
     })
 
     afterEach(() => {
@@ -236,13 +277,14 @@ describe('FrontendSetup', () => {
     })
 
     it('should save the settings', () => {
-      frontendSetup.save(defaultConfig)
-      assert.equal(JSON.stringify(frontendSetup.settings.getFrontendSettings().loadSettings()), JSON.stringify(defaultConfig))
+      return frontendSetup.save(defaultConfig)
+        .catch(err => assert.ifError(err))
     })
 
     it('should show two console logs on success', () => {
-      frontendSetup.save(defaultConfig)
-      sinon.assert.calledOnce(loggerSpy)
+      return frontendSetup.save(defaultConfig).then(() => {
+        sinon.assert.calledOnce(loggerSpy)
+      })
     })
 
     it('should throw if something went wrong', (done) => {
@@ -250,13 +292,10 @@ describe('FrontendSetup', () => {
         throw new Error('error')
       }
 
-      try {
-        frontendSetup.save(defaultConfig)
-        done('Did not throw!')
-      } catch (error) {
-        assert.equal(error.message, 'error')
+      frontendSetup.save(defaultConfig).catch((err) => {
+        assert.equal(err.message, 'error')
         done()
-      }
+      })
     })
   })
 })
