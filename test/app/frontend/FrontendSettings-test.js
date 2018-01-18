@@ -175,7 +175,7 @@ describe('FrontendSettings', () => {
 
         let called = 0
         fsEx.writeJson = (file, s) => {
-          assert.equal(file, 'build/foobar/frontend.json')
+          assert.equal(file, path.join('build', 'foobar', 'frontend.json'))
           assert.deepEqual({ip}, s)
           called++
         }
@@ -208,7 +208,7 @@ describe('FrontendSettings', () => {
 
         let called = 0
         fsEx.writeJson = (file, s) => {
-          assert.equal(file, 'build/foobar/frontend.json')
+          assert.equal(file, path.join('build', 'foobar', 'frontend.json'))
           assert.deepEqual({apiPort}, s)
           called++
         }
@@ -225,7 +225,7 @@ describe('FrontendSettings', () => {
 
         let called = 0
         fsEx.writeJson = (file, s) => {
-          assert.equal(file, 'build/foobar/frontend.json')
+          assert.equal(file, path.join('build', 'foobar', 'frontend.json'))
           assert.deepEqual({hmrPort}, s)
           called++
         }
@@ -242,7 +242,7 @@ describe('FrontendSettings', () => {
 
         let called = 0
         fsEx.writeJson = (file, s) => {
-          assert.equal(file, 'build/foobar/frontend.json')
+          assert.equal(file, path.join('build', 'foobar', 'frontend.json'))
           assert.deepEqual({remotePort}, s)
           called++
         }
@@ -259,7 +259,7 @@ describe('FrontendSettings', () => {
 
         let called = 0
         fsEx.writeJson = (file, s) => {
-          assert.equal(file, 'build/foobar/frontend.json')
+          assert.equal(file, path.join('build', 'foobar', 'frontend.json'))
           assert.deepEqual({accessToken}, s)
           called++
         }
@@ -276,7 +276,7 @@ describe('FrontendSettings', () => {
 
         let called = 0
         fsEx.writeJson = (file, s) => {
-          assert.equal(file, 'build/foobar/frontend.json')
+          assert.equal(file, path.join('build', 'foobar', 'frontend.json'))
           assert.deepEqual({sourceMapsType}, s)
           called++
         }
