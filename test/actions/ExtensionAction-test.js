@@ -440,8 +440,7 @@ describe('ExtensionAction', () => {
         const state = { extensionPath }
 
         const files = [
-          path.join(extensionPath, 'sth.json'),
-          path.join(extensionPath, 'sth.js')
+          path.join(extensionPath, 'sth.json')
         ]
 
         const currentFileContent = {extensionId: '@awesomeOrganization/awesomeExtension', pipelineId: 'awesomeOrganization.somePipeline'}
