@@ -37,16 +37,13 @@ describe('BackendAction', () => {
     return fsEx.emptyDir(userSettingsFolder)
       .then(() => fsEx.emptyDir(path.join(appPath, AppSettings.SETTINGS_FOLDER)))
       .then(() => {
-        return new Promise((resolve, reject) => {
-          userSettings = new UserSettings().setToken({})
-          appSettings = new AppSettings().setId('foobarTest')
+        userSettings = new UserSettings().setToken({})
+        appSettings = new AppSettings().setId('foobarTest')
 
-          backendAction = new BackendAction()
+        backendAction = new BackendAction()
 
-          backendAction.userSettings = userSettings
-          backendAction.appSettings = appSettings
-          resolve()
-        })
+        backendAction.userSettings = userSettings
+        backendAction.appSettings = appSettings
       })
       .then(() => fsEx.emptyDir(backendAction.pipelinesFolder))
       .then(() => {
