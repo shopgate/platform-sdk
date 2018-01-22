@@ -1,3 +1,6 @@
+## v1.1.2
+* Update `cloud-sdk-webpack` module to v1.6.0.
+
 ## v1.1.1
 * Update `cloud-sdk-webpack` module to v1.5.6.
 
