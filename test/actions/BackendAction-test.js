@@ -285,7 +285,7 @@ describe('BackendAction', () => {
         assert.ifError(err)
         backendAction._pipelineChanged(file).catch(err => {
           assert.ok(err)
-          assert.equal(err.message, 'The pipeline id and the file name need to be equal! Please make sure you changed both places')
+          assert.equal(err.message, `Pipeline ID "${pipeline.pipeline.id}" should match its file name!`)
           done()
         })
       })
