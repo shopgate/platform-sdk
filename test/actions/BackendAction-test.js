@@ -170,6 +170,51 @@ describe('BackendAction', () => {
         })
     })
 
+    it('should fail when pipeline IDs not matching pipeline file names', (done) => {
+      appSettings.loadAttachedExtensions = () => { return {testExtension: {path: '..'}} }
+
+      backendAction.backendProcess = {
+        connect: sinon.stub().resolves(),
+        selectApplication: sinon.stub().resolves(),
+        resetPipelines: sinon.stub().resolves(),
+        startStepExecutor: sinon.stub().resolves(),
+        reloadPipelineController: sinon.stub().resolves()
+      }
+
+      backendAction.dcClient = {
+        downloadPipelines: sinon.stub().resolves([]),
+        removePipeline: sinon.stub().resolves(),
+        uploadMultiplePipelines: sinon.stub().resolves()
+      }
+
+      backendAction.attachedExtensionsWatcher = {
+        attachedExtensions: [{'testPipeline123': {path: ''}}],
+        start: () => sinon.stub().resolves(),
+        on: () => sinon.stub().resolves()
+      }
+
+      backendAction._extensionChanged = sinon.stub().resolves()
+
+      fsEx.writeJson(path.join(process.env.APP_PATH, 'pipelines', 'testPipeline.json'), {pipeline: {id: 'testPipeline123'}}, err => {
+        assert.ifError(err)
+
+        backendAction._startSubProcess()
+          .then(() => fsEx.readJson(path.join(process.env.APP_PATH, 'pipelines', 'testPipeline.json')))
+          .then((content) => {
+            assert.deepEqual(content, {pipeline: {id: 'testPipeline123'}})
+          })
+          .catch(err => {
+            assert.ok(err)
+            assert.equal(
+              err.message,
+              'Pipeline ID "testPipeline123" and file name "testPipeline" mismatch! ' +
+              'The ID of a pipeline and its file name should be the same.'
+            )
+            done()
+          })
+      })
+    })
+
     it('should call dcClient if pipelines were updated', (done) => {
       backendAction.backendProcess = {
         connect: sinon.stub().resolves(),
@@ -282,7 +327,7 @@ describe('BackendAction', () => {
         assert.ifError(err)
         backendAction._pipelineChanged(file).catch(err => {
           assert.ok(err)
-          assert.equal(err.message, 'The pipeline id and the file name need to be equal! Please make sure you changed both places')
+          assert.equal(err.message, `Pipeline ID "${pipeline.pipeline.id}" should match its file name!`)
           done()
         })
       })
