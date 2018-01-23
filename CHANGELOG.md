@@ -1,3 +1,6 @@
+## v1.2.1
+* Fix storage issue that local storage can only be used if `backend start` is executed in project root
+
 ## v1.2.0
 * Set minimum node version to 8.4.0
 * Improved log, so that step-logs are prefixed with the corresponding step
