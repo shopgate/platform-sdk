@@ -18,7 +18,8 @@
     "url": "https://github.com/shopgate/cloud-sdk.git"
   },
   "bin": {
-    "sgcloud": "./bin/sgcloud"
+    "sgcloud": "./bin/sgcloud",
+    "sgconnect": "./bin/sgcloud"
   },
   "keywords": [
     "shopgate",
