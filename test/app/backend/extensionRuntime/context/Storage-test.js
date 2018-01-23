@@ -9,8 +9,8 @@ const Storage = proxyquire('../../../../../lib/app/backend/extensionRuntime/cont
 })
 
 describe('Storage', () => {
-  let storage
   let log
+  const appSettings = {settingsFolder: 'fooBar'}
 
   beforeEach(() => {
     log = {log: true, debug: () => {}}
@@ -22,9 +22,7 @@ describe('Storage', () => {
     it('should construct with default path', () => {
       delete process.env.STORAGE_PATH
 
-      const appSettings = {settingsFolder: 'fooBar'}
-      storage = new Storage(appSettings, log)
-
+      const storage = new Storage(appSettings, log)
       assert.equal(storage.path, path.join(appSettings.settingsFolder, 'storage.json'))
       assert.equal(storage.log, log)
     })
@@ -34,6 +32,7 @@ describe('Storage', () => {
     it('should cb undefined if path was not set', done => {
       fsEx.readJSON = (file, options, cb) => { cb(new Error('file not found')) }
 
+      const storage = new Storage(appSettings, log)
       storage.get('foo/bar/foobar', (err, value) => {
         assert.ifError(err)
         assert.equal(value, undefined)
@@ -50,6 +49,7 @@ describe('Storage', () => {
         })
       }
 
+      const storage = new Storage(appSettings, log)
       storage.get(path, (err, v) => {
         assert.ifError(err)
         assert.equal(v, value)
@@ -71,6 +71,7 @@ describe('Storage', () => {
         cb(null)
       }
 
+      const storage = new Storage(appSettings, log)
       storage.set(path, value, err => {
         assert.ifError(err)
         assert.equal(called, 1)
@@ -92,6 +93,7 @@ describe('Storage', () => {
         cb(null)
       }
 
+      const storage = new Storage(appSettings, log)
       storage.del(path, err => {
         assert.ifError(err)
         assert.equal(called, 1)
