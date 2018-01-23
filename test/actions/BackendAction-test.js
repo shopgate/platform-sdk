@@ -364,6 +364,7 @@ describe('BackendAction', () => {
     it('should return if pipeline was removed', (done) => {
       const pipelineId = 'dCPlTest4'
       let called = false
+      backendAction._writeLocalPipelines = sinon.mock().resolves()
       backendAction.dcClient.removePipeline = (plId, id, trusted) => {
         assert.equal(plId, pipelineId)
         called = true
@@ -374,6 +375,7 @@ describe('BackendAction', () => {
 
       backendAction._pipelineRemoved(file).then(() => {
         assert.ok(called)
+        assert.ok(backendAction._writeLocalPipelines.called)
         done()
       }).catch(err => {
         assert.ifError(err)
