@@ -15,6 +15,11 @@ function formatException (err) {
   logger.error(process.env.LOG_LEVEL !== 'debug' ? err.message : err)
 }
 
+process.on('unhandledRejection', function (err) {
+  formatException(err)
+  process.exit(1)
+})
+
 process.on('uncaughtException', function (err) {
   formatException(err)
   process.exit(1)
