@@ -1,3 +1,6 @@
+## v1.2.1
+* Only pipeline files with the ending `.json` will uploaded on `backend start`
+
 ## v1.2.0
 * Set minimum node version to 8.4.0
 * Improved log, so that step-logs are prefixed with the corresponding step
