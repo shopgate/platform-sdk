@@ -1,7 +1,6 @@
 const assert = require('assert')
 const proxyquire = require('proxyquire')
 const path = require('path')
-const sinon = require('sinon')
 const fsEx = require('fs-extra')
 const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
@@ -10,6 +9,8 @@ const appPath = path.join('build', 'appsettings')
 const userPath = path.join('build', 'usersettings')
 
 const fsExtraMock = {}
+const inquirer = {}
+const dcClientMock = class {}
 
 class FrontendActionMock {
   run () { return Promise.resolve() }
@@ -21,10 +22,13 @@ describe('FrontendAction', () => {
     '../logger': {
       info: () => {},
       error: () => {},
-      debug: () => {}
+      debug: () => {},
+      warn: () => {}
     },
     '../app/frontend/FrontendProcess': FrontendActionMock,
-    'fs-extra': fsExtraMock
+    'fs-extra': fsExtraMock,
+    'inquirer': inquirer,
+    '../DcHttpClient': dcClientMock
   })
 
   beforeEach((done) => {
@@ -33,10 +37,15 @@ describe('FrontendAction', () => {
     new UserSettings().setToken({})
     process.env.APP_PATH = appPath
     fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
+
     fsExtraMock.existsSync = () => true
     fsExtraMock.readJSONSync = () => {}
+    fsExtraMock.readdir = () => Promise.resolve()
+    fsExtraMock.lstat = () => Promise.resolve()
+
     new AppSettings().setId('foobarTest')
     frontendAction = new FrontendAction()
+
     done()
   })
 
@@ -58,65 +67,33 @@ describe('FrontendAction', () => {
   })
 
   describe('run() -> start', () => {
-    it('should throw an error if the theme was not selected', () => {
+    it('should throw an error if the theme is not existing', async () => {
+      const options = {theme: 'theme-gmd'}
+      fsExtraMock.readdir = (source) => Promise.resolve(['a', 'b'])
+      fsExtraMock.lstat = () => Promise.resolve({isDirectory: () => true})
+      fsExtraMock.exists = () => Promise.resolve(false)
+      frontendAction.dcClient.generateExtensionConfig = (configFile, id, cb) => { cb(null, {}) }
+
       try {
-        frontendAction.run('start')
+        await frontendAction.run('start', null, options)
         assert.fail()
       } catch (err) {
-        assert.equal(err.message, 'Please pass the folder of the desired theme. Run `sgcloud frontend start -t <foldername of the theme>`')
+        assert.equal(err.message, 'Can\'t find theme \'theme-gmd\'. Please make sure you passed the right theme.')
       }
     })
 
-    it('should throw an error if the theme is not existing', () => {
+    it('should generate theme config', async () => {
       const options = {theme: 'theme-gmd'}
-      fsExtraMock.existsSync = (templateFolder) => {
-        const expectedTemplateFolder = path.join(process.env.APP_PATH, AppSettings.THEMES_FOLDER, options.theme)
-        assert.equal(templateFolder, expectedTemplateFolder)
-        return null
-      }
+      fsExtraMock.readJSON = () => Promise.resolve({})
+      fsExtraMock.readdir = (source) => Promise.resolve(['theme-gmd'])
+      fsExtraMock.exists = () => Promise.resolve(true)
+      frontendAction.dcClient.generateExtensionConfig = (configFile, id, cb) => { cb(null, {}) }
+
       try {
-        frontendAction.run('start', options)
-        assert.fail()
+        await frontendAction.run('start', {}, options)
       } catch (err) {
-        assert.equal(err.message, `Can't find theme ${options.theme}. Please make sure you passed the right theme.`)
+        assert.ifError(err)
       }
-    })
-
-    it('should generate theme config', (done) => {
-      const options = {theme: 'theme-gmd'}
-      const someExtensionConfig = {foo: 'bar'}
-      const someAppJsonContent = {frontend: {bar: 'foo'}}
-      fsExtraMock.readJSONSync = (extensionConfigJson) => {
-        const expectedTemplateFolderPath = path.join(process.env.APP_PATH, AppSettings.THEMES_FOLDER, options.theme, 'extension-config.json')
-        assert.equal(extensionConfigJson, expectedTemplateFolderPath)
-        return someExtensionConfig
-      }
-      frontendAction.dcClient.generateExtensionConfig = (extensionConfigFile, applicationId, cb) => {
-        assert.deepEqual(extensionConfigFile, someExtensionConfig)
-        cb(null, someAppJsonContent)
-      }
-
-      fsExtraMock.outputJsonSync = (appJsonFilePath, config) => {
-        const expectedAppJsonFilePath = path.join(process.env.APP_PATH, AppSettings.THEMES_FOLDER, options.theme, 'config/app.json')
-        assert.equal(appJsonFilePath, expectedAppJsonFilePath)
-        assert.equal(config, someAppJsonContent.frontend)
-        done()
-      }
-
-      frontendAction.run('start', options)
-    })
-
-    it('should throw an error if the extension generation has an error', function () {
-      this.timeout(4000)
-      const stub = sinon.stub()
-      stub.callsArgWith(2, new Error('test'))
-      frontendAction.dcClient.generateExtensionConfig = stub
-      const templateFolderPath = path.join(process.env.APP_PATH, AppSettings.THEMES_FOLDER, './theme-gmd/extension-config.json')
-
-      return frontendAction.updateThemeConfig(templateFolderPath)
-        .catch((err) => {
-          assert.equal(err.message, 'Could not generate config: test')
-        })
     })
   })
 

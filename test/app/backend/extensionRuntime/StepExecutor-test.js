@@ -3,6 +3,7 @@ const path = require('path')
 const fsEx = require('fs-extra')
 const async = require('neo-async')
 const glob = require('glob')
+const sinon = require('sinon')
 const StepExecutor = require('../../../../lib/app/backend/extensionRuntime/StepExecutor')
 const AppSettings = require('../../../../lib/app/AppSettings')
 const UserSettings = require('../../../../lib/user/UserSettings')
@@ -26,49 +27,60 @@ describe('StepExecutor', () => {
       const StepExecutorMocked = proxyquire('../../../../lib/app/backend/extensionRuntime/StepExecutor', {
         chokidar: {
           watch: (actualPath, options) => {
-            assert.equal(actualPath, path.join(utils.getApplicationFolder(), 'extensions'))
+            assert.equal(actualPath, path.join(utils.getApplicationFolder(), 'extensions', '**', 'extension', '*'))
             return watcher
           }
         }
       })
       const stepExecutor = new StepExecutorMocked({info: () => {}}, {getApplicationFolder: utils.getApplicationFolder})
-      stepExecutor.start = (cb) => {
-        done()
-        cb()
+      stepExecutor.start = sinon.stub().resolves()
+      stepExecutor.stop = () => {
+        return new Promise((resolve, reject) => {
+          done()
+          resolve()
+        })
       }
-      stepExecutor.stop = (cb) => cb()
 
       assert.equal(stepExecutor.watcher, undefined)
 
-      stepExecutor.startWatcher(() => {
-        watcher.emit('all')
-      })
+      stepExecutor.startWatcher().then(() => watcher.emit('all'))
+
       watcher.emit('ready')
     })
 
-    it('should stop the watcher', (done) => {
+    it('should stop the watcher', () => {
+      let called = 0
       const watcher = {
         closed: false,
         close: function () {
+          called++
           this.closed = true
-        }
+        },
+        events: {},
+        on: function (event, fn) {
+          this.events[event] = fn
+        },
+        emit: function (event, param1, param2, cb) {
+          this.events[event](param1, param2)
+        },
+        removeAllListeners: () => {}
       }
 
       const StepExecutorMocked = proxyquire('../../../../lib/app/backend/extensionRuntime/StepExecutor', {
         chokidar: {
-          watch: (path, options) => {
-            assert.equal(path, 'extensions')
+          watch: (actualPath, options) => {
+            assert.equal(actualPath, path.join(utils.getApplicationFolder(), 'extensions', '**', 'extension', '*'))
             return watcher
           }
         }
       })
 
-      const stepExecutor = new StepExecutorMocked({info: () => {}})
+      const stepExecutor = new StepExecutorMocked({info: () => {}}, {getApplicationFolder: utils.getApplicationFolder})
 
-      stepExecutor.stopWatcher((err) => {
-        assert.ifError(err)
-        done()
-      })
+      stepExecutor.startWatcher()
+      watcher.emit('ready')
+
+      return stepExecutor.stopWatcher().then(() => assert.equal(called, 1))
     })
   })
 
@@ -87,6 +99,10 @@ describe('StepExecutor', () => {
       process.env.APP_PATH = appTestFolder
       log = {info: () => {}, error: () => {}, debug: () => {}, warn: () => {}}
 
+      executor = new StepExecutor(log)
+      executor.stepTimeout = 1000
+      executor.stepLogger = {info: () => {}, error: () => {}, debug: () => {}, warn: () => {}}
+
       let appSettings = new AppSettings().setId('shop_10006')._saveExtensions({'@foo/bar': {path: 'foobar'}})
       new UserSettings().setToken({})
 
@@ -96,11 +112,12 @@ describe('StepExecutor', () => {
 
       const extensionDir = path.join(appPath, AppSettings.EXTENSIONS_FOLDER, 'foobar', 'extension')
       fsEx.emptyDirSync(extensionDir)
+
       glob(path.join(__dirname, 'fakeSteps', '*.js'), {}, (err, files) => {
         assert.ifError(err)
         async.each(files, (file, eCb) => fsEx.copy(file, path.join(extensionDir, path.basename(file)), eCb), (err) => {
           assert.ifError(err)
-          executor.start(done)
+          executor.start().then(done)
         })
       })
     })
@@ -111,17 +128,18 @@ describe('StepExecutor', () => {
       delete process.env.USER_PATH
 
       async.parallel([
-        (cb) => executor.stop(cb),
         (cb) => fsEx.remove(appTestFolder, cb),
         (cb) => fsEx.remove(userTestFolder, cb)
-      ], done)
+      ], err => {
+        assert.ifError(err)
+        executor.stop().then(done)
+      })
     })
 
-    it('should not start another childProcess when one is already running', (done) => {
+    it('should not start another childProcess when one is already running', () => {
       executor.onExit = () => {}
-      executor.start((err) => {
-        assert.ok(err)
-        done()
+      return executor.start().catch(err => {
+        assert.equal(err.message, 'childProcess already running')
       })
     })
 

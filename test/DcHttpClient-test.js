@@ -72,123 +72,108 @@ describe('DcHttpClient', () => {
   describe('downloadPipelines', () => {
     const appId = 'foobarAppId'
 
-    it('should get a pipeline', (done) => {
+    it('should get a pipeline', () => {
       const body = {pipelines: ['foo', 'bar']}
       const dcMock = nock(dcClient.dcAddress)
         .get(`/applications/${appId}/pipelines`)
         .reply(200, body)
 
-      dcClient.downloadPipelines(appId, false, (err, pipelines) => {
-        assert.ifError(err)
+      return dcClient.downloadPipelines(appId, false).then(pipelines => {
         assert.deepEqual(pipelines, body.pipelines)
         dcMock.done()
-        done()
       })
     })
 
-    it('should update the usertoken on jwt-update', (done) => {
+    it('should update the usertoken on jwt-update', () => {
       const newToken = 'foobarTokenNew13456'
       const dcMock = nock(dcClient.dcAddress)
         .get(`/applications/${appId}/pipelines`)
         .reply(200, {}, {'x-jwt': newToken})
 
-      dcClient.downloadPipelines(appId, false, (err) => {
-        assert.ifError(err)
+      return dcClient.downloadPipelines(appId, false).then(() => {
         assert.equal(dcClient.userSettings.getToken(), newToken)
         dcMock.done()
-        done()
       })
     })
 
-    it('should callback error on dc-error', (done) => {
+    it('should callback error on dc-error', () => {
       const dcMock = nock(dcClient.dcAddress)
         .get(`/applications/${appId}/pipelines`)
         .reply(500)
 
-      dcClient.downloadPipelines(appId, false, (err) => {
+      return dcClient.downloadPipelines(appId, false).catch(err => {
         assert.ok(err)
         dcMock.done()
-        done()
       })
     })
   })
 
   describe('uploadPipeline', () => {
-    it('should update a pipeline', (done) => {
+    it('should update a pipeline', () => {
       const dcMock = nock(dcClient.dcAddress)
         .put('/applications/shop_10006/pipelines/someId')
         .reply(204)
 
-      dcClient.uploadPipeline({pipeline: {id: 'someId'}}, 'shop_10006', false, (err) => {
-        assert.ifError(err)
+      return dcClient.uploadPipeline({pipeline: {id: 'someId'}}, 'shop_10006', false).then(() => {
         dcMock.done()
-        done()
       })
     })
 
-    it('should update the usertoken on jwt-update', (done) => {
+    it('should update the usertoken on jwt-update', () => {
       const newToken = 'newToken134'
       const dcMock = nock(dcClient.dcAddress)
         .put('/applications/shop_10006/pipelines/someId')
         .reply(204, {}, {'x-jwt': newToken})
 
-      dcClient.uploadPipeline({pipeline: {id: 'someId'}}, 'shop_10006', false, (err) => {
-        assert.ifError(err)
+      return dcClient.uploadPipeline({pipeline: {id: 'someId'}}, 'shop_10006', false).then(() => {
         assert.equal(dcClient.userSettings.getToken(), newToken)
         dcMock.done()
-        done()
       })
     })
 
-    it('should return an error on dc-error', (done) => {
+    it('should return an error on dc-error', () => {
       const dcMock = nock(dcClient.dcAddress)
         .put('/applications/shop_10006/pipelines/someId')
         .reply(500)
 
-      dcClient.uploadPipeline({pipeline: {id: 'someId'}}, 'shop_10006', false, (err) => {
+      return dcClient.uploadPipeline({pipeline: {id: 'someId'}}, 'shop_10006', false).catch(err => {
         assert.ok(err)
         dcMock.done()
-        done()
       })
     })
   })
 
   describe('removePipeline', () => {
-    it('should remove a pipeline', (done) => {
+    it('should remove a pipeline', () => {
       const dcMock = nock(dcClient.dcAddress)
         .delete('/applications/shop_10006/pipelines/someId')
         .reply(204)
 
-      dcClient.removePipeline('someId', 'shop_10006', false, (err) => {
-        assert.ifError(err)
+      return dcClient.removePipeline('someId', 'shop_10006', false).then(() => {
         dcMock.done()
-        done()
       })
     })
 
-    it('should update the usertoken on jwt-update', (done) => {
+    it('should update the usertoken on jwt-update', () => {
       const newToken = 'newToken4123'
       const dcMock = nock(dcClient.dcAddress)
         .delete('/applications/shop_10006/pipelines/someId')
         .reply(204, {}, {'x-jwt': newToken})
 
-      dcClient.removePipeline('someId', 'shop_10006', false, (err) => {
-        assert.ifError(err)
+      return dcClient.removePipeline('someId', 'shop_10006', false).then(() => {
         assert.equal(dcClient.userSettings.getToken(), newToken)
         dcMock.done()
-        done()
       })
     })
 
-    it('should return an error on dc-error', (done) => {
+    it('should return an error on dc-error', () => {
       const dcMock = nock(dcClient.dcAddress)
         .delete('/applications/shop_10006/pipelines/someId')
         .reply(500)
 
-      dcClient.removePipeline('someId', 'shop_10006', false, (err) => {
+      return dcClient.removePipeline('someId', 'shop_10006', false).catch(err => {
         assert.ok(err)
         dcMock.done()
-        done()
       })
     })
   })

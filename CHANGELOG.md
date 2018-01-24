@@ -12,6 +12,9 @@
 * Better error log, when something's wrong in a step file
 * Improve logger output of extension logger
 * Project dependend console commands are usable in all subdirectories of a project
+* Add extension create command
+* Update extension workflow; pipelines don't need to be copied to the global pipeline folder anymore (see documentation)
+* From now on the SDK has the command `sgconnect`. `sgcloud` is deprecated from now on
 
 ## v1.1.1
 * Update `cloud-sdk-webpack` module to v1.5.6.
