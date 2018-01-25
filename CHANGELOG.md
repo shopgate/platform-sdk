@@ -1,3 +1,7 @@
+## v1.2.1
+* Fix error handing for `frontend` action. The error message are show up now and has the correct format
+* Fix problems that configs does not get generated correctly when it has a subpath
+
 ## v1.2.0
 * Set minimum node version to 8.4.0
 * Improved log, so that step-logs are prefixed with the corresponding step
