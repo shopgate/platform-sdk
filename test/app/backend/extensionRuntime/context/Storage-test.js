@@ -1,57 +1,38 @@
-const Storage = require('../../../../../lib/app/backend/extensionRuntime/context/Storage')
-const AppSettings = require('../../../../../lib/app/AppSettings')
 const assert = require('assert')
 const path = require('path')
-const fsEx = require('fs-extra')
+const proxyquire = require('proxyquire')
+
+const fsEx = {}
+
+const Storage = proxyquire('../../../../../lib/app/backend/extensionRuntime/context/Storage', {
+  'fs-extra': fsEx
+})
 
 describe('Storage', () => {
-  let storagePath
-  let storage
-  beforeEach(() => {
-    storagePath = path.join('build', 'storage.json')
-    process.env.STORAGE_PATH = storagePath
-    storage = new Storage()
-  })
+  let log
+  const appSettings = {settingsFolder: 'fooBar'}
 
-  afterEach(done => {
-    delete process.env.STORAGE_PATH
-    fsEx.remove(storagePath, done)
+  beforeEach(() => {
+    log = {log: true, debug: () => {}}
+    fsEx.readJSON = (file, options, cb) => cb(new Error('not implemented'))
+    fsEx.writeJSON = (file, content, options, cb) => cb(new Error('not implemented'))
   })
 
   describe('constructor', () => {
     it('should construct with default path', () => {
       delete process.env.STORAGE_PATH
-      const log = {log: true}
-      storage = new Storage(log)
-      assert.equal(storage.path, path.join(AppSettings.SETTINGS_FOLDER, 'storage.json'))
-      assert.equal(storage.saveQueued, undefined)
-      assert.equal(storage.saving, undefined)
-      assert.equal(storage.log, log)
-    })
 
-    it('should construct empty', () => {
-      assert.equal(storage.path, storagePath)
-      assert.deepEqual(storage.data, {})
-      assert.equal(storage.saveQueued, undefined)
-      assert.equal(storage.saving, undefined)
-      assert.equal(storage.log, undefined)
-    })
-
-    it('should construct with data', () => {
-      const data = {foo: 'bar', bar: 'foo'}
-      const log = {log: true}
-      fsEx.writeJsonSync(storagePath, data)
-      storage = new Storage(log)
-      assert.equal(storage.path, storagePath)
-      assert.deepEqual(storage.data, data)
-      assert.equal(storage.saveQueued, undefined)
-      assert.equal(storage.saving, undefined)
+      const storage = new Storage(appSettings, log)
+      assert.equal(storage.path, path.join(appSettings.settingsFolder, 'storage.json'))
       assert.equal(storage.log, log)
     })
   })
 
   describe('get', () => {
     it('should cb undefined if path was not set', done => {
+      fsEx.readJSON = (file, options, cb) => { cb(new Error('file not found')) }
+
+      const storage = new Storage(appSettings, log)
       storage.get('foo/bar/foobar', (err, value) => {
         assert.ifError(err)
         assert.equal(value, undefined)
@@ -59,11 +40,16 @@ describe('Storage', () => {
       })
     })
 
-    it('should cb value if path was set set', done => {
+    it('should cb value if path was set', done => {
       const value = {foo: 'bar'}
       const path = 'foo/bar/foobar'
-      storage.data[path] = value
+      fsEx.readJSON = (file, options, cb) => {
+        cb(null, {
+          'foo/bar/foobar': value
+        })
+      }
 
+      const storage = new Storage(appSettings, log)
       storage.get(path, (err, v) => {
         assert.ifError(err)
         assert.equal(v, value)
@@ -76,96 +62,43 @@ describe('Storage', () => {
     it('should set value and call save', done => {
       const value = {foo: 'bar'}
       const path = 'foo/bar/foobar'
-      let doneCount = 0
-      function isDone () {
-        if (doneCount++ === 1) return done()
+      let called = 0
+
+      fsEx.readJSON = (file, options, cb) => cb(null, {})
+      fsEx.writeJSON = (file, content, options, cb) => {
+        assert.equal(content[path], value)
+        called++
+        cb(null)
       }
 
-      storage.save = isDone
-
+      const storage = new Storage(appSettings, log)
       storage.set(path, value, err => {
         assert.ifError(err)
-        assert.equal(storage.data[path], value)
-        isDone()
+        assert.equal(called, 1)
+        done()
       })
     })
   })
 
   describe('del', () => {
     it('should delete value and call save', done => {
+      const value = {foo: 'bar'}
       const path = 'foo/bar/foobar'
-      storage.data[path] = {foo: 'bar'}
-      let doneCount = 0
-      function isDone () {
-        if (doneCount++ === 1) return done()
+      let called = 0
+
+      fsEx.readJSON = (file, options, cb) => cb(null, {'foo/bar/foobar': value})
+      fsEx.writeJSON = (file, content, options, cb) => {
+        assert.equal(content[path], undefined)
+        called++
+        cb(null)
       }
 
-      storage.save = isDone
-
+      const storage = new Storage(appSettings, log)
       storage.del(path, err => {
         assert.ifError(err)
-        assert.equal(storage.data[path], undefined)
-        isDone()
+        assert.equal(called, 1)
+        done()
       })
-    })
-  })
-
-  describe('save', () => {
-    it('should save and call saveCb', done => {
-      storage.data.foo = 'bar'
-      storage.data.bar = 'foo'
-
-      storage.saveCb = err => {
-        assert.ifError(err)
-        assert.equal(storage.saveQueued, undefined)
-        assert.equal(storage.saving, true)
-
-        fsEx.readJson(storagePath, (err, data) => {
-          assert.ifError(err)
-          assert.deepEqual(data, storage.data)
-          done()
-        })
-      }
-      storage.save()
-    })
-
-    it('should set saveQueued to true if already saving', done => {
-      storage.saveCb = err => {
-        assert.ifError(err)
-        assert.equal(storage.saveQueued, undefined)
-        assert.equal(storage.saving, true)
-        storage.save()
-        assert.equal(storage.saveQueued, true)
-        assert.equal(storage.saving, true)
-        done()
-      }
-      storage.save()
-    })
-
-    it('should reset saving', () => {
-      storage.saving = true
-      storage.saveCb()
-      assert.equal(storage.saving, false)
-    })
-
-    it('should reset saving and call save again if saveQueued', done => {
-      storage.saving = true
-      storage.saveQueued = true
-      storage.save = () => {
-        assert.equal(storage.saving, false)
-        assert.equal(storage.saveQueued, false)
-        done()
-      }
-      storage.saveCb()
-    })
-
-    it('should log errors', done => {
-      const error = new Error()
-      storage = new Storage({error: (err) => {
-        assert.equal(err, error)
-        done()
-      }})
-      storage.saveCb(error)
     })
   })
 })
