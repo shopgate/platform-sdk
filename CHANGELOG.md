@@ -1,5 +1,6 @@
 ## v1.2.1
 * Only pipeline files with the ending `.json` will uploaded on `backend start`
+* Fix error handing for `frontend` action. The error message are show up now and has the correct format
 
 ## v1.2.0
 * Set minimum node version to 8.4.0
