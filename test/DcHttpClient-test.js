@@ -223,44 +223,42 @@ describe('DcHttpClient', () => {
     const appId = 'foobarAppId'
     const extId = 'testExt'
 
-    it('should get a config', (done) => {
+    it('should get a config', () => {
       const body = {id: extId}
       const dcMock = nock(dcClient.dcAddress)
         .post(`/applications/${appId}/extensions/${extId}/generateConfig`)
         .reply(200, body)
 
-      dcClient.generateExtensionConfig({id: extId}, appId, (err, config) => {
-        assert.ifError(err)
-        assert.deepEqual(config, body)
-        dcMock.done()
-        done()
-      })
+      return dcClient.generateExtensionConfig({id: extId}, appId)
+        .then((config) => {
+          assert.deepEqual(config, body)
+          dcMock.done()
+        })
+        .catch(err => assert.ifError(err))
     })
 
-    it('should update the usertoken on jwt-update', (done) => {
+    it('should update the usertoken on jwt-update', () => {
       const newToken = 'foobarTokenNew34'
       const dcMock = nock(dcClient.dcAddress)
         .post(`/applications/${appId}/extensions/${extId}/generateConfig`)
         .reply(200, {}, {'x-jwt': newToken})
 
-      dcClient.generateExtensionConfig({id: extId}, appId, (err) => {
-        assert.ifError(err)
-        assert.equal(dcClient.userSettings.getToken(), newToken)
-        dcMock.done()
-        done()
-      })
+      return dcClient.generateExtensionConfig({id: extId}, appId)
+        .then(() => {
+          assert.equal(dcClient.userSettings.getToken(), newToken)
+          dcMock.done()
+        })
+        .catch(err => assert.ifError(err))
     })
 
-    it('should callback error on dc-error', (done) => {
+    it('should callback error on dc-error', () => {
       const dcMock = nock(dcClient.dcAddress)
         .post(`/applications/${appId}/extensions/${extId}/generateConfig`)
         .reply(500)
 
-      dcClient.generateExtensionConfig({id: extId}, appId, (err) => {
-        assert.ok(err)
-        dcMock.done()
-        done()
-      })
+      return dcClient.generateExtensionConfig({id: extId}, appId)
+        .then(() => dcMock.done())
+        .catch(err => assert.equal(err.message, 'Could not generate Extension-Config'))
     })
   })
 

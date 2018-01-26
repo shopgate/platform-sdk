@@ -87,7 +87,7 @@ describe('FrontendAction', () => {
       fsExtraMock.readJSON = () => Promise.resolve({})
       fsExtraMock.readdir = (source) => Promise.resolve(['theme-gmd'])
       fsExtraMock.exists = () => Promise.resolve(true)
-      frontendAction.dcClient.generateExtensionConfig = (configFile, id, cb) => { cb(null, {}) }
+      frontendAction.dcClient.generateExtensionConfig = () => Promise.resolve({})
 
       try {
         await frontendAction.run('start', {}, options)
