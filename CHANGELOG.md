@@ -1,3 +1,6 @@
+## v1.3.0
+* Added option `--inspect` to `backend start` to allow for inspection/debugging of extensions (props @Menes1337)
+
 ## v1.2.1
 * Only pipeline files with the ending `.json` will uploaded on `backend start`
 * Fix storage issue that local storage can only be used if `backend start` is executed in project root
