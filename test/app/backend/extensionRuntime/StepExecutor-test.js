@@ -24,10 +24,15 @@ describe('StepExecutor', () => {
         }
       }
 
+      const pathes = [
+        path.join(utils.getApplicationFolder(), 'extensions', '**', 'extension', '*.js'),
+        path.join(utils.getApplicationFolder(), 'extensions', '**', 'extension', '**', '*.js')
+      ]
+
       const StepExecutorMocked = proxyquire('../../../../lib/app/backend/extensionRuntime/StepExecutor', {
         chokidar: {
           watch: (actualPath, options) => {
-            assert.equal(actualPath, path.join(utils.getApplicationFolder(), 'extensions', '**', 'extension', '*.js'))
+            assert.deepEqual(actualPath, pathes)
             return watcher
           }
         }
@@ -66,10 +71,15 @@ describe('StepExecutor', () => {
         removeAllListeners: () => {}
       }
 
+      const pathes = [
+        path.join(utils.getApplicationFolder(), 'extensions', '**', 'extension', '*.js'),
+        path.join(utils.getApplicationFolder(), 'extensions', '**', 'extension', '**', '*.js')
+      ]
+
       const StepExecutorMocked = proxyquire('../../../../lib/app/backend/extensionRuntime/StepExecutor', {
         chokidar: {
           watch: (actualPath, options) => {
-            assert.equal(actualPath, path.join(utils.getApplicationFolder(), 'extensions', '**', 'extension', '*.js'))
+            assert.deepEqual(actualPath, pathes)
             return watcher
           }
         }
