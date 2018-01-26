@@ -1,8 +1,9 @@
 ## v1.2.1
 * Only pipeline files with the ending `.json` will uploaded on `backend start`
 * Fix storage issue that local storage can only be used if `backend start` is executed in project root
-* Fix error handing for `frontend` action. The error message are show up now and has the correct format
+* Fix error handing for `frontend` action. Error messages show up now and have the correct format
 * Fix crashing of the SDK on reconnect
+* Fix bug that allowed two backend processes to run in the same project
 
 ## v1.2.0
 * Set minimum node version to 8.4.0
