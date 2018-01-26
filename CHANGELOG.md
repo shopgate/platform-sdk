@@ -4,6 +4,7 @@
 * Fix error handing for `frontend` action. Error messages show up now and have the correct format
 * Fix crashing of the SDK on reconnect
 * Fix bug that allowed two backend processes to run in the same project
+* Added option `--inspect-extensions` to `backend start` to allow for inspection/debugging of extensions (props @Menes1337)
 
 ## v1.2.0
 * Set minimum node version to 8.4.0
