@@ -101,7 +101,7 @@ describe('BackendAction', () => {
 
     it('should throw if user not logged in', (done) => {
       userSettings.setToken()
-      backendAction.run('start')
+      backendAction.run()
         .catch(err => {
           assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
           done()
@@ -114,7 +114,7 @@ describe('BackendAction', () => {
 
       utils.setProcessFile('backend', processFile, pid)
 
-      backendAction.run('start')
+      backendAction.run()
         .catch(err => {
           assert.equal(err.message, `Backend process is already running with pid: ${pid}. Please quit this process first.`)
           done()
@@ -384,7 +384,7 @@ describe('BackendAction', () => {
     it('should work', () => {
       backendAction._startSubProcess = () => {}
       try {
-        backendAction.run('start')
+        backendAction.run()
       } catch (err) {
         assert.ifError(err)
       }
