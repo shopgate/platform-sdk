@@ -46,12 +46,11 @@ describe('InitAction', () => {
   it('should throw if user not logged in', (done) => {
     userSettings.setToken(null)
     const init = new InitAction()
-    try {
-      init.run(null)
-    } catch (e) {
-      assert.equal(e.message, 'You\'re not logged in! Please run `sgcloud login` again.')
-      done()
-    }
+    init.run(null)
+      .catch(err => {
+        assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
+        done()
+      })
   })
 
   it('should reinit the application if selected', (done) => {
