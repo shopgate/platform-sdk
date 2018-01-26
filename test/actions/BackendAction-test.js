@@ -99,13 +99,13 @@ describe('BackendAction', () => {
       assert(caporal.action.calledOnce)
     })
 
-    it('should throw if user not logged in', () => {
+    it('should throw if user not logged in', (done) => {
       userSettings.setToken()
-      try {
-        backendAction.run('start')
-      } catch (err) {
-        assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
-      }
+      backendAction.run()
+        .catch(err => {
+          assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
+          done()
+        })
     })
 
     it('should fail because a backend process is already running', (done) => {
@@ -114,12 +114,11 @@ describe('BackendAction', () => {
 
       utils.setProcessFile('backend', processFile, pid)
 
-      try {
-        backendAction.run('start')
-      } catch (err) {
-        assert.equal(err.message, `Backend process is already running with pid: ${pid}. Please quit this process first.`)
-        done()
-      }
+      backendAction.run()
+        .catch(err => {
+          assert.equal(err.message, `Backend process is already running with pid: ${pid}. Please quit this process first.`)
+          done()
+        })
     })
   })
 
@@ -395,7 +394,7 @@ describe('BackendAction', () => {
     it('should work', () => {
       backendAction._startSubProcess = () => {}
       try {
-        backendAction.run('start')
+        backendAction.run()
       } catch (err) {
         assert.ifError(err)
       }
