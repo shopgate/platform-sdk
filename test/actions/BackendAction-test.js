@@ -244,36 +244,46 @@ describe('BackendAction', () => {
       })
     })
 
-    it('should write generated extension-config if backend-extension was updated', (done) => {
+    it('should write generated extension-config if backend-extension was updated', async () => {
       let generated = {backend: {id: 'myGeneratedExtension'}}
-      backendAction.dcClient.generateExtensionConfig = (config, appId, cb) => cb(null, generated)
+
+      let called = 0
+      backendAction.dcClient.generateExtensionConfig = () => {
+        called++
+        return Promise.resolve(generated)
+      }
 
       const cfgPath = path.join(process.env.APP_PATH, 'extensions', 'testExt')
 
-      backendAction._extensionChanged({file: generated, path: cfgPath}, (err) => {
+      try {
+        await backendAction._extensionChanged({file: generated, path: cfgPath})
+        const content = await fsEx.readJson(path.join(cfgPath, 'extension', 'config.json'))
+        assert.deepEqual(content, {id: 'myGeneratedExtension'})
+        assert.equal(called, 1)
+      } catch (err) {
         assert.ifError(err)
-        fsEx.readJson(path.join(cfgPath, 'extension', 'config.json'))
-          .then(cfg => {
-            assert.deepEqual(cfg, {id: 'myGeneratedExtension'})
-            done()
-          })
-      })
+      }
     })
 
-    it('should write generated extension-config if frontend-extension was updated', (done) => {
+    it('should write generated extension-config if frontend-extension was updated', async () => {
       let generated = {frontend: {id: 'myGeneratedExtension'}}
-      backendAction.dcClient.generateExtensionConfig = (config, appId, cb) => cb(null, generated)
+
+      let called = 0
+      backendAction.dcClient.generateExtensionConfig = () => {
+        called++
+        return Promise.resolve(generated)
+      }
 
       const cfgPath = path.join(process.env.APP_PATH, 'extension', 'testExt')
 
-      backendAction._extensionChanged({file: generated, path: cfgPath}, (err) => {
+      try {
+        await backendAction._extensionChanged({file: generated, path: cfgPath})
+        const content = await fsEx.readJson(path.join(cfgPath, 'frontend', 'config.json'))
+        assert.deepEqual(content, {id: 'myGeneratedExtension'})
+        assert.equal(called, 1)
+      } catch (err) {
         assert.ifError(err)
-        fsEx.readJson(path.join(cfgPath, 'frontend', 'config.json'))
-          .then(cfg => {
-            assert.deepEqual(cfg, {id: 'myGeneratedExtension'})
-            done()
-          })
-      })
+      }
     })
 
     it('should throw error if dcClient is not reachable', (done) => {
