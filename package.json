@@ -1,7 +1,7 @@
 {
-  "name": "@shopgate/cloud-sdk",
+  "name": "@shopgate/platform-sdk",
   "version": "1.2.1",
-  "description": "Shopgate's Cloud SDK",
+  "description": "Shopgate's Platform SDK",
   "main": "index.js",
   "scripts": {
     "test": "mocha",
