@@ -6,6 +6,7 @@
 * Fix crashing of the SDK on reconnect
 * Fix step file watcher will also react on changes in sub directories of "{project}/extensions/{extensionDir}/extension"
 * Fix bug that allowed two backend processes to run in the same project
+* Rename SDK from `@shopgate/cloud-sdk` to `@shopgate/platform-sdk`
 
 ## v1.2.0
 * Set minimum node version to 8.4.0
