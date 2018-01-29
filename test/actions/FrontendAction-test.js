@@ -85,9 +85,10 @@ describe('FrontendAction', () => {
     it('should generate theme config', async () => {
       const options = {theme: 'theme-gmd'}
       fsExtraMock.readJSON = () => Promise.resolve({})
-      fsExtraMock.readdir = (source) => Promise.resolve(['theme-gmd'])
+      fsExtraMock.readdir = () => Promise.resolve(['theme-gmd'])
       fsExtraMock.exists = () => Promise.resolve(true)
-      frontendAction.dcClient.generateExtensionConfig = (configFile, id, cb) => { cb(null, {}) }
+      fsExtraMock.lstat = () => Promise.resolve({isDirectory: () => true})
+      frontendAction.dcClient.generateExtensionConfig = () => Promise.resolve({})
 
       try {
         await frontendAction.run('start', {}, options)
