@@ -1,6 +1,9 @@
 ## v1.3.0
 * Added option `--inspect` to `backend start` to allow for inspection/debugging of extensions (props @Menes1337)
 
+## v1.2.2
+* Fix issue of starting the frontend processes twice when using the option '-t' on 'frontend start' command
+
 ## v1.2.1
 * Only pipeline files with the ending `.json` will uploaded on `backend start`
 * Fix storage issue that local storage can only be used if `backend start` is executed in project root
@@ -9,6 +12,7 @@
 * Fix crashing of the SDK on reconnect
 * Fix step file watcher will also react on changes in sub directories of "{project}/extensions/{extensionDir}/extension"
 * Fix bug that allowed two backend processes to run in the same project
+* Rename SDK from `@shopgate/cloud-sdk` to `@shopgate/platform-sdk`
 
 ## v1.2.0
 * Set minimum node version to 8.4.0
