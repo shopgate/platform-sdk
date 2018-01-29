@@ -109,11 +109,7 @@ describe('StepExecutor', () => {
       process.env.APP_PATH = appTestFolder
       log = {info: () => {}, error: () => {}, debug: () => {}, warn: () => {}}
 
-      executor = new StepExecutor(log)
-      executor.stepTimeout = 1000
-      executor.stepLogger = {info: () => {}, error: () => {}, debug: () => {}, warn: () => {}}
-
-      let appSettings = new AppSettings().setId('shop_10006')._saveExtensions({'@foo/bar': {path: 'foobar'}})
+      const appSettings = new AppSettings().setId('shop_10006')._saveExtensions({'@foo/bar': {path: 'foobar'}})
       new UserSettings().setToken({})
 
       executor = new StepExecutor(log, appSettings)
