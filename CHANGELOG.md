@@ -1,3 +1,6 @@
+## v1.2.2
+* Fix issue of starting the frontend processes twice when using the option '-t' on 'frontend start' command
+
 ## v1.2.1
 * Only pipeline files with the ending `.json` will uploaded on `backend start`
 * Fix storage issue that local storage can only be used if `backend start` is executed in project root
