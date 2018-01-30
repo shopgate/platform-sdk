@@ -3,7 +3,7 @@
 * Add promise support for steps
 
 ## v1.2.1
-* Only pipeline files with the ending `.json` will uploaded on `backend start`
+* Only pipeline files with the ending: `.json` will be uploaded on `backend start`
 * Fix storage issue that local storage can only be used if `backend start` is executed in project root
 * Fix error handing for `frontend` action. The error message are show up now and has the correct format
 * Fix problems that configs does not get generated correctly when it has a subpath
