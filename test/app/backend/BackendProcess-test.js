@@ -34,8 +34,7 @@ describe('BackendProcess', () => {
 
   beforeEach((done) => {
     appTestFolder = path.join('build', 'appsettings')
-    process.env.APP_PATH = appTestFolder
-    appSettings = new AppSettings().setId('shop_10006')
+    appSettings = new AppSettings(appTestFolder).setId('shop_10006')
 
     userTestFolder = path.join('build', 'usersettings')
     process.env.USER_PATH = userTestFolder

@@ -7,7 +7,6 @@ const sinon = require('sinon')
 const StepExecutor = require('../../../../lib/app/backend/extensionRuntime/StepExecutor')
 const AppSettings = require('../../../../lib/app/AppSettings')
 const UserSettings = require('../../../../lib/user/UserSettings')
-const utils = require('../../../../lib/utils/utils')
 const appPath = path.join('build', 'appsettings')
 const proxyquire = require('proxyquire').noPreserveCache()
 
@@ -25,8 +24,8 @@ describe('StepExecutor', () => {
       }
 
       const pathes = [
-        path.join(utils.getApplicationFolder(), 'extensions', '**', 'extension', '*.js'),
-        path.join(utils.getApplicationFolder(), 'extensions', '**', 'extension', '**', '*.js')
+        path.join(appPath, 'extensions', '**', 'extension', '*.js'),
+        path.join(appPath, 'extensions', '**', 'extension', '**', '*.js')
       ]
 
       const StepExecutorMocked = proxyquire('../../../../lib/app/backend/extensionRuntime/StepExecutor', {
@@ -37,7 +36,7 @@ describe('StepExecutor', () => {
           }
         }
       })
-      const stepExecutor = new StepExecutorMocked({info: () => {}}, {getApplicationFolder: utils.getApplicationFolder})
+      const stepExecutor = new StepExecutorMocked({info: () => {}}, {getApplicationFolder: () => appPath})
       stepExecutor.start = sinon.stub().resolves()
       stepExecutor.stop = () => {
         return new Promise((resolve, reject) => {
@@ -72,8 +71,8 @@ describe('StepExecutor', () => {
       }
 
       const pathes = [
-        path.join(utils.getApplicationFolder(), 'extensions', '**', 'extension', '*.js'),
-        path.join(utils.getApplicationFolder(), 'extensions', '**', 'extension', '**', '*.js')
+        path.join(appPath, 'extensions', '**', 'extension', '*.js'),
+        path.join(appPath, 'extensions', '**', 'extension', '**', '*.js')
       ]
 
       const StepExecutorMocked = proxyquire('../../../../lib/app/backend/extensionRuntime/StepExecutor', {
@@ -85,7 +84,7 @@ describe('StepExecutor', () => {
         }
       })
 
-      const stepExecutor = new StepExecutorMocked({info: () => {}}, {getApplicationFolder: utils.getApplicationFolder})
+      const stepExecutor = new StepExecutorMocked({info: () => {}}, {getApplicationFolder: () => appPath})
 
       stepExecutor.startWatcher()
       watcher.emit('ready')
@@ -113,7 +112,7 @@ describe('StepExecutor', () => {
       executor.stepTimeout = 1000
       executor.stepLogger = {info: () => {}, error: () => {}, debug: () => {}, warn: () => {}}
 
-      new AppSettings().setId('shop_10006')._saveExtensions({'@foo/bar': {path: 'foobar'}})
+      new AppSettings(appTestFolder).setId('shop_10006')._saveExtensions({'@foo/bar': {path: 'foobar'}})
       new UserSettings().setToken({})
 
       const extensionDir = path.join(appPath, AppSettings.EXTENSIONS_FOLDER, 'foobar', 'extension')

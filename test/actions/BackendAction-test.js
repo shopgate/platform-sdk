@@ -26,7 +26,6 @@ describe('BackendAction', () => {
 
   before(() => {
     process.env.USER_PATH = userSettingsFolder
-    process.env.APP_PATH = appPath
     fsEx.emptyDir(userSettingsFolder)
       .then(() => fsEx.emptyDir(path.join(appPath, AppSettings.SETTINGS_FOLDER)))
   })
@@ -38,7 +37,7 @@ describe('BackendAction', () => {
       .then(() => fsEx.emptyDir(path.join(appPath, AppSettings.SETTINGS_FOLDER)))
       .then(() => {
         userSettings = new UserSettings().setToken({})
-        appSettings = new AppSettings().setId('foobarTest')
+        appSettings = new AppSettings(appPath).setId('foobarTest')
 
         subjectUnderTest = new BackendAction(appSettings)
 
@@ -161,7 +160,7 @@ describe('BackendAction', () => {
       subjectUnderTest._extensionChanged = sinon.stub().resolves()
 
       subjectUnderTest._startSubProcess()
-        .then(() => fsEx.readJson(path.join(process.env.APP_PATH, 'pipelines', 'testPipeline.json')))
+        .then(() => fsEx.readJson(path.join(appPath, 'pipelines', 'testPipeline.json')))
         .then((content) => {
           assert.deepEqual(content, {pipeline: {id: 'testPipeline'}})
           done()
@@ -193,11 +192,11 @@ describe('BackendAction', () => {
 
       subjectUnderTest._extensionChanged = sinon.stub().resolves()
 
-      fsEx.writeJson(path.join(process.env.APP_PATH, 'pipelines', 'testPipeline.json'), {pipeline: {id: 'testPipeline123'}}, err => {
+      fsEx.writeJson(path.join(appPath, 'pipelines', 'testPipeline.json'), {pipeline: {id: 'testPipeline123'}}, err => {
         assert.ifError(err)
 
         subjectUnderTest._startSubProcess()
-          .then(() => fsEx.readJson(path.join(process.env.APP_PATH, 'pipelines', 'testPipeline.json')))
+          .then(() => fsEx.readJson(path.join(appPath, 'pipelines', 'testPipeline.json')))
           .then((content) => {
             assert.deepEqual(content, {pipeline: {id: 'testPipeline123'}})
           })
@@ -252,7 +251,7 @@ describe('BackendAction', () => {
         return Promise.resolve(generated)
       }
 
-      const cfgPath = path.join(process.env.APP_PATH, 'extensions', 'testExt')
+      const cfgPath = path.join(appPath, 'extensions', 'testExt')
 
       try {
         await subjectUnderTest._extensionChanged({file: generated, path: cfgPath})
@@ -273,7 +272,7 @@ describe('BackendAction', () => {
         return Promise.resolve(generated)
       }
 
-      const cfgPath = path.join(process.env.APP_PATH, 'extension', 'testExt')
+      const cfgPath = path.join(appPath, 'extension', 'testExt')
 
       try {
         await subjectUnderTest._extensionChanged({file: generated, path: cfgPath})

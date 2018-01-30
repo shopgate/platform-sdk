@@ -20,10 +20,9 @@ describe('ExtensionAction', () => {
 
   beforeEach(() => {
     process.env.USER_PATH = userSettingsFolder
-    process.env.APP_PATH = appPath
     const appId = 'foobarTest'
 
-    appSettings = new AppSettings()
+    appSettings = new AppSettings(appPath)
     fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
     appSettings.setId(appId)
 

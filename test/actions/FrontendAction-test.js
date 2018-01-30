@@ -36,7 +36,6 @@ describe('FrontendAction', () => {
     process.env.USER_PATH = userPath
     fsEx.emptyDirSync(userPath)
     new UserSettings().setToken({})
-    process.env.APP_PATH = appPath
     fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
 
     fsExtraMock.existsSync = () => true
@@ -44,7 +43,7 @@ describe('FrontendAction', () => {
     fsExtraMock.readdir = () => Promise.resolve()
     fsExtraMock.lstat = () => Promise.resolve()
 
-    appSettings = new AppSettings().setId('foobarTest')
+    appSettings = new AppSettings(appPath).setId('foobarTest')
     subjectUnderTest = new FrontendAction(appSettings)
 
     done()

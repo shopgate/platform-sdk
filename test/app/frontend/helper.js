@@ -24,7 +24,7 @@ const setupAppEnvironment = (callback = () => {}) => {
   process.env.appId = appId
 
   fsEx.emptyDirSync(join(appSettingsPath, AppSettings.SETTINGS_FOLDER))
-  new AppSettings().setId(appId)
+  new AppSettings(appSettingsPath).setId(appId)
   new UserSettings().setToken({})
 
   callback()

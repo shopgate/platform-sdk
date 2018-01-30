@@ -16,13 +16,8 @@ describe('AppSettings', () => {
     fsEx.remove(testFolder, done)
   })
 
-  it('should have default settingsFolder', () => {
-    delete process.env.APP_PATH
-    assert.ok(new AppSettings().settingsFolder.includes('.sgcloud'))
-  })
-
   it('should throw an error if application data does not exist', (done) => {
-    const appSettings = new AppSettings()
+    const appSettings = new AppSettings(testFolder)
     fsEx.emptyDirSync(appSettings.settingsFolder)
     try {
       appSettings.validate()
@@ -33,7 +28,7 @@ describe('AppSettings', () => {
   })
 
   it('should throw if application data is invalid', (done) => {
-    const appSettings = new AppSettings()
+    const appSettings = new AppSettings(testFolder)
     fsEx.emptyDirSync(appSettings.settingsFolder)
     fsEx.writeJsonSync(appSettings.settingsFile, {})
     fsEx.writeJsonSync(appSettings.attachedExtensionsFile, {})
