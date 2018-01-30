@@ -10,7 +10,9 @@ const fsEx = require('fs-extra')
 const nock = require('nock')
 
 describe('InitAction', () => {
+  let subjectUnderTest
   let userSettings
+  let appSettings
 
   it('should register', () => {
     const commander = {}
@@ -19,7 +21,7 @@ describe('InitAction', () => {
     commander.option = sinon.stub().returns(commander)
     commander.action = sinon.stub().returns(commander)
 
-    InitAction.register(commander)
+    InitAction.register(commander, new AppSettings())
 
     assert(commander.command.calledWith('init'))
     assert(commander.option.calledWith('--appId <appId>'))
@@ -32,6 +34,8 @@ describe('InitAction', () => {
     process.env.SGCLOUD_DC_ADDRESS = 'http://test.test'
     fsEx.emptyDirSync(userSettingsFolder)
     userSettings = new UserSettings()
+    appSettings = new AppSettings()
+    subjectUnderTest = new InitAction(appSettings)
   })
 
   afterEach((done) => {
@@ -45,8 +49,7 @@ describe('InitAction', () => {
 
   it('should throw if user not logged in', (done) => {
     userSettings.setToken(null)
-    const init = new InitAction()
-    init.run(null)
+    subjectUnderTest.run(null)
       .catch(err => {
         assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
         done()
@@ -57,7 +60,6 @@ describe('InitAction', () => {
     userSettings.setToken({})
     const appId = 'foobarTest'
     process.env.APP_PATH = appPath
-    const appSettings = new AppSettings()
     fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
     appSettings.setId(appId)
 
@@ -65,10 +67,9 @@ describe('InitAction', () => {
       .get(`/applications/test`)
       .reply(200, {})
 
-    const init = new InitAction()
-    init.permitDeletion = (prompt, appId, cb) => cb(null, true)
+    subjectUnderTest.permitDeletion = (prompt, appId, cb) => cb(null, true)
 
-    init.run({appId: 'test'}, (err) => {
+    subjectUnderTest.run({appId: 'test'}, (err) => {
       fsEx.remove(appPath, (err2) => {
         assert.ifError(err)
         assert.ifError(err2)
@@ -87,7 +88,8 @@ describe('InitAction', () => {
     .get(`/applications/test`)
     .reply(403, {})
 
-    new InitAction().run({appId: 'test'}, (err) => {
+    subjectUnderTest = new InitAction(new AppSettings())
+    subjectUnderTest.run({appId: 'test'}, (err) => {
       fsEx.remove(appPath, () => {
         assert.equal(err.message, 'The application test is not available or permissions are missing (message: Getting application data failed). Please check the application at developer.shopgate.com!')
         delete process.env.APP_PATH
@@ -105,7 +107,8 @@ describe('InitAction', () => {
     .get(`/applications/test`)
     .reply(200, {})
 
-    new InitAction().run({appId: 'test'}, (err) => {
+    subjectUnderTest = new InitAction(new AppSettings())
+    subjectUnderTest.run({appId: 'test'}, (err) => {
       fsEx.remove(appPath, (err2) => {
         assert.ifError(err)
         assert.ifError(err2)
@@ -118,10 +121,9 @@ describe('InitAction', () => {
 
   describe('getAppId', () => {
     it('should return appId if already set in options', (done) => {
-      const init = new InitAction()
       const applicationId = 'test'
-      init.options = {appId: applicationId}
-      init.getAppId(null, (err, id) => {
+      subjectUnderTest.options = {appId: applicationId}
+      subjectUnderTest.getAppId(null, (err, id) => {
         assert.ifError(err)
         assert.equal(id, applicationId)
         done()
@@ -129,9 +131,8 @@ describe('InitAction', () => {
     })
 
     it('should use prompt for appId if not set in options', (done) => {
-      const init = new InitAction()
       const appId = 'test'
-      init.options = {}
+      subjectUnderTest.options = {}
 
       function prompt (questions) {
         assert.equal(questions.length, 1)
@@ -139,7 +140,7 @@ describe('InitAction', () => {
         return Promise.resolve({appId: appId})
       }
 
-      init.getAppId(prompt, (err, id) => {
+      subjectUnderTest.getAppId(prompt, (err, id) => {
         assert.ifError(err)
         assert.equal(id, appId)
         done()
@@ -149,14 +150,13 @@ describe('InitAction', () => {
 
   describe('permitDeletion', () => {
     it('should use prompt', (done) => {
-      const init = new InitAction()
 
       function prompt (question) {
         assert.deepEqual(question, {type: 'input', name: 'overwrite', default: 'n', message: 'Do you really want to overwrite your current application (appId)? (y/N)'})
         return Promise.resolve({overwrite: 'y'})
       }
 
-      init.permitDeletion(prompt, 'appId', (err, res) => {
+      subjectUnderTest.permitDeletion(prompt, 'appId', (err, res) => {
         assert.ifError(err)
         assert.equal(res, true)
         done()

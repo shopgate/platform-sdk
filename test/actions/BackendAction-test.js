@@ -15,7 +15,7 @@ describe('BackendAction', () => {
   /**
    * @type {BackendAction}
    */
-  let backendAction
+  let subjectUnderTest
   let logger = {}
   const BackendAction = proxyquire('../../lib/actions/BackendAction', {
     '../logger': logger
@@ -40,34 +40,33 @@ describe('BackendAction', () => {
         userSettings = new UserSettings().setToken({})
         appSettings = new AppSettings().setId('foobarTest')
 
-        backendAction = new BackendAction()
+        subjectUnderTest = new BackendAction(appSettings)
 
-        backendAction.userSettings = userSettings
-        backendAction.appSettings = appSettings
+        subjectUnderTest.userSettings = userSettings
       })
-      .then(() => fsEx.emptyDir(backendAction.pipelinesFolder))
+      .then(() => fsEx.emptyDir(subjectUnderTest.pipelinesFolder))
       .then(() => {
-        backendAction.pipelineWatcher = {
+        subjectUnderTest.pipelineWatcher = {
           start: sinon.stub().resolves(),
           close: () => {},
-          on: (event, fn) => fn(event, path.join(backendAction.pipelinesFolder, 'testPipeline.json'))
+          on: (event, fn) => fn(event, path.join(subjectUnderTest.pipelinesFolder, 'testPipeline.json'))
         }
-        backendAction.extensionConfigWatcher = {
+        subjectUnderTest.extensionConfigWatcher = {
           start: () => sinon.stub().resolves(),
           on: () => sinon.stub().resolves(),
           stop: () => sinon.stub().resolves()
         }
 
-        backendAction.cliProxy = {
+        subjectUnderTest.cliProxy = {
           start: () => sinon.stub().resolves(),
           close: () => sinon.stub().resolves()
         }
 
-        backendAction.attachedExtensionsWatcher = {
+        subjectUnderTest.attachedExtensionsWatcher = {
           attachedExtensions: []
         }
 
-        backendAction.dcClient = {}
+        subjectUnderTest.dcClient = {}
 
         logger.info = () => {}
         logger.error = () => {}
@@ -76,8 +75,8 @@ describe('BackendAction', () => {
   })
 
   afterEach(async () => {
-    backendAction.pipelineWatcher.close()
-    return backendAction.extensionConfigWatcher.stop()
+    subjectUnderTest.pipelineWatcher.close()
+    return subjectUnderTest.extensionConfigWatcher.stop()
   })
 
   after(() => {
@@ -101,7 +100,7 @@ describe('BackendAction', () => {
 
     it('should throw if user not logged in', (done) => {
       userSettings.setToken()
-      backendAction.run()
+      subjectUnderTest.run()
         .catch(err => {
           assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
           done()
@@ -114,7 +113,7 @@ describe('BackendAction', () => {
 
       utils.setProcessFile('backend', processFile, pid)
 
-      backendAction.run()
+      subjectUnderTest.run()
         .catch(err => {
           assert.equal(err.message, `Backend process is already running with pid: ${pid}. Please quit this process first.`)
           done()
@@ -124,22 +123,22 @@ describe('BackendAction', () => {
 
   describe('_pipelineEvent', () => {
     it('should not do anything when the extension is not attached', (done) => {
-      backendAction._pipelineRemoved = sinon.stub().resolves()
-      backendAction._pipelineChanged = sinon.stub().resolves()
+      subjectUnderTest._pipelineRemoved = sinon.stub().resolves()
+      subjectUnderTest._pipelineChanged = sinon.stub().resolves()
 
       logger.debug = (msg) => {
         assert.equal(msg, 'The extension of the pipeline is not attached --> skip')
-        assert.ok(!backendAction._pipelineRemoved.called, '_pipelineRemoved should not be called')
-        assert.ok(!backendAction._pipelineChanged.called, '_pipelineChanged should not be called')
+        assert.ok(!subjectUnderTest._pipelineRemoved.called, '_pipelineRemoved should not be called')
+        assert.ok(!subjectUnderTest._pipelineChanged.called, '_pipelineChanged should not be called')
         done()
       }
-      backendAction._pipelineEvent('test', 'somefile')
+      subjectUnderTest._pipelineEvent('test', 'somefile')
     })
   })
 
   describe('watching', () => {
     it('should update pipelines', (done) => {
-      backendAction.backendProcess = {
+      subjectUnderTest.backendProcess = {
         connect: sinon.stub().resolves(),
         selectApplication: sinon.stub().resolves(),
         resetPipelines: sinon.stub().resolves(),
@@ -147,21 +146,21 @@ describe('BackendAction', () => {
         reloadPipelineController: sinon.stub().resolves()
       }
 
-      backendAction.dcClient = {
+      subjectUnderTest.dcClient = {
         downloadPipelines: sinon.stub().resolves([{pipeline: {id: 'testPipeline'}}]),
         removePipeline: sinon.stub().resolves(),
         uploadMultiplePipelines: sinon.stub().resolves()
       }
 
-      backendAction.attachedExtensionsWatcher = {
+      subjectUnderTest.attachedExtensionsWatcher = {
         attachedExtensions: [],
         start: () => sinon.stub().resolves(),
         on: () => sinon.stub().resolves()
       }
 
-      backendAction._extensionChanged = sinon.stub().resolves()
+      subjectUnderTest._extensionChanged = sinon.stub().resolves()
 
-      backendAction._startSubProcess()
+      subjectUnderTest._startSubProcess()
         .then(() => fsEx.readJson(path.join(process.env.APP_PATH, 'pipelines', 'testPipeline.json')))
         .then((content) => {
           assert.deepEqual(content, {pipeline: {id: 'testPipeline'}})
@@ -172,7 +171,7 @@ describe('BackendAction', () => {
     it('should fail when pipeline IDs not matching pipeline file names', (done) => {
       appSettings.loadAttachedExtensions = () => { return {testExtension: {path: '..'}} }
 
-      backendAction.backendProcess = {
+      subjectUnderTest.backendProcess = {
         connect: sinon.stub().resolves(),
         selectApplication: sinon.stub().resolves(),
         resetPipelines: sinon.stub().resolves(),
@@ -180,24 +179,24 @@ describe('BackendAction', () => {
         reloadPipelineController: sinon.stub().resolves()
       }
 
-      backendAction.dcClient = {
+      subjectUnderTest.dcClient = {
         downloadPipelines: sinon.stub().resolves([]),
         removePipeline: sinon.stub().resolves(),
         uploadMultiplePipelines: sinon.stub().resolves()
       }
 
-      backendAction.attachedExtensionsWatcher = {
+      subjectUnderTest.attachedExtensionsWatcher = {
         attachedExtensions: [{'testPipeline123': {path: ''}}],
         start: () => sinon.stub().resolves(),
         on: () => sinon.stub().resolves()
       }
 
-      backendAction._extensionChanged = sinon.stub().resolves()
+      subjectUnderTest._extensionChanged = sinon.stub().resolves()
 
       fsEx.writeJson(path.join(process.env.APP_PATH, 'pipelines', 'testPipeline.json'), {pipeline: {id: 'testPipeline123'}}, err => {
         assert.ifError(err)
 
-        backendAction._startSubProcess()
+        subjectUnderTest._startSubProcess()
           .then(() => fsEx.readJson(path.join(process.env.APP_PATH, 'pipelines', 'testPipeline.json')))
           .then((content) => {
             assert.deepEqual(content, {pipeline: {id: 'testPipeline123'}})
@@ -215,7 +214,7 @@ describe('BackendAction', () => {
     })
 
     it('should call dcClient if pipelines were updated', (done) => {
-      backendAction.backendProcess = {
+      subjectUnderTest.backendProcess = {
         connect: sinon.stub().resolves(),
         selectApplication: sinon.stub().resolves(),
         resetPipelines: sinon.stub().resolves(),
@@ -227,18 +226,18 @@ describe('BackendAction', () => {
       const appId = 'foobarAppIdDcTestBackendAction'
       appSettings.setId(appId)
 
-      const file = path.join(backendAction.pipelinesFolder, 'plFooBarline1.json')
-      assert.equal(backendAction.pipelines[file], undefined)
+      const file = path.join(subjectUnderTest.pipelinesFolder, 'plFooBarline1.json')
+      assert.equal(subjectUnderTest.pipelines[file], undefined)
 
-      backendAction.dcClient.uploadPipeline = (f, aId, trusted) => {
-        assert.deepEqual(backendAction.pipelines[file].id, pipeline.pipeline.id)
+      subjectUnderTest.dcClient.uploadPipeline = (f, aId, trusted) => {
+        assert.deepEqual(subjectUnderTest.pipelines[file].id, pipeline.pipeline.id)
         assert.deepEqual(f, pipeline)
         assert.equal(aId, appId)
       }
 
       fsEx.writeJson(file, pipeline, (err) => {
         assert.ifError(err)
-        backendAction._pipelineChanged(file).then(() => {
+        subjectUnderTest._pipelineChanged(file).then(() => {
           done()
         })
       })
@@ -248,7 +247,7 @@ describe('BackendAction', () => {
       let generated = {backend: {id: 'myGeneratedExtension'}}
 
       let called = 0
-      backendAction.dcClient.generateExtensionConfig = () => {
+      subjectUnderTest.dcClient.generateExtensionConfig = () => {
         called++
         return Promise.resolve(generated)
       }
@@ -256,7 +255,7 @@ describe('BackendAction', () => {
       const cfgPath = path.join(process.env.APP_PATH, 'extensions', 'testExt')
 
       try {
-        await backendAction._extensionChanged({file: generated, path: cfgPath})
+        await subjectUnderTest._extensionChanged({file: generated, path: cfgPath})
         const content = await fsEx.readJson(path.join(cfgPath, 'extension', 'config.json'))
         assert.deepEqual(content, {id: 'myGeneratedExtension'})
         assert.equal(called, 1)
@@ -269,7 +268,7 @@ describe('BackendAction', () => {
       let generated = {frontend: {id: 'myGeneratedExtension'}}
 
       let called = 0
-      backendAction.dcClient.generateExtensionConfig = () => {
+      subjectUnderTest.dcClient.generateExtensionConfig = () => {
         called++
         return Promise.resolve(generated)
       }
@@ -277,7 +276,7 @@ describe('BackendAction', () => {
       const cfgPath = path.join(process.env.APP_PATH, 'extension', 'testExt')
 
       try {
-        await backendAction._extensionChanged({file: generated, path: cfgPath})
+        await subjectUnderTest._extensionChanged({file: generated, path: cfgPath})
         const content = await fsEx.readJson(path.join(cfgPath, 'frontend', 'config.json'))
         assert.deepEqual(content, {id: 'myGeneratedExtension'})
         assert.equal(called, 1)
@@ -288,14 +287,14 @@ describe('BackendAction', () => {
 
     it('should throw error if dcClient is not reachable', (done) => {
       const pipeline = {pipeline: {id: 'dCPlTest2'}}
-      backendAction.dcClient = {
+      subjectUnderTest.dcClient = {
         uploadPipeline: sinon.stub().rejects(new Error('error'))
       }
 
-      const file = path.join(backendAction.pipelinesFolder, 'dCPlTest2.json')
+      const file = path.join(subjectUnderTest.pipelinesFolder, 'dCPlTest2.json')
       fsEx.writeJson(file, pipeline, (err) => {
         assert.ifError(err)
-        backendAction._pipelineChanged(file).catch(err => {
+        subjectUnderTest._pipelineChanged(file).catch(err => {
           assert.ok(err)
           assert.equal(err.message, `error`)
           done()
@@ -305,13 +304,13 @@ describe('BackendAction', () => {
 
     it('should return if pipeline was changed', (done) => {
       const pipeline = {pipeline: {id: 'dCPlTest3'}}
-      const file = path.join(backendAction.pipelinesFolder, 'dCPlTest3.json')
+      const file = path.join(subjectUnderTest.pipelinesFolder, 'dCPlTest3.json')
 
-      backendAction.dcClient = {
+      subjectUnderTest.dcClient = {
         uploadPipeline: sinon.stub().resolves()
       }
 
-      backendAction.backendProcess = {
+      subjectUnderTest.backendProcess = {
         connect: sinon.stub().resolves(),
         selectApplication: sinon.stub().resolves(),
         resetPipelines: sinon.stub().resolves(),
@@ -321,7 +320,7 @@ describe('BackendAction', () => {
 
       fsEx.writeJson(file, pipeline, (err) => {
         assert.ifError(err)
-        backendAction._pipelineChanged(file).then(err => {
+        subjectUnderTest._pipelineChanged(file).then(err => {
           assert.ifError(err)
           done()
         })
@@ -331,10 +330,10 @@ describe('BackendAction', () => {
     it('should throw an error if pipeline id is not matching with the filename', (done) => {
       const pipeline = {pipeline: {id: 'nonMatchingId'}}
 
-      const file = path.join(backendAction.pipelinesFolder, 'dCPlTest3.json')
+      const file = path.join(subjectUnderTest.pipelinesFolder, 'dCPlTest3.json')
       fsEx.writeJson(file, pipeline, (err) => {
         assert.ifError(err)
-        backendAction._pipelineChanged(file).catch(err => {
+        subjectUnderTest._pipelineChanged(file).catch(err => {
           assert.ok(err)
           assert.equal(err.message, `Pipeline ID "${pipeline.pipeline.id}" should match its file name!`)
           done()
@@ -344,11 +343,11 @@ describe('BackendAction', () => {
 
     it('should throw an error if pipeline is invalid', (done) => {
       const pipeline = {}
-      const file = path.join(backendAction.pipelinesFolder, 'dCPlTest3.json')
+      const file = path.join(subjectUnderTest.pipelinesFolder, 'dCPlTest3.json')
 
       fsEx.writeJson(file, pipeline, (err) => {
         assert.ifError(err)
-        backendAction._pipelineChanged(file).catch(err => {
+        subjectUnderTest._pipelineChanged(file).catch(err => {
           assert.ok(err)
           assert.equal(err.message, `invalid pipeline; check the pipeline.id property in ${file}`)
           done()
@@ -358,11 +357,11 @@ describe('BackendAction', () => {
 
     it('should throw an error if pipeline has invalid json', (done) => {
       const pipeline = '{someInvalid: content}'
-      const file = path.join(backendAction.pipelinesFolder, 'dCPlTest5.json')
+      const file = path.join(subjectUnderTest.pipelinesFolder, 'dCPlTest5.json')
 
       fsEx.writeFile(file, pipeline, (err) => {
         assert.ifError(err)
-        backendAction._pipelineChanged(file).catch(err => {
+        subjectUnderTest._pipelineChanged(file).catch(err => {
           assert.ok(err)
           assert.equal(err.message, 'Parse error on line 1:\n{someInvalid: content\n-^\nExpecting \'STRING\', \'}\', got \'undefined\'')
           done()
@@ -373,18 +372,18 @@ describe('BackendAction', () => {
     it('should return if pipeline was removed', (done) => {
       const pipelineId = 'dCPlTest4'
       let called = false
-      backendAction._writeLocalPipelines = sinon.mock().resolves()
-      backendAction.dcClient.removePipeline = (plId, id, trusted) => {
+      subjectUnderTest._writeLocalPipelines = sinon.mock().resolves()
+      subjectUnderTest.dcClient.removePipeline = (plId, id, trusted) => {
         assert.equal(plId, pipelineId)
         called = true
       }
 
-      const file = path.join(backendAction.pipelinesFolder, 'dCPlTest4.json')
-      backendAction.pipelines[file] = {id: pipelineId}
+      const file = path.join(subjectUnderTest.pipelinesFolder, 'dCPlTest4.json')
+      subjectUnderTest.pipelines[file] = {id: pipelineId}
 
-      backendAction._pipelineRemoved(file).then(() => {
+      subjectUnderTest._pipelineRemoved(file).then(() => {
         assert.ok(called)
-        assert.ok(backendAction._writeLocalPipelines.called)
+        assert.ok(subjectUnderTest._writeLocalPipelines.called)
         done()
       }).catch(err => {
         assert.ifError(err)
@@ -392,9 +391,9 @@ describe('BackendAction', () => {
     })
 
     it('should work', () => {
-      backendAction._startSubProcess = () => {}
+      subjectUnderTest._startSubProcess = () => {}
       try {
-        backendAction.run()
+        subjectUnderTest.run()
       } catch (err) {
         assert.ifError(err)
       }
