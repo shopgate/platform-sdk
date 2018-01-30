@@ -1,36 +1,44 @@
 #!/usr/bin/env node
+(async function () {
+  'use strict'
 
-'use strict'
-
-const caporal = require('caporal')
-const semver = require('semver')
-const updateNotifier = require('update-notifier')
-const AppSettings = require('../lib/app/AppSettings')
+  const caporal = require('caporal')
+  const semver = require('semver')
+  const updateNotifier = require('update-notifier')
+  const AppSettings = require('../lib/app/AppSettings')
+  const utils = require('../lib/utils/utils')
 
 // set version (includes version command)
-const pkg = require('../package.json')
+  const pkg = require('../package.json')
 
 // check node version
-if (!semver.satisfies(process.version, pkg.engines.node)) {
-  console.error(`You have an outdated node version (${process.version}). Please upgrade to the newest version`)
-  process.exit(1)
-}
+  if (!semver.satisfies(process.version, pkg.engines.node)) {
+    console.error(`You have an outdated node version (${process.version}). Please upgrade to the newest version`)
+    process.exit(1)
+  }
 
-const notifier = updateNotifier({pkg, updateCheckInterval: 0})
-notifier.notify()
+  const notifier = updateNotifier({pkg, updateCheckInterval: 0})
+  notifier.notify()
 
-if (notifier.update) {
-  process.exit(0)
-}
+  if (notifier.update) {
+    process.exit(0)
+  }
 
-caporal.version(pkg.version)
+  caporal.version(pkg.version)
 
-// initialize settings object(s)
-const appSettings = new AppSettings()
+  let appFolder
 
-// load all custom actions
-const actions = require('../')
-Object.keys(actions).forEach(a => actions[a].register(caporal, appSettings))
+  try {
+    // initialize settings object(s)
+    appFolder = await utils.getApplicationFolder()
+  } finally {
+    const appSettings = new AppSettings(appFolder || '')
 
-// activate argument parsing
-caporal.parse(process.argv)
+    // load all custom actions
+    const actions = require('../')
+    Object.keys(actions).forEach(a => actions[a].register(caporal, appSettings))
+
+    // activate argument parsing
+    caporal.parse(process.argv)
+  }
+})()
