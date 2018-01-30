@@ -1,3 +1,16 @@
+## v1.2.2
+* Fix issue of starting the frontend processes twice when using the option '-t' on 'frontend start' command
+
+## v1.2.1
+* Only pipeline files with the ending `.json` will uploaded on `backend start`
+* Fix storage issue that local storage can only be used if `backend start` is executed in project root
+* Fix error handing for `frontend` action. The error message are show up now and has the correct format
+* Fix problems that configs does not get generated correctly when it has a subpath
+* Fix crashing of the SDK on reconnect
+* Fix step file watcher will also react on changes in sub directories of "{project}/extensions/{extensionDir}/extension"
+* Fix bug that allowed two backend processes to run in the same project
+* Rename SDK from `@shopgate/cloud-sdk` to `@shopgate/platform-sdk`
+
 ## v1.2.0
 * Set minimum node version to 8.4.0
 * Improved log, so that step-logs are prefixed with the corresponding step
@@ -11,6 +24,10 @@
 * Update log when pipeline file is invalid; JSON parse error will be displayed
 * Better error log, when something's wrong in a step file
 * Improve logger output of extension logger
+* Project dependend console commands are usable in all subdirectories of a project
+* Add extension create command
+* Update extension workflow; pipelines don't need to be copied to the global pipeline folder anymore (see documentation)
+* From now on the SDK has the command `sgconnect`. `sgcloud` is deprecated from now on
 
 ## v1.1.1
 * Update `cloud-sdk-webpack` module to v1.5.6.

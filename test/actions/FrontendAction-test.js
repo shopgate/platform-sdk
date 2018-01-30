@@ -8,24 +8,45 @@ const AppSettings = require('../../lib/app/AppSettings')
 const appPath = path.join('build', 'appsettings')
 const userPath = path.join('build', 'usersettings')
 
+const fsExtraMock = {}
+const inquirer = {}
+const dcClientMock = class {}
+
+class FrontendActionMock {
+  run () { return Promise.resolve() }
+}
+
 describe('FrontendAction', () => {
   let frontendAction
   const FrontendAction = proxyquire('../../lib/actions/FrontendAction', {
     '../logger': {
       info: () => {},
       error: () => {},
-      debug: () => {}
-    }
+      debug: () => {},
+      warn: () => {}
+    },
+    '../app/frontend/FrontendProcess': FrontendActionMock,
+    'fs-extra': fsExtraMock,
+    'inquirer': inquirer,
+    '../DcHttpClient': dcClientMock
   })
 
-  beforeEach(() => {
-    frontendAction = new FrontendAction()
+  beforeEach((done) => {
     process.env.USER_PATH = userPath
     fsEx.emptyDirSync(userPath)
     new UserSettings().setToken({})
     process.env.APP_PATH = appPath
     fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
+
+    fsExtraMock.existsSync = () => true
+    fsExtraMock.readJSONSync = () => {}
+    fsExtraMock.readdir = () => Promise.resolve()
+    fsExtraMock.lstat = () => Promise.resolve()
+
     new AppSettings().setId('foobarTest')
+    frontendAction = new FrontendAction()
+
+    done()
   })
 
   afterEach(() => {
@@ -33,26 +54,57 @@ describe('FrontendAction', () => {
     delete process.env.USER_PATH
   })
 
-  describe('themeChanged()', () => {
-    it('should work', (done) => {
-      let generated = { frontend: {id: 'myGeneratedTheme'} }
-      const dcClient = {
-        generateExtensionConfig: (config, appId, cb) => {
-          cb(null, generated)
-        }
+  describe('constructor', () => {
+    it('should throw an error if user is not logged in', () => {
+      new UserSettings().setToken(null)
+      try {
+        frontendAction = new FrontendAction()
+        assert.fail()
+      } catch (err) {
+        assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
       }
+    })
+  })
 
-      frontendAction.appSettings = {
-        getId: () => 'appId'
+  describe('run() -> start', () => {
+    it('should throw an error if the theme is not existing', async () => {
+      const options = {theme: 'theme-gmd'}
+      fsExtraMock.readdir = (source) => Promise.resolve(['a', 'b'])
+      fsExtraMock.lstat = () => Promise.resolve({isDirectory: () => true})
+      fsExtraMock.exists = () => Promise.resolve(false)
+      frontendAction.dcClient.generateExtensionConfig = (configFile, id, cb) => { cb(null, {}) }
+
+      try {
+        await frontendAction.run('start', null, options)
+        assert.fail()
+      } catch (err) {
+        assert.equal(err.message, 'Can\'t find theme \'theme-gmd\'. Please make sure you passed the right theme.')
       }
+    })
 
-      const cfgPath = path.join(process.env.APP_PATH, 'extension', 'testExt')
-      frontendAction.themeChanged(dcClient, { file: generated, path: cfgPath }, (err) => {
+    it('should generate theme config', async () => {
+      const options = {theme: 'theme-gmd'}
+      fsExtraMock.readJSON = () => Promise.resolve({})
+      fsExtraMock.readdir = () => Promise.resolve(['theme-gmd'])
+      fsExtraMock.exists = () => Promise.resolve(true)
+      fsExtraMock.lstat = () => Promise.resolve({isDirectory: () => true})
+      frontendAction.dcClient.generateExtensionConfig = () => Promise.resolve({})
+
+      try {
+        await frontendAction.run('start', {}, options)
+      } catch (err) {
         assert.ifError(err)
-        let cfg = fsEx.readJsonSync(path.join(cfgPath, 'config', 'app.json'))
-        assert.deepEqual(cfg, {id: 'myGeneratedTheme'})
+      }
+    })
+  })
+
+  describe('run() -> setup', () => {
+    it('should run frontend setup', (done) => {
+      frontendAction.frontendSetup.run = () => {
         done()
-      })
+        return Promise.resolve()
+      }
+      frontendAction.run('setup', {theme: 'theme-gmd'})
     })
   })
 })

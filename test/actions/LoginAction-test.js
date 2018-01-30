@@ -38,7 +38,7 @@ describe('LoginAction', () => {
     commander.option = sinon.stub().returns(commander)
     commander.action = sinon.stub().returns(commander)
 
-    new LoginAction().register(commander)
+    LoginAction.register(commander)
 
     assert(commander.command.calledWith('login'))
     assert(commander.option.calledWith('--username [email]'))
