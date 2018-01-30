@@ -5,6 +5,7 @@
 const caporal = require('caporal')
 const semver = require('semver')
 const updateNotifier = require('update-notifier')
+const AppSettings = require('../lib/app/AppSettings')
 
 // set version (includes version command)
 const pkg = require('../package.json')
@@ -24,9 +25,12 @@ if (notifier.update) {
 
 caporal.version(pkg.version)
 
+// initialize settings object(s)
+const appSettings = new AppSettings()
+
 // load all custom actions
 const actions = require('../')
-Object.keys(actions).forEach(a => actions[a].register(caporal))
+Object.keys(actions).forEach(a => actions[a].register(caporal, appSettings))
 
 // activate argument parsing
 caporal.parse(process.argv)

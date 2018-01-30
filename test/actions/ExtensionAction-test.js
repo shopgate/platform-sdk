@@ -303,7 +303,7 @@ describe('ExtensionAction', () => {
 
       it('should get the user input by command', () => {
         const extensionAction = new ExtensionAction()
-        extensionAction.settings = {getApplicationFolder: () => tempFolder}
+        extensionAction.appSettings = {getApplicationFolder: () => tempFolder}
 
         return extensionAction._checkIfExtensionExists('testExtension')
           .then(() => {
