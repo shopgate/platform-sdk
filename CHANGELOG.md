@@ -1,5 +1,6 @@
-## v1.2.2
+## v1.3.0
 * Fix issue of starting the frontend processes twice when using the option '-t' on 'frontend start' command
+* Add promise support for steps
 
 ## v1.2.1
 * Only pipeline files with the ending `.json` will uploaded on `backend start`
