@@ -1,6 +1,7 @@
 ## v1.3.0
 * Fix issue of starting the frontend processes twice when using the option '-t' on 'frontend start' command
 * Add promise support for steps
+* Updated to use `@shopgate/cloud-sdk-webpack@^1.8.0`.
 
 ## v1.2.1
 * Only pipeline files with the ending: `.json` will be uploaded on `backend start`
