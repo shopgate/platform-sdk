@@ -1,6 +1,8 @@
 ## v1.3.0
-* Fix issue of starting the frontend processes twice when using the option '-t' on 'frontend start' command
 * Add promise support for steps
+
+## v1.2.2
+* Fix issue of starting the frontend processes twice when using the option '-t' on 'frontend start' command
 * Updated to use `@shopgate/cloud-sdk-webpack@^1.8.0`.
 
 ## v1.2.1
