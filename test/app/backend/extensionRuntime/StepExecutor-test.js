@@ -332,5 +332,31 @@ describe('StepExecutor', () => {
         done()
       })
     })
+
+    it('should start the sub process with "--inspect" if requested', async () => {
+      // stop the executor from beforeEach as we're going to instantiate our own
+      await executor.stop()
+
+      executor = new StepExecutor(log, {}, true)
+      await executor.start()
+
+      if (!executor.childProcess.spawnargs.reduce((val, current) => val || current === '--inspect', false)) {
+        await executor.stop()
+        assert.fail('Expected child process to be spawned with the "--inspect" argument.')
+      }
+    })
+
+    it('should start the sub process without "--inspect" if not requested', async () => {
+      // stop the executor from beforeEach as we're going to instantiate our own
+      await executor.stop()
+
+      executor = new StepExecutor(log, {}, false)
+      await executor.start()
+
+      if (executor.childProcess.spawnargs.reduce((val, current) => val || current === '--inspect', false)) {
+        await executor.stop()
+        assert.fail('Expected child process to be spawned with the "--inspect" argument.')
+      }
+    })
   })
 })

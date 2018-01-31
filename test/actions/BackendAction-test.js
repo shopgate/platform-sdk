@@ -400,5 +400,21 @@ describe('BackendAction', () => {
         assert.ifError(err)
       }
     })
+
+    it('should pass true to StepExecutor\'s "inspect" constructor argument when called with --inspect', async () => {
+      backendAction._startSubProcess = async function () {
+        if (this.backendProcess.executor.inspect !== true) throw new Error('Expected third constructor argument "inspect" to true.')
+      }
+
+      await backendAction.run({inspect: true})
+    })
+
+    it('should pass false to StepExecutor\'s "inspect" constructor argument when called without --inspect', async () => {
+      backendAction._startSubProcess = async function () {
+        if (this.backendProcess.executor.inspect !== false) throw new Error('Expected third constructor argument "inspect" to false.')
+      }
+
+      await backendAction.run({})
+    })
   })
 })
