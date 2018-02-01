@@ -1,5 +1,6 @@
 ## v1.3.0
 * Add promise support for steps
+* Added option `--inspect` to `backend start` to allow for inspection/debugging of extensions (props @Menes1337)
 
 ## v1.2.2
 * Fix issue of starting the frontend processes twice when using the option '-t' on 'frontend start' command
