@@ -164,6 +164,21 @@ describe('StepExecutor', () => {
       })
     })
 
+    it('should call a local promise step action', (done) => {
+      const input = {foo: 'bar'}
+      const stepMeta = {
+        id: '@foo/bar',
+        path: '@foo/bar/promise-resolve.js',
+        meta: {appId: 'shop_123'}
+      }
+      executor.onExit = () => {}
+      executor.execute(input, stepMeta, (err, output) => {
+        assert.ifError(err)
+        assert.deepEqual(output, input)
+        done()
+      })
+    })
+
     it('should callback error of step (with all fields)', (done) => {
       const input = {foo: 'bar', bar: {nestedFoo: 'nestedBar'}}
       const stepMeta = {
@@ -174,6 +189,21 @@ describe('StepExecutor', () => {
       executor.onExit = () => {}
       executor.execute(input, stepMeta, (err, output) => {
         assert.deepEqual(err, Object.assign({name: 'Error', message: 'crashed ' + stepMeta.meta.appId}, input))
+        assert.equal(output, undefined)
+        done()
+      })
+    })
+
+    it('should callback error of promise step (with all fields)', (done) => {
+      const input = {foo: 'bar', bar: {nestedFoo: 'nestedBar'}}
+      const stepMeta = {
+        id: '@foo/bar',
+        path: '@foo/bar/promise-reject.js',
+        meta: {appId: 'shop_123'}
+      }
+      executor.onExit = () => {}
+      executor.execute(input, stepMeta, (err, output) => {
+        assert.equal(err.message, 'error')
         assert.equal(output, undefined)
         done()
       })
