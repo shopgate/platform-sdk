@@ -16,27 +16,27 @@ describe('AppSettings', () => {
     fsEx.remove(testFolder, done)
   })
 
-  it('should throw an error if application data does not exist', (done) => {
+  it('should throw an error if application data does not exist', async () => {
     const appSettings = new AppSettings(testFolder)
     fsEx.emptyDirSync(appSettings.settingsFolder)
     try {
-      appSettings.validate()
+      await appSettings.validate()
+      assert.fail('Expected error to be thrown.')
     } catch (err) {
       assert.equal(err.message, 'The current folder seems not to be a sgcloud project. Please run sgcloud init first.')
-      done()
     }
   })
 
-  it('should throw if application data is invalid', (done) => {
+  it('should throw if application data is invalid', async () => {
     const appSettings = new AppSettings(testFolder)
     fsEx.emptyDirSync(appSettings.settingsFolder)
     fsEx.writeJsonSync(appSettings.settingsFile, {})
     fsEx.writeJsonSync(appSettings.attachedExtensionsFile, {})
     try {
-      appSettings.validate()
+      await appSettings.validate()
+      assert.fail('Expected error to be thrown.')
     } catch (err) {
       assert.equal(err.message, 'The current folder seems not to be a sgcloud project. Please run sgcloud init first.')
-      done()
     }
   })
 })

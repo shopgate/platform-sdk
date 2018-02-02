@@ -30,47 +30,46 @@ describe('BackendAction', () => {
       .then(() => fsEx.emptyDir(path.join(appPath, AppSettings.SETTINGS_FOLDER)))
   })
 
-  beforeEach(function () {
+  beforeEach(async () => {
     process.env.USER_PATH = userSettingsFolder
 
-    return fsEx.emptyDir(userSettingsFolder)
-      .then(() => fsEx.emptyDir(path.join(appPath, AppSettings.SETTINGS_FOLDER)))
-      .then(() => {
-        userSettings = new UserSettings().setToken({})
-        appSettings = new AppSettings(appPath).setId('foobarTest')
+    await fsEx.emptyDir(userSettingsFolder)
+    await fsEx.emptyDir(path.join(appPath, AppSettings.SETTINGS_FOLDER))
 
-        subjectUnderTest = new BackendAction(appSettings)
+    userSettings = new UserSettings().setToken({})
+    appSettings = await new AppSettings(appPath).setId('foobarTest')
 
-        subjectUnderTest.userSettings = userSettings
-      })
-      .then(() => fsEx.emptyDir(subjectUnderTest.pipelinesFolder))
-      .then(() => {
-        subjectUnderTest.pipelineWatcher = {
-          start: sinon.stub().resolves(),
-          close: () => {},
-          on: (event, fn) => fn(event, path.join(subjectUnderTest.pipelinesFolder, 'testPipeline.json'))
-        }
-        subjectUnderTest.extensionConfigWatcher = {
-          start: () => sinon.stub().resolves(),
-          on: () => sinon.stub().resolves(),
-          stop: () => sinon.stub().resolves()
-        }
+    subjectUnderTest = new BackendAction(appSettings)
 
-        subjectUnderTest.cliProxy = {
-          start: () => sinon.stub().resolves(),
-          close: () => sinon.stub().resolves()
-        }
+    subjectUnderTest.userSettings = userSettings
 
-        subjectUnderTest.attachedExtensionsWatcher = {
-          attachedExtensions: []
-        }
+    await fsEx.emptyDir(subjectUnderTest.pipelinesFolder)
 
-        subjectUnderTest.dcClient = {}
+    subjectUnderTest.pipelineWatcher = {
+      start: sinon.stub().resolves(),
+      close: () => {},
+      on: (event, fn) => fn(event, path.join(subjectUnderTest.pipelinesFolder, 'testPipeline.json'))
+    }
+    subjectUnderTest.extensionConfigWatcher = {
+      start: () => sinon.stub().resolves(),
+      on: () => sinon.stub().resolves(),
+      stop: () => sinon.stub().resolves()
+    }
 
-        logger.info = () => {}
-        logger.error = () => {}
-        logger.debug = () => {}
-      })
+    subjectUnderTest.cliProxy = {
+      start: () => sinon.stub().resolves(),
+      close: () => sinon.stub().resolves()
+    }
+
+    subjectUnderTest.attachedExtensionsWatcher = {
+      attachedExtensions: []
+    }
+
+    subjectUnderTest.dcClient = {}
+
+    logger.info = () => {}
+    logger.error = () => {}
+    logger.debug = () => {}
   })
 
   afterEach(async () => {

@@ -32,7 +32,7 @@ describe('FrontendAction', () => {
     '../DcHttpClient': dcClientMock
   })
 
-  beforeEach((done) => {
+  beforeEach(async () => {
     process.env.USER_PATH = userPath
     fsEx.emptyDirSync(userPath)
     new UserSettings().setToken({})
@@ -43,10 +43,8 @@ describe('FrontendAction', () => {
     fsExtraMock.readdir = () => Promise.resolve()
     fsExtraMock.lstat = () => Promise.resolve()
 
-    appSettings = new AppSettings(appPath).setId('foobarTest')
+    appSettings = await new AppSettings(appPath).setId('foobarTest')
     subjectUnderTest = new FrontendAction(appSettings)
-
-    done()
   })
 
   afterEach(() => {
@@ -58,8 +56,9 @@ describe('FrontendAction', () => {
     it('should throw an error if user is not logged in', () => {
       new UserSettings().setToken(null)
       try {
+        // re-create the subject under test after token was set to null
         subjectUnderTest = new FrontendAction(appSettings)
-        assert.fail()
+        assert.fail('Expected error to be thrown')
       } catch (err) {
         assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
       }

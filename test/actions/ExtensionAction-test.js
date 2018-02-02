@@ -2,7 +2,6 @@ const assert = require('assert')
 const path = require('path')
 const fsEx = require('fs-extra')
 const sinon = require('sinon')
-const async = require('neo-async')
 const nock = require('nock')
 
 const UserSettings = require('../../lib/user/UserSettings')
@@ -18,27 +17,27 @@ describe('ExtensionAction', () => {
   let userSettings
   let appSettings
 
-  beforeEach(() => {
+  beforeEach(async () => {
     process.env.USER_PATH = userSettingsFolder
     const appId = 'foobarTest'
 
     appSettings = new AppSettings(appPath)
-    fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
-    appSettings.setId(appId)
+    await fsEx.emptyDir(path.join(appPath, AppSettings.SETTINGS_FOLDER))
+    await appSettings.setId(appId)
 
-    fsEx.emptyDirSync(userSettingsFolder)
+    await fsEx.emptyDir(userSettingsFolder)
     userSettings = new UserSettings().setToken({})
 
     subjectUnderTest = new ExtensionAction(appSettings)
   })
 
-  afterEach((done) => {
+  afterEach(async () => {
     delete process.env.USER_PATH
     delete process.env.APP_PATH
-    async.parallel([
-      (cb) => fsEx.remove(userSettingsFolder, cb),
-      (cb) => fsEx.remove(appPath, cb)
-    ], done)
+    await Promise.all([
+      fsEx.remove(userSettingsFolder),
+      fsEx.remove(appPath)
+    ])
   })
 
   describe('attaching and detaching', () => {
@@ -69,10 +68,11 @@ describe('ExtensionAction', () => {
         assert(caporal.action.callCount === 3)
       })
 
-      it('should throw if user not logged in', () => {
+      it('should throw if user not logged in', async () => {
         userSettings.setToken(null)
         try {
-          subjectUnderTest.attachExtensions({extensions: []})
+          await subjectUnderTest.attachExtensions({extensions: []})
+          assert.fail('Expected error to be thrown.')
         } catch (err) {
           assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
         }
@@ -80,34 +80,34 @@ describe('ExtensionAction', () => {
     })
 
     describe('attaching', () => {
-      it('should attach if extension exists locally', () => {
+      it('should attach if extension exists locally', async () => {
         const name = 'existentExtension'
         const id = 'extId'
 
         const extPath = path.join(appPath, 'extensions', name)
-        fsEx.ensureDirSync(extPath)
-        fsEx.writeJSONSync(path.join(extPath, 'extension-config.json'), {id, trusted: false})
+        await fsEx.ensureDir(extPath)
+        await fsEx.writeJSON(path.join(extPath, 'extension-config.json'), {id, trusted: false})
 
-        subjectUnderTest.attachExtensions({extensions: [name]})
+        await subjectUnderTest.attachExtensions({extensions: [name]})
 
-        const config = fsEx.readJsonSync(appSettings.attachedExtensionsFile)
+        const config = await fsEx.readJson(appSettings.attachedExtensionsFile)
         assert.deepEqual(config.attachedExtensions[id], {path: name, trusted: false})
       })
 
-      it('should attach all local extensions if no one is given', () => {
+      it('should attach all local extensions if no one is given', async () => {
         const name1 = 'existentExtension1'
         const name2 = 'existentExtension2'
 
         const extPath1 = path.join(appPath, 'extensions', name1)
         const extPath2 = path.join(appPath, 'extensions', name2)
-        fsEx.ensureDirSync(extPath1)
-        fsEx.ensureDirSync(extPath2)
-        fsEx.writeJSONSync(path.join(extPath1, 'extension-config.json'), {id: 'existentExtension1', trusted: false})
-        fsEx.writeJSONSync(path.join(extPath2, 'extension-config.json'), {id: 'existentExtension2', trusted: false})
+        await fsEx.ensureDir(extPath1)
+        await fsEx.ensureDir(extPath2)
+        await fsEx.writeJSON(path.join(extPath1, 'extension-config.json'), {id: 'existentExtension1', trusted: false})
+        await fsEx.writeJSON(path.join(extPath2, 'extension-config.json'), {id: 'existentExtension2', trusted: false})
 
-        subjectUnderTest.attachExtensions({extensions: [name1]})
-        subjectUnderTest.attachExtensions({})
-        const config = fsEx.readJsonSync(appSettings.attachedExtensionsFile)
+        await subjectUnderTest.attachExtensions({extensions: [name1]})
+        await subjectUnderTest.attachExtensions({})
+        const config = await fsEx.readJson(appSettings.attachedExtensionsFile)
         assert.deepEqual(config.attachedExtensions, {
           existentExtension1: { path: 'existentExtension1', trusted: false },
           existentExtension2: { path: 'existentExtension2', trusted: false }
@@ -138,25 +138,25 @@ describe('ExtensionAction', () => {
         }
       })
 
-      it('should throw an error if extension is already attached', () => {
+      it('should throw an error if extension is already attached', async () => {
         const name = 'existentExtension'
 
         const extPath = path.join(appPath, 'extensions', name)
         fsEx.ensureDirSync(extPath)
         fsEx.writeJSONSync(path.join(extPath, 'extension-config.json'), {id: name})
 
-        subjectUnderTest.attachExtensions({extensions: [name]})
+        await subjectUnderTest.attachExtensions({extensions: [name]})
         try {
-          subjectUnderTest.attachExtensions({extensions: [name]})
+          await subjectUnderTest.attachExtensions({extensions: [name]})
         } catch (e) {
           assert.equal(e.message, `Extension 'existentExtension (existentExtension) is already attached`)
         }
       })
 
-      it('should throw if user not logged in', () => {
+      it('should throw if user not logged in', async () => {
         userSettings.setToken(null)
         try {
-          subjectUnderTest.attachExtensions({})
+          await subjectUnderTest.attachExtensions({})
         } catch (err) {
           assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
         }
@@ -164,41 +164,44 @@ describe('ExtensionAction', () => {
     })
 
     describe('detaching', () => {
-      it('should detach a extension', () => {
+      it('should detach a extension', async () => {
         const name = 'existentExtension'
 
         const extPath = path.join(appPath, 'extensions', name)
-        fsEx.ensureDirSync(extPath)
-        fsEx.writeJSONSync(path.join(extPath, 'extension-config.json'), {id: name})
+        await fsEx.ensureDir(extPath)
+        await fsEx.writeJSON(path.join(extPath, 'extension-config.json'), {id: name})
 
         appSettings.attachExtension(name, {id: name, trusted: false})
-        subjectUnderTest.detachExtensions({extensions: [name]})
+        await subjectUnderTest.detachExtensions({extensions: [name]})
 
-        const config = fsEx.readJsonSync(appSettings.attachedExtensionsFile)
+        const config = await fsEx.readJson(appSettings.attachedExtensionsFile)
         assert.deepEqual(config.attachedExtensions, {})
       })
 
-      it('should skip if extension was not attached', (done) => {
+      it('should skip if extension was not attached', async () => {
         const name = 'notExitstentExtension'
 
         const extPath = path.join(appPath, 'extensions', name)
-        fsEx.ensureDirSync(extPath)
-        fsEx.writeJSONSync(path.join(extPath, 'extension-config.json'), {id: name})
+        await fsEx.ensureDir(extPath)
+        await fsEx.writeJSON(path.join(extPath, 'extension-config.json'), {id: name})
 
+        let warning
         logger.warn = (text) => {
-          assert.equal(text, `The extension '${name}' is not attached`)
-          done()
+          warning = text
         }
 
-        subjectUnderTest.detachExtensions({extensions: [name]})
+        await subjectUnderTest.detachExtensions({extensions: [name]})
+
+        assert.ok(warning)
+        assert.equal(warning, `The extension '${name}' is not attached`)
       })
 
-      it('should detach all extensions if none was specified', () => {
+      it('should detach all extensions if none was specified', async () => {
         appSettings.attachExtension('ext2', {id: 'ext2'})
         appSettings.attachExtension('ext1', {id: 'ext1'})
 
-        subjectUnderTest.detachExtensions({})
-        const config = fsEx.readJsonSync(appSettings.attachedExtensionsFile)
+        await subjectUnderTest.detachExtensions({})
+        const config = await fsEx.readJson(appSettings.attachedExtensionsFile)
         assert.deepEqual(config.attachedExtensions, {})
       })
     })
@@ -220,7 +223,7 @@ describe('ExtensionAction', () => {
     })
 
     describe('general', () => {
-      it('should create an extension', (done) => {
+      it('should create an extension', async () => {
         subjectUnderTest._getUserInput = () => { return new Promise((resolve, reject) => { resolve({}) }) }
         subjectUnderTest._checkIfExtensionExists = () => { return new Promise((resolve, reject) => { resolve({}) }) }
         subjectUnderTest._downloadBoilerplate = () => { return new Promise((resolve, reject) => { resolve({}) }) }
@@ -230,9 +233,7 @@ describe('ExtensionAction', () => {
         subjectUnderTest._updateBackendFiles = () => { return new Promise((resolve, reject) => { resolve({}) }) }
         subjectUnderTest._installFrontendDependencies = () => { return new Promise((resolve, reject) => { resolve({}) }) }
 
-        subjectUnderTest.createExtension({}, null).then(() => {
-          done()
-        })
+        await subjectUnderTest.createExtension({types: []}, null)
       })
 
       it('should catch an error because of sth.', () => {
@@ -249,14 +250,14 @@ describe('ExtensionAction', () => {
         return subjectUnderTest.createExtension({}, null)
       })
 
-      it('should throw error "not logged in"', (done) => {
+      it('should throw error "not logged in"', async () => {
         userSettings.setToken(null)
 
         try {
-          subjectUnderTest.createExtension({}, null)
+          await subjectUnderTest.createExtension({}, null)
+          assert.fail('Expected error to be thrown.')
         } catch (err) {
           assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
-          done()
         }
       })
     })
