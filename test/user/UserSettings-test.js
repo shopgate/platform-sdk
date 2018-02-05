@@ -29,20 +29,23 @@ describe('UserSettings', () => {
 
   it('should return session loaded from file', () => {
     const userSettings = new UserSettings()
-    const session = {token: 'foo'}
+    const session = {token: 'foo', user: 'bar'}
     fsEx.ensureDirSync(userSettings.settingsFolder)
-    fsEx.writeJsonSync(userSettings.sessionFile, {token: 'foo'})
+    fsEx.writeJsonSync(userSettings.sessionFile, {token: 'foo', user: 'bar'})
 
     assert.equal(session.token, userSettings.getToken())
+    assert.equal(session.user, userSettings.getUsername())
   })
 
   it('should save all settings', () => {
     const token = {foo: 'bar'}
-
+    const user = 'foo@bar.baz'
     const userSettings = new UserSettings()
     userSettings.setToken(token)
+    userSettings.setUsername(user)
     userSettings.validate()
 
     assert.deepEqual(fsEx.readJsonSync(userSettings.sessionFile).token, token)
+    assert.deepEqual(fsEx.readJsonSync(userSettings.sessionFile).user, user)
   })
 })

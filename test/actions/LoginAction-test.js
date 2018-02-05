@@ -58,6 +58,7 @@ describe('LoginAction', () => {
       assert.ifError(err)
       api.done()
       assert.equal(userSettings.getToken(), 'token')
+      assert.equal(userSettings.getUsername(), 'foo')
       done()
     })
   })
@@ -72,6 +73,7 @@ describe('LoginAction', () => {
       assert.ifError(err)
       api.done()
       assert.equal(userSettings.getToken(), 'token2')
+      assert.equal(userSettings.getUsername(), 'foo')
       done()
     })
 
@@ -92,6 +94,7 @@ describe('LoginAction', () => {
       assert.ifError(err)
       api.done()
       assert.equal(userSettings.getToken(), 'token3')
+      assert.equal(userSettings.getUsername(), 'foo')
       done()
     })
 
@@ -109,6 +112,7 @@ describe('LoginAction', () => {
       assert.ifError(err)
       api.done()
       assert.equal(userSettings.getToken(), 'token4')
+      assert.equal(userSettings.getUsername(), 'foo')
       done()
     })
 
@@ -124,9 +128,58 @@ describe('LoginAction', () => {
     const login = new LoginAction()
     login.run(options, err => {
       assert.ok(err)
+      assert.equal(userSettings.getUsername(), undefined)
       assert.equal(err.message, 'Login failed')
       api.done()
       done()
     })
+  })
+
+  it('should fail login in with invalid credentials', (done) => {
+    const api = nock('http://dc.shopgate.cloud')
+      .post('/login', {username: 'foo', password: 'bar'})
+      .reply(400)
+
+    const options = {username: 'foo', password: 'bar'}
+    const login = new LoginAction()
+    login.run(options, err => {
+      assert.ok(err)
+      assert.equal(userSettings.getUsername(), undefined)
+      assert.equal(err.message, 'Login failed')
+      api.done()
+      done()
+    })
+  })
+
+  it('should store the username when logged in successfully', (done) => {
+    const api = nock('http://dc.shopgate.cloud')
+      .post('/login', {username: 'foo', password: 'bar'})
+      .reply(200, {accessToken: 'token3'})
+
+    const login = new LoginAction()
+    login.run({}, err => {
+      assert.ifError(err)
+      api.done()
+      assert.equal(userSettings.getToken(), 'token3')
+      assert.equal(userSettings.getUsername(), 'foo')
+    })
+
+    setTimeout(() => stdin.send('foo\n'), 10)
+    setTimeout(() => stdin.send('bar\n'), 20)
+
+    const api2 = nock('http://dc.shopgate.cloud')
+      .post('/login', {username: 'foo', password: 'bar'})
+      .reply(200, {accessToken: 'token3'})
+    login.run({}, err => {
+      assert.ifError(err)
+      api2.done()
+      assert.equal(userSettings.getToken(), 'token3')
+      assert.equal(userSettings.getUsername(), 'foo')
+      done()
+    })
+
+    userSettings.setToken(null)
+    setTimeout(() => stdin.send('\n'), 30)
+    setTimeout(() => stdin.send('bar\n'), 40)
   })
 })
