@@ -15,8 +15,8 @@ describe('CliProxy', () => {
     return fsEx.emptyDir(appPath)
   })
 
-  beforeEach(() => {
-    cliProxy = new CliProxy(new AppSettings(appPath).setId('foobarTest'), {info: () => {}})
+  beforeEach(async () => {
+    cliProxy = new CliProxy(await new AppSettings(appPath).setId('foobarTest'), {info: () => {}})
     nock.disableNetConnect()
   })
 

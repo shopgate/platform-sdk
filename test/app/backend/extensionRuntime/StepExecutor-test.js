@@ -1,7 +1,6 @@
 const assert = require('assert')
 const path = require('path')
 const fsEx = require('fs-extra')
-const async = require('neo-async')
 const glob = require('glob')
 const sinon = require('sinon')
 const StepExecutor = require('../../../../lib/app/backend/extensionRuntime/StepExecutor')
@@ -99,7 +98,7 @@ describe('StepExecutor', () => {
     let appTestFolder
     let userTestFolder
 
-    beforeEach(function (done) {
+    beforeEach(async function () {
       this.timeout(10000)
       userTestFolder = path.join('build', 'usersettings')
       process.env.USER_PATH = userTestFolder
@@ -112,40 +111,44 @@ describe('StepExecutor', () => {
       executor.stepTimeout = 1000
       executor.stepLogger = {info: () => {}, error: () => {}, debug: () => {}, warn: () => {}}
 
-      new AppSettings(appTestFolder).setId('shop_10006')._saveExtensions({'@foo/bar': {path: 'foobar'}})
+      const appSettings = await new AppSettings(appTestFolder).setId('shop_10006')
+      await fsEx.writeJson(appSettings.attachedExtensionsFile, {attachedExtensions: {'@foo/bar': {path: 'foobar'}}})
+
       new UserSettings().setToken({})
 
       const extensionDir = path.join(appPath, AppSettings.EXTENSIONS_FOLDER, 'foobar', 'extension')
-      fsEx.emptyDirSync(extensionDir)
+      await fsEx.emptyDir(extensionDir)
 
-      glob(path.join(__dirname, 'fakeSteps', '*.js'), {}, (err, files) => {
-        assert.ifError(err)
-        async.each(files, (file, eCb) => fsEx.copy(file, path.join(extensionDir, path.basename(file)), eCb), (err) => {
-          assert.ifError(err)
-          executor.start().then(done)
-        })
-      })
+      const files = glob(path.join(__dirname, 'fakeSteps', '*.js'), {sync: true})
+      const fileCopyResults = await Promise.all(files.map(file => fsEx.copy(file, path.join(extensionDir, path.basename(file)))))
+      if (fileCopyResults) {
+        await executor.start()
+      }
     })
 
-    afterEach((done) => {
+    afterEach(async () => {
       delete process.env.SGCLOUD_DC_WS_ADDRESS
       delete process.env.APP_PATH
       delete process.env.USER_PATH
 
-      async.parallel([
-        (cb) => fsEx.remove(appTestFolder, cb),
-        (cb) => fsEx.remove(userTestFolder, cb)
-      ], err => {
+      try {
+        await Promise.all([
+          fsEx.remove(appTestFolder),
+          fsEx.remove(userTestFolder)
+        ])
+      } catch (err) {
         assert.ifError(err)
-        executor.stop().then(done)
-      })
+      } finally {
+        await executor.stop()
+      }
     })
 
-    it('should not start another childProcess when one is already running', () => {
-      executor.onExit = () => {}
-      return executor.start().catch(err => {
+    it('should not start another childProcess when one is already running', async () => {
+      try {
+        await executor.start()
+      } catch (err) {
         assert.equal(err.message, 'childProcess already running')
-      })
+      }
     })
 
     it('should call a local step action', (done) => {
