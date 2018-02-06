@@ -288,7 +288,7 @@ describe('FrontendSetup', () => {
     })
 
     it('should throw if something went wrong', (done) => {
-      frontendSetup.settings.getFrontendSettings = () => {
+      frontendSetup.appSettings.getFrontendSettings = () => {
         throw new Error('error')
       }
 

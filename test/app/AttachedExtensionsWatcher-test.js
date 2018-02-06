@@ -10,14 +10,13 @@ describe('AttachedExtensionsWatcher', () => {
   let attachedExtensionsWatcher
   let appSettingsMock
 
-  beforeEach(done => {
-    process.env.APP_PATH = appPath
+  beforeEach(async () => {
     appSettingsMock = {
-      attachedExtensionsFile: path.join(utils.getApplicationFolder(), '.sgcloud', 'attachedExtensions.json'),
+      attachedExtensionsFile: path.join(appPath, '.sgcloud', 'attachedExtensions.json'),
       getApplicationFolder: utils.getApplicationFolder
     }
     attachedExtensionsWatcher = new AttachedExtensionsWatcher(appSettingsMock)
-    fsEx.emptyDir(path.join(appPath, '.sgcloud'), done)
+    await fsEx.emptyDir(path.join(appPath, '.sgcloud'))
   })
 
   afterEach(async () => {

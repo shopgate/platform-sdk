@@ -2,7 +2,6 @@ const assert = require('assert')
 const path = require('path')
 const fsEx = require('fs-extra')
 const ExtensionConfigWatcher = require('../../lib/app/ExtensionConfigWatcher')
-const utils = require('../../lib/utils/utils')
 
 const appPath = path.join('build', 'appsettings')
 
@@ -11,7 +10,7 @@ describe('ExtensionConfigWatcher', () => {
 
   beforeEach((done) => {
     process.env.APP_PATH = appPath
-    const appSettingsMock = {getApplicationFolder: utils.getApplicationFolder}
+    const appSettingsMock = {getApplicationFolder: () => appPath}
     extensionConfigWatcher = new ExtensionConfigWatcher(appSettingsMock)
     fsEx.emptyDir(path.join(appPath, 'extensions'), done)
   })

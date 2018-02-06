@@ -12,12 +12,13 @@ const fsExtraMock = {}
 const inquirer = {}
 const dcClientMock = class {}
 
-class FrontendActionMock {
+class FrontendProcessMock {
   run () { return Promise.resolve() }
 }
 
 describe('FrontendAction', () => {
-  let frontendAction
+  let subjectUnderTest
+  let appSettings
   const FrontendAction = proxyquire('../../lib/actions/FrontendAction', {
     '../logger': {
       info: () => {},
@@ -25,17 +26,16 @@ describe('FrontendAction', () => {
       debug: () => {},
       warn: () => {}
     },
-    '../app/frontend/FrontendProcess': FrontendActionMock,
+    '../app/frontend/FrontendProcess': FrontendProcessMock,
     'fs-extra': fsExtraMock,
     'inquirer': inquirer,
     '../DcHttpClient': dcClientMock
   })
 
-  beforeEach((done) => {
+  beforeEach(async () => {
     process.env.USER_PATH = userPath
     fsEx.emptyDirSync(userPath)
     new UserSettings().setToken({})
-    process.env.APP_PATH = appPath
     fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
 
     fsExtraMock.existsSync = () => true
@@ -43,10 +43,8 @@ describe('FrontendAction', () => {
     fsExtraMock.readdir = () => Promise.resolve()
     fsExtraMock.lstat = () => Promise.resolve()
 
-    new AppSettings().setId('foobarTest')
-    frontendAction = new FrontendAction()
-
-    done()
+    appSettings = await new AppSettings(appPath).setId('foobarTest')
+    subjectUnderTest = new FrontendAction(appSettings)
   })
 
   afterEach(() => {
@@ -58,8 +56,9 @@ describe('FrontendAction', () => {
     it('should throw an error if user is not logged in', () => {
       new UserSettings().setToken(null)
       try {
-        frontendAction = new FrontendAction()
-        assert.fail()
+        // re-create the subject under test after token was set to null
+        subjectUnderTest = new FrontendAction(appSettings)
+        assert.fail('Expected error to be thrown')
       } catch (err) {
         assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
       }
@@ -72,10 +71,10 @@ describe('FrontendAction', () => {
       fsExtraMock.readdir = (source) => Promise.resolve(['a', 'b'])
       fsExtraMock.lstat = () => Promise.resolve({isDirectory: () => true})
       fsExtraMock.exists = () => Promise.resolve(false)
-      frontendAction.dcClient.generateExtensionConfig = (configFile, id, cb) => { cb(null, {}) }
+      subjectUnderTest.dcClient.generateExtensionConfig = (configFile, id, cb) => { cb(null, {}) }
 
       try {
-        await frontendAction.run('start', null, options)
+        await subjectUnderTest.run('start', null, options)
         assert.fail()
       } catch (err) {
         assert.equal(err.message, 'Can\'t find theme \'theme-gmd\'. Please make sure you passed the right theme.')
@@ -88,10 +87,10 @@ describe('FrontendAction', () => {
       fsExtraMock.readdir = () => Promise.resolve(['theme-gmd'])
       fsExtraMock.exists = () => Promise.resolve(true)
       fsExtraMock.lstat = () => Promise.resolve({isDirectory: () => true})
-      frontendAction.dcClient.generateExtensionConfig = () => Promise.resolve({})
+      subjectUnderTest.dcClient.generateExtensionConfig = () => Promise.resolve({})
 
       try {
-        await frontendAction.run('start', {}, options)
+        await subjectUnderTest.run('start', {}, options)
       } catch (err) {
         assert.ifError(err)
       }
@@ -100,11 +99,11 @@ describe('FrontendAction', () => {
 
   describe('run() -> setup', () => {
     it('should run frontend setup', (done) => {
-      frontendAction.frontendSetup.run = () => {
+      subjectUnderTest.frontendSetup.run = () => {
         done()
         return Promise.resolve()
       }
-      frontendAction.run('setup', {theme: 'theme-gmd'})
+      subjectUnderTest.run('setup', {theme: 'theme-gmd'})
     })
   })
 })
