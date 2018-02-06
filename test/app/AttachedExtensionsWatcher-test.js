@@ -1,4 +1,5 @@
 const assert = require('assert')
+const sinon = require('sinon')
 const path = require('path')
 const fsEx = require('fs-extra')
 const AttachedExtensionsWatcher = require('../../lib/app/AttachedExtensionsWatcher')
@@ -31,7 +32,7 @@ describe('AttachedExtensionsWatcher', () => {
     let attachedExtensionsFileContents = '{"attachedExtensions":{"@shopgate/auth0Login":{"path":"auth0-login","trusted":true}}}'
     let expectedExtensionToBeAttached = {path: 'auth0-login', trusted: true, id: '@shopgate/auth0Login'}
 
-    appSettingsMock.loadAttachedExtensions = () => initialAttachedExtensions
+    appSettingsMock.loadAttachedExtensions = sinon.stub().resolves(initialAttachedExtensions)
 
     attachedExtensionsWatcher.on('attach', (extension) => {
       assert.deepEqual(extension, expectedExtensionToBeAttached)
@@ -61,7 +62,7 @@ describe('AttachedExtensionsWatcher', () => {
     let attachedExtensionsFileContents = '{"attachedExtensions":{}}'
     let expectedExtensionToBeDetached = {path: 'auth0-login', trusted: true, id: '@shopgate/auth0Login'}
 
-    appSettingsMock.loadAttachedExtensions = () => initialAttachedExtensions
+    appSettingsMock.loadAttachedExtensions = sinon.stub().resolves(initialAttachedExtensions)
 
     attachedExtensionsWatcher.on('detach', (extension) => {
       assert.deepEqual(extension, expectedExtensionToBeDetached)

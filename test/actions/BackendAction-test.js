@@ -24,10 +24,10 @@ describe('BackendAction', () => {
   let userSettings
   let appSettings
 
-  before(() => {
+  before(async () => {
     process.env.USER_PATH = userSettingsFolder
-    fsEx.emptyDir(userSettingsFolder)
-      .then(() => fsEx.emptyDir(path.join(appPath, AppSettings.SETTINGS_FOLDER)))
+    await fsEx.emptyDir(userSettingsFolder)
+    await fsEx.emptyDir(path.join(appPath, AppSettings.SETTINGS_FOLDER))
   })
 
   beforeEach(async () => {
@@ -38,6 +38,7 @@ describe('BackendAction', () => {
 
     userSettings = new UserSettings().setToken({})
     appSettings = await new AppSettings(appPath).setId('foobarTest')
+    appSettings.loadAttachedExtensions = sinon.stub().resolves()
 
     subjectUnderTest = new BackendAction(appSettings)
 
@@ -51,14 +52,14 @@ describe('BackendAction', () => {
       on: (event, fn) => fn(event, path.join(subjectUnderTest.pipelinesFolder, 'testPipeline.json'))
     }
     subjectUnderTest.extensionConfigWatcher = {
-      start: () => sinon.stub().resolves(),
-      on: () => sinon.stub().resolves(),
-      stop: () => sinon.stub().resolves()
+      start: sinon.stub().resolves(),
+      on: sinon.stub().resolves(),
+      stop: sinon.stub().resolves()
     }
 
     subjectUnderTest.cliProxy = {
-      start: () => sinon.stub().resolves(),
-      close: () => sinon.stub().resolves()
+      start: sinon.stub().resolves(),
+      close: sinon.stub().resolves()
     }
 
     subjectUnderTest.attachedExtensionsWatcher = {

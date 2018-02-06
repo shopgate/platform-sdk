@@ -145,7 +145,12 @@ describe('InitAction', () => {
   describe('permitDeletion', () => {
     it('should use prompt', (done) => {
       function prompt (question) {
-        assert.deepEqual(question, {type: 'input', name: 'overwrite', default: 'n', message: 'Do you really want to overwrite your current application (appId)? (y/N)'})
+        assert.deepEqual(question, {
+          type: 'input',
+          name: 'overwrite',
+          default: 'n',
+          message: 'Do you really want to overwrite your current application (appId)? (y/N)'
+        })
         return Promise.resolve({overwrite: 'y'})
       }
 
