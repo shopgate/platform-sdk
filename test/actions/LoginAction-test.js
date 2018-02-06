@@ -135,7 +135,7 @@ describe('LoginAction', () => {
     })
   })
 
-  it('should fail login in with invalid credentials', (done) => {
+  it('should not write username to session on invalid login', (done) => {
     const api = nock('http://dc.shopgate.cloud')
       .post('/login', {username: 'foo', password: 'bar'})
       .reply(400)
