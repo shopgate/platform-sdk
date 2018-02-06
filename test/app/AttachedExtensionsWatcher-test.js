@@ -2,6 +2,7 @@ const assert = require('assert')
 const path = require('path')
 const fsEx = require('fs-extra')
 const AttachedExtensionsWatcher = require('../../lib/app/AttachedExtensionsWatcher')
+const UserSettings = require('../../lib/user/UserSettings')
 const utils = require('../../lib/utils/utils')
 
 const appPath = path.join('build', 'appsettings')
@@ -11,6 +12,7 @@ describe('AttachedExtensionsWatcher', () => {
   let appSettingsMock
 
   beforeEach(async () => {
+    await new UserSettings().setToken({})
     appSettingsMock = {
       attachedExtensionsFile: path.join(appPath, '.sgcloud', 'attachedExtensions.json'),
       getApplicationFolder: utils.getApplicationFolder

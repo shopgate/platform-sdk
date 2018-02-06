@@ -19,6 +19,7 @@ class FrontendProcessMock {
 describe('FrontendAction', () => {
   let subjectUnderTest
   let appSettings
+  let userSetting
   const FrontendAction = proxyquire('../../lib/actions/FrontendAction', {
     '../logger': {
       info: () => {},
@@ -34,9 +35,9 @@ describe('FrontendAction', () => {
 
   beforeEach(async () => {
     process.env.USER_PATH = userPath
-    fsEx.emptyDirSync(userPath)
-    new UserSettings().setToken({})
-    fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
+    await fsEx.emptyDir(userPath)
+    userSetting = await new UserSettings().setToken({})
+    await fsEx.emptyDir(path.join(appPath, AppSettings.SETTINGS_FOLDER))
 
     fsExtraMock.existsSync = () => true
     fsExtraMock.readJSONSync = () => {}
@@ -44,7 +45,7 @@ describe('FrontendAction', () => {
     fsExtraMock.lstat = () => Promise.resolve()
 
     appSettings = await new AppSettings(appPath).setId('foobarTest')
-    subjectUnderTest = new FrontendAction(appSettings)
+    subjectUnderTest = new FrontendAction(appSettings, userSetting)
   })
 
   afterEach(() => {
@@ -52,20 +53,21 @@ describe('FrontendAction', () => {
     delete process.env.USER_PATH
   })
 
-  describe('constructor', () => {
-    it('should throw an error if user is not logged in', () => {
-      new UserSettings().setToken(null)
+  describe('constructor', async () => {
+    it('should throw an error if user is not logged in', async () => {
+      userSetting.setToken(null)
       try {
         // re-create the subject under test after token was set to null
-        subjectUnderTest = new FrontendAction(appSettings)
-        assert.fail('Expected error to be thrown')
+        subjectUnderTest = new FrontendAction(appSettings, userSetting)
       } catch (err) {
+        assert.ok(err)
         assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
       }
     })
   })
 
-  describe('run() -> start', () => {
+  describe('run() -> start', async () => {
+    userSetting = await new UserSettings().setToken({})
     it('should throw an error if the theme is not existing', async () => {
       const options = {theme: 'theme-gmd'}
       fsExtraMock.readdir = (source) => Promise.resolve(['a', 'b'])

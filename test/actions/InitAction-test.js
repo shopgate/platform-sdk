@@ -34,8 +34,9 @@ describe('InitAction', () => {
     process.env.SGCLOUD_DC_ADDRESS = 'http://test.test'
     await fsEx.emptyDir(userSettingsFolder)
     userSettings = new UserSettings()
+    await userSettings.setToken({})
     appSettings = new AppSettings(appPath)
-    subjectUnderTest = new InitAction(appSettings)
+    subjectUnderTest = new InitAction(appSettings, userSettings)
   })
 
   afterEach(async () => {
@@ -47,17 +48,18 @@ describe('InitAction', () => {
     await fsEx.remove(appPath)
   })
 
-  it('should throw if user not logged in', (done) => {
-    userSettings.setToken(null)
+  it('should throw if user not logged in', async () => {
+    await userSettings.setToken(null)
     subjectUnderTest.run(null)
+      .then(() => {
+        assert.fail('should have failed')
+      })
       .catch(err => {
         assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
-        done()
       })
   })
 
   it('should reinit the application if selected', async () => {
-    userSettings.setToken({})
     const appId = 'foobarTest'
     await fsEx.emptyDir(path.join(appPath, AppSettings.SETTINGS_FOLDER))
     await appSettings.setId(appId)
@@ -66,54 +68,62 @@ describe('InitAction', () => {
       .get(`/applications/test`)
       .reply(200, {})
 
-    subjectUnderTest.permitDeletion = (prompt, appId, cb) => cb(null, true)
+    subjectUnderTest.permitDeletion = async (prompt, appId, cb) => cb(null, true)
 
-    await subjectUnderTest.run({appId: 'test'}, async (err) => {
-      await fsEx.remove(appPath)
+    try {
+      await subjectUnderTest.run({appId: 'test'}, async (err) => {
+        await fsEx.remove(appPath)
+        assert.ifError(err)
+        delete process.env.APP_PATH
+        dcMock.done()
+      })
+    } catch (err) {
       assert.ifError(err)
-      delete process.env.APP_PATH
-      dcMock.done()
-    })
+    }
   })
 
-  it('should throw an error because getting the application data as validation fails', (done) => {
-    userSettings.setToken({})
-
+  it('should throw an error because getting the application data as validation fails', async () => {
     const dcMock = nock(process.env.SGCLOUD_DC_ADDRESS)
       .get(`/applications/test`)
       .reply(403, {})
 
     subjectUnderTest = new InitAction(new AppSettings(appPath))
-    subjectUnderTest.run({appId: 'test'}, (err) => {
-      fsEx.remove(appPath, () => {
-        assert.equal(err.message, 'The application test is not available or permissions are missing (message: Getting application data failed). Please check the application at developer.shopgate.com!')
-        delete process.env.APP_PATH
-        dcMock.done()
-        done()
+    try {
+      await subjectUnderTest.run({appId: 'test'}, (err) => {
+        fsEx.remove(appPath, () => {
+          assert.equal(err.message, 'The application test is not available or permissions are missing (message: Getting application data failed). Please check the application at developer.shopgate.com!')
+          delete process.env.APP_PATH
+          dcMock.done()
+        })
       })
-    })
+    } catch (err) {
+      assert.ifError(err)
+    }
+
   })
 
-  it('should create folders, settings file and save appId', (done) => {
-    userSettings.setToken({})
-
+  it('should create folders, settings file and save appId', async () => {
     const dcMock = nock(process.env.SGCLOUD_DC_ADDRESS)
       .get(`/applications/test`)
       .reply(200, {})
 
     subjectUnderTest = new InitAction(new AppSettings(appPath))
-    subjectUnderTest.run({appId: 'test'}, (err) => {
-      fsEx.remove(appPath, (err2) => {
-        assert.ifError(err)
-        assert.ifError(err2)
-        delete process.env.APP_PATH
-        dcMock.done()
-        done()
+    try {
+      await subjectUnderTest.run({appId: 'test'}, (err) => {
+        fsEx.remove(appPath, (err2) => {
+          assert.ifError(err)
+          assert.ifError(err2)
+          delete process.env.APP_PATH
+          dcMock.done()
+        })
       })
-    })
+    } catch (err) {
+      assert.ifError(err)
+    }
+
   })
 
-  describe('getAppId', () => {
+  describe('getAppId', async () => {
     it('should return appId if already set in options', (done) => {
       const applicationId = 'test'
       subjectUnderTest.options = {appId: applicationId}
@@ -124,7 +134,7 @@ describe('InitAction', () => {
       })
     })
 
-    it('should use prompt for appId if not set in options', (done) => {
+    it('should use prompt for appId if not set in options', async () => {
       const appId = 'test'
       subjectUnderTest.options = {}
 
@@ -134,18 +144,27 @@ describe('InitAction', () => {
         return Promise.resolve({appId: appId})
       }
 
-      subjectUnderTest.getAppId(prompt, (err, id) => {
-        assert.ifError(err)
-        assert.equal(id, appId)
-        done()
-      })
+      try {
+        await subjectUnderTest.getAppId(prompt, (err, id) => {
+          assert.ifError(err)
+          assert.equal(id, appId)
+        })
+      } catch (err) {
+        console.log(err)
+        assert.fail(err.message)
+      }
     })
   })
 
   describe('permitDeletion', () => {
     it('should use prompt', (done) => {
       function prompt (question) {
-        assert.deepEqual(question, {type: 'input', name: 'overwrite', default: 'n', message: 'Do you really want to overwrite your current application (appId)? (y/N)'})
+        assert.deepEqual(question, {
+          type: 'input',
+          name: 'overwrite',
+          default: 'n',
+          message: 'Do you really want to overwrite your current application (appId)? (y/N)'
+        })
         return Promise.resolve({overwrite: 'y'})
       }
 

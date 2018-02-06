@@ -27,23 +27,23 @@ describe('UserSettings', () => {
     assert.equal(new UserSettings().settingsFolder, testFolder)
   })
 
-  it('should return session loaded from file', () => {
+  it('should return session loaded from file', async () => {
     const userSettings = new UserSettings()
     const session = {token: 'foo', user: 'bar'}
-    fsEx.ensureDirSync(userSettings.settingsFolder)
-    fsEx.writeJsonSync(userSettings.sessionFile, {token: 'foo', user: 'bar'})
+    await fsEx.ensureDir(userSettings.settingsFolder)
+    await fsEx.writeJson(userSettings.sessionFile, {token: 'foo', user: 'bar'})
 
-    assert.equal(session.token, userSettings.getToken())
-    assert.equal(session.user, userSettings.getUsername())
+    assert.equal(session.token, await userSettings.getToken())
+    assert.equal(session.user, await userSettings.getUsername())
   })
 
-  it('should save all settings', () => {
+  it('should save all settings', async () => {
     const token = {foo: 'bar'}
     const user = 'foo@bar.baz'
     const userSettings = new UserSettings()
-    userSettings.setToken(token)
-    userSettings.setUsername(user)
-    userSettings.validate()
+    await userSettings.setToken(token)
+    await userSettings.setUsername(user)
+    await userSettings.validate()
 
     assert.deepEqual(fsEx.readJsonSync(userSettings.sessionFile).token, token)
     assert.deepEqual(fsEx.readJsonSync(userSettings.sessionFile).user, user)

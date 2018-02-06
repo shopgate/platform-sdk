@@ -36,7 +36,7 @@ describe('BackendAction', () => {
     await fsEx.emptyDir(userSettingsFolder)
     await fsEx.emptyDir(path.join(appPath, AppSettings.SETTINGS_FOLDER))
 
-    userSettings = new UserSettings().setToken({})
+    userSettings = await new UserSettings().setToken({})
     appSettings = await new AppSettings(appPath).setId('foobarTest')
 
     subjectUnderTest = new BackendAction(appSettings)
@@ -96,12 +96,11 @@ describe('BackendAction', () => {
       assert(caporal.action.calledOnce)
     })
 
-    it('should throw if user not logged in', (done) => {
-      userSettings.setToken()
+    it('should throw if user not logged in', async () => {
+      await userSettings.setToken()
       subjectUnderTest.run()
         .catch(err => {
           assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
-          done()
         })
     })
 

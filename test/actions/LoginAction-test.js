@@ -57,8 +57,10 @@ describe('LoginAction', () => {
     try {
       await login.run(options)
       api.done()
-      assert.equal(userSettings.getToken(), 'token')
-      assert.equal(userSettings.getUsername(), 'foo')
+      const sessionToken = await userSettings.getToken()
+      assert.equal(sessionToken, 'token')
+      const sessionUser = await userSettings.getUsername()
+      assert.equal(sessionUser, 'foo')
     } catch (err) {
       assert.ifError(err)
     }
@@ -79,8 +81,8 @@ describe('LoginAction', () => {
       }, 10)
       await login.run({})
       api.done()
-      assert.equal(userSettings.getToken(), 'token2')
-      assert.equal(userSettings.getUsername(), 'foo')
+      assert.equal(await userSettings.getToken(), 'token2')
+      assert.equal(await userSettings.getUsername(), 'foo')
     } catch (err) {
       assert.ifError(err)
     }
@@ -97,8 +99,8 @@ describe('LoginAction', () => {
       setTimeout(() => stdin.send('bar\n'), 10)
       await login.run({})
       api.done()
-      assert.equal(userSettings.getToken(), 'token3')
-      assert.equal(userSettings.getUsername(), 'foo')
+      assert.equal(await userSettings.getToken(), 'token3')
+      assert.equal(await userSettings.getUsername(), 'foo')
     } catch (err) {
       assert.ifError(err)
     }
@@ -115,8 +117,8 @@ describe('LoginAction', () => {
       setTimeout(() => stdin.send('foo\n'), 10)
       await login.run(options)
       api.done()
-      assert.equal(userSettings.getToken(), 'token4')
-      assert.equal(userSettings.getUsername(), 'foo')
+      assert.equal(await userSettings.getToken(), 'token4')
+      assert.equal(await userSettings.getUsername(), 'foo')
     } catch (err) {
       assert.ifError(err)
     }
@@ -134,7 +136,7 @@ describe('LoginAction', () => {
       await login.run(options)
     } catch (err) {
       assert.ok(err)
-      assert.equal(userSettings.getUsername(), undefined)
+      assert.equal(await userSettings.getUsername(), undefined)
       assert.equal(err.message, 'Login failed')
       api.done()
     }
@@ -150,7 +152,7 @@ describe('LoginAction', () => {
       await new LoginAction().run(options)
     } catch (err) {
       assert.ok(err)
-      assert.equal(userSettings.getUsername(), undefined)
+      assert.equal(await userSettings.getUsername(), undefined)
       assert.equal(err.message, 'Login failed')
       api.done()
     }
@@ -168,9 +170,9 @@ describe('LoginAction', () => {
       await login.run({})
 
       api.done()
-      assert.equal(userSettings.getToken(), 'token3')
-      assert.equal(userSettings.getUsername(), 'foo')
-      userSettings.setToken(null)
+      assert.equal(await userSettings.getToken(), 'token3')
+      assert.equal(await userSettings.getUsername(), 'foo')
+      await userSettings.setToken(null)
 
       try {
         setTimeout(() => stdin.send('\n'), 30)
@@ -182,8 +184,8 @@ describe('LoginAction', () => {
 
         await login.run({})
         nextLoginRequest.done()
-        assert.equal(userSettings.getToken(), 'token3')
-        assert.equal(userSettings.getUsername(), 'foo')
+        assert.equal(await userSettings.getToken(), 'token3')
+        assert.equal(await userSettings.getUsername(), 'foo')
       } catch (err) {
         assert.ifError(err)
       }

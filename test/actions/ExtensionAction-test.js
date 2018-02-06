@@ -26,7 +26,7 @@ describe('ExtensionAction', () => {
     await appSettings.setId(appId)
 
     await fsEx.emptyDir(userSettingsFolder)
-    userSettings = new UserSettings().setToken({})
+    userSettings = await new UserSettings().setToken({})
 
     subjectUnderTest = new ExtensionAction(appSettings)
   })
@@ -69,7 +69,7 @@ describe('ExtensionAction', () => {
       })
 
       it('should throw if user not logged in', async () => {
-        userSettings.setToken(null)
+        await userSettings.setToken(null)
         try {
           await subjectUnderTest.attachExtensions({extensions: []})
           assert.fail('Expected error to be thrown.')
@@ -154,7 +154,7 @@ describe('ExtensionAction', () => {
       })
 
       it('should throw if user not logged in', async () => {
-        userSettings.setToken(null)
+        await userSettings.setToken(null)
         try {
           await subjectUnderTest.attachExtensions({})
         } catch (err) {
@@ -251,7 +251,7 @@ describe('ExtensionAction', () => {
       })
 
       it('should throw error "not logged in"', async () => {
-        userSettings.setToken(null)
+        await userSettings.setToken(null)
 
         try {
           await subjectUnderTest.createExtension({}, null)
