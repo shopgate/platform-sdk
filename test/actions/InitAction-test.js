@@ -36,7 +36,7 @@ describe('InitAction', () => {
     userSettings = new UserSettings()
     await userSettings.setToken({})
     appSettings = new AppSettings(appPath)
-    subjectUnderTest = new InitAction(appSettings, userSettings)
+    subjectUnderTest = new InitAction(appSettings)
   })
 
   afterEach(async () => {
@@ -87,6 +87,7 @@ describe('InitAction', () => {
       .get(`/applications/test`)
       .reply(403, {})
 
+    await userSettings.setToken({})
     subjectUnderTest = new InitAction(new AppSettings(appPath))
     try {
       await subjectUnderTest.run({appId: 'test'}, (err) => {
@@ -99,7 +100,6 @@ describe('InitAction', () => {
     } catch (err) {
       assert.ifError(err)
     }
-
   })
 
   it('should create folders, settings file and save appId', async () => {
@@ -120,7 +120,6 @@ describe('InitAction', () => {
     } catch (err) {
       assert.ifError(err)
     }
-
   })
 
   describe('getAppId', async () => {
