@@ -102,6 +102,7 @@ describe('FrontendSetup', () => {
 
     inquirer.prompt = setPromptBody()
 
+    questionSpy.reset()
     questionSpyFail = false
   })
 
@@ -126,13 +127,13 @@ describe('FrontendSetup', () => {
       questionSpyFail = true
       frontendSetup.run()
         .then(() => {
-          spy.restore()
+          spy.reset()
           done('Did not throw!')
         })
         .catch((error) => {
           assert.ok(typeof error === 'string')
           sinon.assert.calledOnce(spy)
-          spy.restore()
+          spy.reset()
           done()
         })
     })
@@ -152,7 +153,7 @@ describe('FrontendSetup', () => {
       frontendSetup.run()
         .then(() => {
           assert.ok(spy.calledOnce)
-          spy.restore()
+          spy.reset()
           done()
         })
         .catch(error => done(error))
@@ -163,7 +164,7 @@ describe('FrontendSetup', () => {
       frontendSetup.run()
         .then(() => {
           assert.ok(spy.calledOnce)
-          spy.restore()
+          spy.reset()
           done()
         })
         .catch(error => done(error))
@@ -174,7 +175,7 @@ describe('FrontendSetup', () => {
       frontendSetup.run()
         .then(() => {
           assert.ok(spy.calledOnce)
-          spy.restore()
+          spy.reset()
           done()
         })
         .catch(error => done(error))
@@ -237,7 +238,7 @@ describe('FrontendSetup', () => {
 
     beforeEach(() => {
       saveSpy = sinon.spy()
-      loggerSpy.restore()
+      loggerSpy.reset()
 
       frontendSettings.setIpAddress = (ip) => {
         assert.equal(ip, defaultConfig.ip)
@@ -271,8 +272,8 @@ describe('FrontendSetup', () => {
     })
 
     afterEach(() => {
-      saveSpy.restore()
-      loggerSpy.restore()
+      saveSpy.reset()
+      loggerSpy.reset()
     })
 
     it('should save the settings', () => {
