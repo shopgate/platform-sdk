@@ -114,25 +114,25 @@ describe('ExtensionAction', () => {
         })
       })
 
-      it('should throw an error if extension does not exist locally', () => {
+      it('should throw an error if extension does not exist locally', async () => {
         const name = 'notExitstentExtension'
 
         try {
-          subjectUnderTest.attachExtensions({extensions: [name]})
+          await subjectUnderTest.attachExtensions({extensions: [name]})
         } catch (e) {
           assert.equal(e.message, `Config file of 'notExitstentExtension' is invalid or not existent`)
         }
       })
 
-      it('should throw an error if extension-config is invalid', () => {
+      it('should throw an error if extension-config is invalid', async () => {
         const name = 'existentExtension'
 
         const extPath = path.join(appPath, 'extensions', name)
-        fsEx.ensureDirSync(extPath)
-        fsEx.writeJSONSync(path.join(extPath, 'extension-config.json'), {})
+        await fsEx.ensureDir(extPath)
+        await fsEx.writeJSON(path.join(extPath, 'extension-config.json'), {})
 
         try {
-          subjectUnderTest.attachExtensions({extensions: [name]})
+          await subjectUnderTest.attachExtensions({extensions: [name]})
         } catch (e) {
           assert.equal(e.message, `Config file of '${name}' is invalid or not existent`)
         }
@@ -142,8 +142,8 @@ describe('ExtensionAction', () => {
         const name = 'existentExtension'
 
         const extPath = path.join(appPath, 'extensions', name)
-        fsEx.ensureDirSync(extPath)
-        fsEx.writeJSONSync(path.join(extPath, 'extension-config.json'), {id: name})
+        await fsEx.ensureDir(extPath)
+        await fsEx.writeJSON(path.join(extPath, 'extension-config.json'), {id: name})
 
         await subjectUnderTest.attachExtensions({extensions: [name]})
         try {
@@ -171,7 +171,7 @@ describe('ExtensionAction', () => {
         await fsEx.ensureDir(extPath)
         await fsEx.writeJSON(path.join(extPath, 'extension-config.json'), {id: name})
 
-        appSettings.attachExtension(name, {id: name, trusted: false})
+        await appSettings.attachExtension(name, {id: name, trusted: false})
         await subjectUnderTest.detachExtensions({extensions: [name]})
 
         const config = await fsEx.readJson(appSettings.attachedExtensionsFile)
@@ -179,7 +179,7 @@ describe('ExtensionAction', () => {
       })
 
       it('should skip if extension was not attached', async () => {
-        const name = 'notExitstentExtension'
+        const name = 'notExistentExtension'
 
         const extPath = path.join(appPath, 'extensions', name)
         await fsEx.ensureDir(extPath)
@@ -197,8 +197,8 @@ describe('ExtensionAction', () => {
       })
 
       it('should detach all extensions if none was specified', async () => {
-        appSettings.attachExtension('ext2', {id: 'ext2'})
-        appSettings.attachExtension('ext1', {id: 'ext1'})
+        await appSettings.attachExtension('ext2', {id: 'ext2'})
+        await appSettings.attachExtension('ext1', {id: 'ext1'})
 
         await subjectUnderTest.detachExtensions({})
         const config = await fsEx.readJson(appSettings.attachedExtensionsFile)
