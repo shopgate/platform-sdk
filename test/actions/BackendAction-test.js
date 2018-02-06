@@ -211,7 +211,7 @@ describe('BackendAction', () => {
       })
     })
 
-    it('should call dcClient if pipelines were updated', (done) => {
+    it('should call dcClient if pipelines were updated', async () => {
       subjectUnderTest.backendProcess = {
         connect: sinon.stub().resolves(),
         selectApplication: sinon.stub().resolves(),
@@ -222,23 +222,19 @@ describe('BackendAction', () => {
 
       const pipeline = {pipeline: {id: 'plFooBarline1'}}
       const appId = 'foobarAppIdDcTestBackendAction'
-      appSettings.setId(appId)
+      await appSettings.setId(appId)
 
       const file = path.join(subjectUnderTest.pipelinesFolder, 'plFooBarline1.json')
       assert.equal(subjectUnderTest.pipelines[file], undefined)
 
-      subjectUnderTest.dcClient.uploadPipeline = (f, aId, trusted) => {
+      subjectUnderTest.dcClient.uploadPipeline = (f, aId) => {
         assert.deepEqual(subjectUnderTest.pipelines[file].id, pipeline.pipeline.id)
         assert.deepEqual(f, pipeline)
         assert.equal(aId, appId)
       }
 
-      fsEx.writeJson(file, pipeline, (err) => {
-        assert.ifError(err)
-        subjectUnderTest._pipelineChanged(file).then(() => {
-          done()
-        })
-      })
+      await fsEx.writeJson(file, pipeline)
+      await subjectUnderTest._pipelineChanged(file)
     })
 
     it('should write generated extension-config if backend-extension was updated', async () => {

@@ -29,22 +29,22 @@ describe('InitAction', () => {
     assert(commander.action.calledOnce)
   })
 
-  beforeEach(() => {
+  beforeEach(async () => {
     process.env.USER_PATH = userSettingsFolder
     process.env.SGCLOUD_DC_ADDRESS = 'http://test.test'
-    fsEx.emptyDirSync(userSettingsFolder)
+    await fsEx.emptyDir(userSettingsFolder)
     userSettings = new UserSettings()
     appSettings = new AppSettings(appPath)
     subjectUnderTest = new InitAction(appSettings)
   })
 
-  afterEach((done) => {
+  afterEach(async () => {
     delete process.env.USER_PATH
     delete process.env.SGCLOUD_DC_ADDRESS
-    fsEx.remove(userSettingsFolder, () => {
-      delete process.env.APP_PATH
-      fsEx.remove(appPath, done)
-    })
+    await fsEx.remove(userSettingsFolder)
+
+    delete process.env.APP_PATH
+    await fsEx.remove(appPath)
   })
 
   it('should throw if user not logged in', (done) => {
@@ -56,11 +56,11 @@ describe('InitAction', () => {
       })
   })
 
-  it('should reinit the application if selected', (done) => {
+  it('should reinit the application if selected', async () => {
     userSettings.setToken({})
     const appId = 'foobarTest'
-    fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
-    appSettings.setId(appId)
+    await fsEx.emptyDir(path.join(appPath, AppSettings.SETTINGS_FOLDER))
+    await appSettings.setId(appId)
 
     const dcMock = nock(process.env.SGCLOUD_DC_ADDRESS)
       .get(`/applications/test`)
@@ -68,14 +68,11 @@ describe('InitAction', () => {
 
     subjectUnderTest.permitDeletion = (prompt, appId, cb) => cb(null, true)
 
-    subjectUnderTest.run({appId: 'test'}, (err) => {
-      fsEx.remove(appPath, (err2) => {
-        assert.ifError(err)
-        assert.ifError(err2)
-        delete process.env.APP_PATH
-        dcMock.done()
-        done()
-      })
+    await subjectUnderTest.run({appId: 'test'}, async (err) => {
+      await fsEx.remove(appPath)
+      assert.ifError(err)
+      delete process.env.APP_PATH
+      dcMock.done()
     })
   })
 
@@ -83,8 +80,8 @@ describe('InitAction', () => {
     userSettings.setToken({})
 
     const dcMock = nock(process.env.SGCLOUD_DC_ADDRESS)
-    .get(`/applications/test`)
-    .reply(403, {})
+      .get(`/applications/test`)
+      .reply(403, {})
 
     subjectUnderTest = new InitAction(new AppSettings(appPath))
     subjectUnderTest.run({appId: 'test'}, (err) => {
@@ -101,8 +98,8 @@ describe('InitAction', () => {
     userSettings.setToken({})
 
     const dcMock = nock(process.env.SGCLOUD_DC_ADDRESS)
-    .get(`/applications/test`)
-    .reply(200, {})
+      .get(`/applications/test`)
+      .reply(200, {})
 
     subjectUnderTest = new InitAction(new AppSettings(appPath))
     subjectUnderTest.run({appId: 'test'}, (err) => {

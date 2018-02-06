@@ -73,20 +73,20 @@ const request = {
 let rapidDevServer
 
 describe('RapidDevServer', () => {
-  beforeEach(() => {
-    helper.setupAppEnvironment(() => {
-      rapidDevServer = proxyquire('../../../../lib/app/frontend/rapidDevServer/RapidDevServer', {
-        '../LogHelper': logHelper,
-        '../../../logger': logger,
-        './RapidApi': RapidApi,
-        restify,
-        request
-      })
+  beforeEach(async () => {
+    await helper.setupAppEnvironment()
+
+    rapidDevServer = proxyquire('../../../../lib/app/frontend/rapidDevServer/RapidDevServer', {
+      '../LogHelper': logHelper,
+      '../../../logger': logger,
+      './RapidApi': RapidApi,
+      restify,
+      request
     })
   })
 
-  afterEach((done) => {
-    helper.clearAppEnviroment(done)
+  afterEach(async () => {
+    await helper.clearAppEnviroment()
     logHelper.logLogo.reset()
     logHelper.logStartUp.reset()
     logger.plain.reset()

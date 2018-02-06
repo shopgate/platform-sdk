@@ -32,9 +32,9 @@ describe('BackendProcess', () => {
     'socket.io-client': () => socketIOMock
   })
 
-  beforeEach((done) => {
+  beforeEach(async () => {
     appTestFolder = path.join('build', 'appsettings')
-    appSettings = new AppSettings(appTestFolder).setId('shop_10006')
+    appSettings = await new AppSettings(appTestFolder).setId('shop_10006')
 
     userTestFolder = path.join('build', 'usersettings')
     process.env.USER_PATH = userTestFolder
@@ -55,7 +55,6 @@ describe('BackendProcess', () => {
       logger = {info: () => {}, error: () => {}, debug: () => {}}
       backendProcess = new BackendProcess(userSettings, appSettings, logger)
       backendProcess.executor = stepExecutor
-      done()
     })
   })
 
