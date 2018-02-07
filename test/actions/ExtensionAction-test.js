@@ -236,7 +236,7 @@ describe('ExtensionAction', () => {
         await subjectUnderTest.createExtension({types: []}, null)
       })
 
-      it('should catch an error because of sth.', () => {
+      it('should catch an error because of sth.', async () => {
         subjectUnderTest._getUserInput = () => { return new Promise((resolve, reject) => { resolve() }) }
         subjectUnderTest._checkIfExtensionExists = () => { return new Promise((resolve, reject) => { resolve({}) }) }
         subjectUnderTest._downloadBoilerplate = (extensionsFolder, state) => {
@@ -247,7 +247,7 @@ describe('ExtensionAction', () => {
         }
         subjectUnderTest._cleanUp = (state) => assert.ok(state.cloned)
 
-        return subjectUnderTest.createExtension({}, null)
+        await subjectUnderTest.createExtension({}, null)
       })
 
       it('should throw error "not logged in"', async () => {
@@ -576,28 +576,26 @@ describe('ExtensionAction', () => {
     describe('cleanUp', () => {
       const extensionPath = path.join(extensionFolder, 'ex1')
 
-      beforeEach((done) => {
-        fsEx.ensureDirSync(extensionPath)
-        done()
+      beforeEach(async () => {
+        await fsEx.ensureDir(extensionPath)
       })
 
-      afterEach((done) => {
-        fsEx.removeSync(extensionFolder)
-        done()
+      afterEach(async () => {
+        await fsEx.remove(extensionFolder)
       })
 
-      it('should delete the extension directory', () => {
+      it('should delete the extension directory', async () => {
         const state = {
           cloned: true,
           moved: true,
           extensionPath
         }
 
-        assert.ok(fsEx.existsSync(extensionPath))
+        assert.ok(await fsEx.exists(extensionPath))
 
-        subjectUnderTest._cleanUp(state, 'doesNotExist')
+        await subjectUnderTest._cleanUp(state, 'doesNotExist')
 
-        assert.ok(!fsEx.existsSync(extensionPath))
+        assert.ok(!await fsEx.exists(extensionPath))
       })
     })
   })

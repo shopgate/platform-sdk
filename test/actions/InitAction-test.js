@@ -1,18 +1,20 @@
-const InitAction = require('../../lib/actions/InitAction')
+const nock = require('nock')
+const sinon = require('sinon')
 const assert = require('assert')
+const InitAction = require('../../lib/actions/InitAction')
 const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
+const DcHttpClient = require('../../lib/DcHttpClient')
 const path = require('path')
 const userSettingsFolder = path.join('build', 'usersettings')
 const appPath = path.join('build', 'appsettings')
-const sinon = require('sinon')
 const fsEx = require('fs-extra')
-const nock = require('nock')
 
 describe('InitAction', () => {
   let subjectUnderTest
   let userSettings
   let appSettings
+  let dcHttpClient
 
   it('should register', () => {
     const commander = {}
@@ -20,8 +22,10 @@ describe('InitAction', () => {
     commander.description = sinon.stub().returns(commander)
     commander.option = sinon.stub().returns(commander)
     commander.action = sinon.stub().returns(commander)
+    const userSettings = new UserSettings()
+    const dcHttpClient = new DcHttpClient(userSettings)
 
-    InitAction.register(commander, new AppSettings(appPath))
+    InitAction.register(commander, new AppSettings(appPath), userSettings, dcHttpClient)
 
     assert(commander.command.calledWith('init'))
     assert(commander.option.calledWith('--appId <appId>'))
@@ -36,7 +40,8 @@ describe('InitAction', () => {
     userSettings = new UserSettings()
     await userSettings.setToken({})
     appSettings = new AppSettings(appPath)
-    subjectUnderTest = new InitAction(appSettings, userSettings)
+    dcHttpClient = new DcHttpClient(userSettings)
+    subjectUnderTest = new InitAction(appSettings, userSettings, dcHttpClient)
   })
 
   afterEach(async () => {
@@ -50,13 +55,12 @@ describe('InitAction', () => {
 
   it('should throw if user not logged in', async () => {
     await userSettings.setToken(null)
-    subjectUnderTest.run(null)
-      .then(() => {
-        assert.fail('should have failed')
-      })
-      .catch(err => {
-        assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
-      })
+    try {
+      await subjectUnderTest.run(null)
+      assert.fail('Expected an error to be thrown.')
+    } catch (err) {
+      assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
+    }
   })
 
   it('should reinit the application if selected', async () => {
@@ -68,15 +72,13 @@ describe('InitAction', () => {
       .get(`/applications/test`)
       .reply(200, {})
 
-    subjectUnderTest.permitDeletion = async (prompt, appId, cb) => cb(null, true)
+    subjectUnderTest.permitDeletion = sinon.stub().resolves(true)
 
     try {
-      await subjectUnderTest.run({appId: 'test'}, async (err) => {
-        await fsEx.remove(appPath)
-        assert.ifError(err)
-        delete process.env.APP_PATH
-        dcMock.done()
-      })
+      await subjectUnderTest.run({appId: 'test'})
+      await fsEx.remove(appPath)
+      delete process.env.APP_PATH
+      dcMock.done()
     } catch (err) {
       assert.ifError(err)
     }
@@ -87,19 +89,15 @@ describe('InitAction', () => {
       .get(`/applications/test`)
       .reply(403, {})
 
-    subjectUnderTest = new InitAction(new AppSettings(appPath))
     try {
-      await subjectUnderTest.run({appId: 'test'}, (err) => {
-        fsEx.remove(appPath, () => {
-          assert.equal(err.message, 'The application test is not available or permissions are missing (message: Getting application data failed). Please check the application at developer.shopgate.com!')
-          delete process.env.APP_PATH
-          dcMock.done()
-        })
-      })
+      await subjectUnderTest.run({appId: 'test'})
+      await fsEx.remove(appPath)
+      delete process.env.APP_PATH
+      assert.fail('Expected exception to be thrown.')
     } catch (err) {
-      assert.ifError(err)
+      assert.equal(err.message, 'The application test is not available or permissions are missing (message: Getting application data failed). Please check the application at developer.shopgate.com!')
+      dcMock.done()
     }
-
   })
 
   it('should create folders, settings file and save appId', async () => {
@@ -107,31 +105,26 @@ describe('InitAction', () => {
       .get(`/applications/test`)
       .reply(200, {})
 
-    subjectUnderTest = new InitAction(new AppSettings(appPath))
     try {
-      await subjectUnderTest.run({appId: 'test'}, (err) => {
-        fsEx.remove(appPath, (err2) => {
-          assert.ifError(err)
-          assert.ifError(err2)
-          delete process.env.APP_PATH
-          dcMock.done()
-        })
-      })
+      await subjectUnderTest.run({appId: 'test'})
+      await fsEx.remove(appPath)
+      delete process.env.APP_PATH
+      dcMock.done()
     } catch (err) {
       assert.ifError(err)
     }
-
   })
 
-  describe('getAppId', async () => {
-    it('should return appId if already set in options', (done) => {
-      const applicationId = 'test'
-      subjectUnderTest.options = {appId: applicationId}
-      subjectUnderTest.getAppId(null, (err, id) => {
+  describe('getAppId', () => {
+    it('should return appId if already set in options', async () => {
+      const expectedApplicationId = 'test'
+      subjectUnderTest.options = {appId: expectedApplicationId}
+      try {
+        const applicationId = await subjectUnderTest.getAppId(null)
+        assert.equal(applicationId, expectedApplicationId)
+      } catch (err) {
         assert.ifError(err)
-        assert.equal(id, applicationId)
-        done()
-      })
+      }
     })
 
     it('should use prompt for appId if not set in options', async () => {
@@ -157,7 +150,7 @@ describe('InitAction', () => {
   })
 
   describe('permitDeletion', () => {
-    it('should use prompt', (done) => {
+    it('should use prompt', async () => {
       function prompt (question) {
         assert.deepEqual(question, {
           type: 'input',
@@ -168,11 +161,12 @@ describe('InitAction', () => {
         return Promise.resolve({overwrite: 'y'})
       }
 
-      subjectUnderTest.permitDeletion(prompt, 'appId', (err, res) => {
+      try {
+        const response = await subjectUnderTest.permitDeletion(prompt, 'appId')
+        assert.equal(response, true)
+      } catch (err) {
         assert.ifError(err)
-        assert.equal(res, true)
-        done()
-      })
+      }
     })
   })
 })

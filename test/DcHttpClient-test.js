@@ -278,30 +278,33 @@ describe('DcHttpClient', () => {
       })
     })
 
-    it('should callback unauthorized error on dc unauthorized error', (done) => {
-      console.log(appId)
+    it('should throw unauthorized error on dc unauthorized error', async () => {
       const dcMock = nock(dcClient.dcAddress)
         .get(`/applications/${appId}`)
         .reply(401, {message: 'Error!'})
 
-      dcClient.getApplicationData(appId, (err) => {
+      try {
+        await dcClient.getApplicationData(appId)
+        assert.fail('Expected an exception to be thrown.')
+      } catch (err) {
         assert.ok(err)
-        assert.ok(err instanceof UnauthorizedError, 'Error needs to be from type UnauthorizedError')
+        assert.ok(err instanceof UnauthorizedError, 'Expected an UnauthorizedError, got ' + err.constructor.name)
         dcMock.done()
-        done()
-      })
+      }
     })
 
-    it('should callback error on dc error', (done) => {
+    it('should throw error on dc error', async () => {
       const dcMock = nock(dcClient.dcAddress)
         .get(`/applications/${appId}`)
         .reply(500)
 
-      dcClient.getApplicationData(appId, (err) => {
+      try {
+        await dcClient.getApplicationData(appId)
+        assert.fail('Expected an error to be thrown.')
+      } catch (err) {
         assert.ok(err)
         dcMock.done()
-        done()
-      })
+      }
     })
   })
 })
