@@ -74,13 +74,13 @@ describe('BackendAction', () => {
   })
 
   afterEach(async () => {
-    subjectUnderTest.pipelineWatcher.close()
-    return subjectUnderTest.extensionConfigWatcher.stop()
+    await subjectUnderTest.pipelineWatcher.close()
+    await subjectUnderTest.extensionConfigWatcher.stop()
   })
 
-  after(() => {
-    return fsEx.remove(userSettingsFolder)
-      .then(() => fsEx.remove(appPath))
+  after(async () => {
+    await fsEx.remove(userSettingsFolder)
+    await fsEx.remove(appPath)
   })
 
   describe('general', () => {
@@ -90,7 +90,7 @@ describe('BackendAction', () => {
       caporal.description = sinon.stub().returns(caporal)
       caporal.action = sinon.stub().returns(caporal)
 
-      BackendAction.register(caporal)
+      BackendAction.register(caporal, appSettings, userSettings)
 
       assert(caporal.command.calledWith('backend start'))
       assert(caporal.description.calledOnce)
