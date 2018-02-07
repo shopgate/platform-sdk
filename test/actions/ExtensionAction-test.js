@@ -28,7 +28,7 @@ describe('ExtensionAction', () => {
     await fsEx.emptyDir(userSettingsFolder)
     userSettings = await new UserSettings().setToken({})
 
-    subjectUnderTest = new ExtensionAction(appSettings)
+    subjectUnderTest = new ExtensionAction(appSettings, userSettings)
   })
 
   afterEach(async () => {

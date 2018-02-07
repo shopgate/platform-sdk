@@ -10,6 +10,7 @@ const fsEx = require('fs-extra')
 describe('LoginAction', () => {
   let stdin
   let userSettings
+  let subjectUnderTest
 
   beforeEach(async () => {
     process.env.USER_PATH = settingsFolder
@@ -20,6 +21,7 @@ describe('LoginAction', () => {
     stdin = require('mock-stdin').stdin()
     await fsEx.emptyDir(settingsFolder)
     userSettings = new UserSettings()
+    subjectUnderTest = new LoginAction(userSettings)
   })
 
   afterEach(async () => {
@@ -38,7 +40,7 @@ describe('LoginAction', () => {
     commander.option = sinon.stub().returns(commander)
     commander.action = sinon.stub().returns(commander)
 
-    LoginAction.register(commander)
+    LoginAction.register(commander, null, userSettings)
 
     assert(commander.command.calledWith('login'))
     assert(commander.option.calledWith('--username [email]'))
@@ -53,9 +55,8 @@ describe('LoginAction', () => {
       .reply(200, {accessToken: 'token'})
 
     const options = {username: 'foo', password: 'bar'}
-    const login = new LoginAction()
     try {
-      await login.run(options)
+      await subjectUnderTest.run(options)
       api.done()
       const sessionToken = await userSettings.getToken()
       assert.equal(sessionToken, 'token')
@@ -71,7 +72,6 @@ describe('LoginAction', () => {
       .post('/login', {username: 'foo', password: 'bar'})
       .reply(200, {accessToken: 'token2'})
 
-    const login = new LoginAction()
     try {
       setTimeout(() => {
         stdin.send('foo\n')
@@ -79,7 +79,7 @@ describe('LoginAction', () => {
           stdin.send('bar\n')
         }, 10)
       }, 10)
-      await login.run({})
+      await subjectUnderTest.run({})
       api.done()
       assert.equal(await userSettings.getToken(), 'token2')
       assert.equal(await userSettings.getUsername(), 'foo')
@@ -94,10 +94,9 @@ describe('LoginAction', () => {
       .post('/login', {username: 'foo', password: 'bar'})
       .reply(200, {accessToken: 'token3'})
 
-    const login = new LoginAction()
     try {
       setTimeout(() => stdin.send('bar\n'), 10)
-      await login.run({})
+      await subjectUnderTest.run({})
       api.done()
       assert.equal(await userSettings.getToken(), 'token3')
       assert.equal(await userSettings.getUsername(), 'foo')
@@ -112,10 +111,9 @@ describe('LoginAction', () => {
       .reply(200, {accessToken: 'token4'})
 
     const options = {password: 'bar'}
-    const login = new LoginAction()
     try {
       setTimeout(() => stdin.send('foo\n'), 10)
-      await login.run(options)
+      await subjectUnderTest.run(options)
       api.done()
       assert.equal(await userSettings.getToken(), 'token4')
       assert.equal(await userSettings.getUsername(), 'foo')
@@ -130,10 +128,9 @@ describe('LoginAction', () => {
       .reply(400)
 
     const options = {username: 'foo', password: 'bar'}
-    const login = new LoginAction()
 
     try {
-      await login.run(options)
+      await subjectUnderTest.run(options)
     } catch (err) {
       assert.ok(err)
       assert.equal(await userSettings.getUsername(), undefined)
@@ -149,7 +146,7 @@ describe('LoginAction', () => {
 
     const options = {username: 'foo', password: 'bar'}
     try {
-      await new LoginAction().run(options)
+      await subjectUnderTest.run(options)
     } catch (err) {
       assert.ok(err)
       assert.equal(await userSettings.getUsername(), undefined)
@@ -163,11 +160,10 @@ describe('LoginAction', () => {
       .post('/login', {username: 'foo', password: 'bar'})
       .reply(200, {accessToken: 'token3'})
 
-    const login = new LoginAction()
     try {
       setTimeout(() => stdin.send('foo\n'), 10)
       setTimeout(() => stdin.send('bar\n'), 20)
-      await login.run({})
+      await subjectUnderTest.run({})
 
       api.done()
       assert.equal(await userSettings.getToken(), 'token3')
@@ -182,7 +178,7 @@ describe('LoginAction', () => {
           .post('/login', {username: 'foo', password: 'bar'})
           .reply(200, {accessToken: 'token3'})
 
-        await login.run({})
+        await subjectUnderTest.run({})
         nextLoginRequest.done()
         assert.equal(await userSettings.getToken(), 'token3')
         assert.equal(await userSettings.getUsername(), 'foo')

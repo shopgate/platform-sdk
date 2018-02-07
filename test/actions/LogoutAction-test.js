@@ -9,6 +9,7 @@ const fsEx = require('fs-extra')
 
 describe('LogoutAction', () => {
   let userSettings
+  let subjectUnderTest
 
   beforeEach(async () => {
     process.env.USER_PATH = settingsFolder
@@ -18,6 +19,7 @@ describe('LogoutAction', () => {
     process.env.SGCLOUD_PASS = ''
     await fsEx.emptyDir(settingsFolder)
     userSettings = new UserSettings()
+    subjectUnderTest = new LogoutAction(userSettings)
   })
 
   afterEach(async () => {
@@ -36,7 +38,7 @@ describe('LogoutAction', () => {
     commander.option = sinon.stub().returns(commander)
     commander.action = sinon.stub().returns(commander)
 
-    LogoutAction.register(commander)
+    LogoutAction.register(commander, null, userSettings)
 
     assert(commander.command.calledWith('logout'))
     assert(commander.description.calledOnce)
@@ -49,8 +51,7 @@ describe('LogoutAction', () => {
       await userSettings.getToken()
       assert.fail('Should not have gotten token')
     } catch (error) {
-      const logout = new LogoutAction()
-      await logout.run()
+      await subjectUnderTest.run()
     }
   })
 
@@ -59,8 +60,7 @@ describe('LogoutAction', () => {
     await userSettings.setUsername('foo')
 
     assert.equal(await userSettings.getToken(), 'token')
-    const logout = new LogoutAction()
-    await logout.run()
+    await subjectUnderTest.run()
 
     assert.equal(await userSettings.getUsername(), 'foo')
 
