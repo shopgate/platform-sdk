@@ -39,7 +39,3 @@ after_script:
 
 notifications:
   email: false
-
-branches:
-  only:
-    - master
