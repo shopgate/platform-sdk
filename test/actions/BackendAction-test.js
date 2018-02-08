@@ -90,6 +90,7 @@ describe('BackendAction', () => {
       caporal.command = sinon.stub().returns(caporal)
       caporal.description = sinon.stub().returns(caporal)
       caporal.action = sinon.stub().returns(caporal)
+      caporal.option = sinon.stub().returns(caporal)
 
       BackendAction.register(caporal, appSettings, userSettings)
 
@@ -387,13 +388,29 @@ describe('BackendAction', () => {
       })
     })
 
-    it('should work', () => {
+    it('should work', async () => {
       subjectUnderTest._startSubProcess = () => {}
       try {
-        subjectUnderTest.run()
+        await subjectUnderTest.run({})
       } catch (err) {
         assert.ifError(err)
       }
+    })
+
+    it('should pass true to StepExecutor\'s "inspect" constructor argument when called with --inspect', async () => {
+      subjectUnderTest._startSubProcess = async function () {
+        if (this.backendProcess.executor.inspect !== true) throw new Error('Expected third constructor argument "inspect" to true.')
+      }
+
+      await subjectUnderTest.run({inspect: true})
+    })
+
+    it('should pass false to StepExecutor\'s "inspect" constructor argument when called without --inspect', async () => {
+      subjectUnderTest._startSubProcess = async function () {
+        if (this.backendProcess.executor.inspect !== false) throw new Error('Expected third constructor argument "inspect" to false.')
+      }
+
+      await subjectUnderTest.run({})
     })
   })
 })
