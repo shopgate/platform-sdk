@@ -17,11 +17,21 @@ matrix:
 before_script:
   - if [[ "$TRAVIS_NODE_VERSION" == "8" && "$TRAVIS_OS_NAME" == "linux" ]]; then npm run lint; fi
   - if [[ "$TRAVIS_NODE_VERSION" == "8" && "$TRAVIS_OS_NAME" == "linux" ]]; then npm run check; fi
+  - wget https://github.com/shopgate/connect-sdk-integration-test/archive/master.zip
+  - mkdir integration
+  - unzip master.zip -d integration
+  - cd integration/connect-sdk-integration-test-master
+  - npm i --no-package-lock
+  - cd ../../
 
 install:
   - npm i --no-package-lock
 
 script:
+  - cd integration/connect-sdk-integration-test-master
+  - ls -la
+  - npm run test
+  - cd ../../
   - if [[ "$TRAVIS_NODE_VERSION" == "8" && "$TRAVIS_OS_NAME" == "linux" ]]; then npm run cover; else npm t; fi
 
 after_script:
