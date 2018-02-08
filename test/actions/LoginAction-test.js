@@ -4,12 +4,14 @@ const nock = require('nock')
 const sinon = require('sinon')
 const LoginAction = require('../../lib/actions/LoginAction')
 const UserSettings = require('../../lib/user/UserSettings')
+const DcHttpClient = require('../../lib/DcHttpClient')
 const settingsFolder = path.join('build', 'user')
 const fsEx = require('fs-extra')
 
 describe('LoginAction', () => {
   let stdin
   let userSettings
+  let dcHttpClient
   let subjectUnderTest
 
   beforeEach(async () => {
@@ -21,7 +23,8 @@ describe('LoginAction', () => {
     stdin = require('mock-stdin').stdin()
     await fsEx.emptyDir(settingsFolder)
     userSettings = new UserSettings()
-    subjectUnderTest = new LoginAction(userSettings)
+    dcHttpClient = new DcHttpClient(userSettings, null)
+    subjectUnderTest = new LoginAction(userSettings, dcHttpClient)
   })
 
   afterEach(async () => {

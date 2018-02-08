@@ -7,6 +7,8 @@
   const updateNotifier = require('update-notifier')
   const AppSettings = require('../lib/app/AppSettings')
   const UserSettings = require('../lib/user/UserSettings')
+  const DcHttpClient = require('../lib/DcHttpClient')
+  const logger = require('../lib/logger')
   const utils = require('../lib/utils/utils')
 
 // set version (includes version command)
@@ -36,10 +38,11 @@
   } finally {
     const appSettings = new AppSettings(appFolder || '')
     const userSettings = new UserSettings()
+    const dcHttpClient = new DcHttpClient(userSettings, logger)
 
     // load all custom actions
     const actions = require('../')
-    Object.keys(actions).forEach(a => actions[a].register(caporal, appSettings, userSettings))
+    Object.keys(actions).forEach(a => actions[a].register(caporal, appSettings, userSettings, dcHttpClient))
 
     // activate argument parsing
     caporal.parse(process.argv)

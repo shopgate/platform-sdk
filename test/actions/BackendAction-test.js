@@ -6,8 +6,9 @@ const proxyquire = require('proxyquire')
 
 const utils = require('../../lib/utils/utils')
 
-const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
+const UserSettings = require('../../lib/user/UserSettings')
+const DcHttpClient = require('../../lib/DcHttpClient')
 const userSettingsFolder = path.join('build', 'usersettings')
 const appPath = path.join('build', 'appsettings')
 
@@ -21,8 +22,9 @@ describe('BackendAction', () => {
     '../logger': logger
   })
 
-  let userSettings
   let appSettings
+  let userSettings
+  let dcHttpClient
 
   before(async () => {
     process.env.USER_PATH = userSettingsFolder
@@ -36,13 +38,12 @@ describe('BackendAction', () => {
     await fsEx.emptyDir(userSettingsFolder)
     await fsEx.emptyDir(path.join(appPath, AppSettings.SETTINGS_FOLDER))
 
-    userSettings = await new UserSettings().setToken({})
     appSettings = await new AppSettings(appPath).setId('foobarTest')
     appSettings.loadAttachedExtensions = sinon.stub().resolves()
+    userSettings = await new UserSettings().setToken({})
+    dcHttpClient = new DcHttpClient(userSettings, null)
 
-    subjectUnderTest = new BackendAction(appSettings)
-
-    subjectUnderTest.userSettings = userSettings
+    subjectUnderTest = new BackendAction(appSettings, userSettings, dcHttpClient)
 
     await fsEx.emptyDir(subjectUnderTest.pipelinesFolder)
 
@@ -66,7 +67,7 @@ describe('BackendAction', () => {
       attachedExtensions: []
     }
 
-    subjectUnderTest.dcClient = {}
+    subjectUnderTest.dcHttpClient = {}
 
     logger.info = () => {}
     logger.error = () => {}
@@ -99,10 +100,12 @@ describe('BackendAction', () => {
 
     it('should throw if user not logged in', async () => {
       await userSettings.setToken()
-      subjectUnderTest.run()
-        .catch(err => {
-          assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
-        })
+      try {
+        await subjectUnderTest.run()
+        assert.fail('Expected error to be thrown.')
+      } catch (err) {
+        assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
+      }
     })
 
     it('should fail because a backend process is already running', (done) => {
@@ -144,7 +147,7 @@ describe('BackendAction', () => {
         reloadPipelineController: sinon.stub().resolves()
       }
 
-      subjectUnderTest.dcClient = {
+      subjectUnderTest.dcHttpClient = {
         downloadPipelines: sinon.stub().resolves([{pipeline: {id: 'testPipeline'}}]),
         removePipeline: sinon.stub().resolves(),
         uploadMultiplePipelines: sinon.stub().resolves()
@@ -177,7 +180,7 @@ describe('BackendAction', () => {
         reloadPipelineController: sinon.stub().resolves()
       }
 
-      subjectUnderTest.dcClient = {
+      subjectUnderTest.dcHttpClient = {
         downloadPipelines: sinon.stub().resolves([]),
         removePipeline: sinon.stub().resolves(),
         uploadMultiplePipelines: sinon.stub().resolves()
@@ -227,7 +230,7 @@ describe('BackendAction', () => {
       const file = path.join(subjectUnderTest.pipelinesFolder, 'plFooBarline1.json')
       assert.equal(subjectUnderTest.pipelines[file], undefined)
 
-      subjectUnderTest.dcClient.uploadPipeline = (f, aId) => {
+      subjectUnderTest.dcHttpClient.uploadPipeline = (f, aId) => {
         assert.deepEqual(subjectUnderTest.pipelines[file].id, pipeline.pipeline.id)
         assert.deepEqual(f, pipeline)
         assert.equal(aId, appId)
@@ -241,7 +244,7 @@ describe('BackendAction', () => {
       let generated = {backend: {id: 'myGeneratedExtension'}}
 
       let called = 0
-      subjectUnderTest.dcClient.generateExtensionConfig = () => {
+      subjectUnderTest.dcHttpClient.generateExtensionConfig = () => {
         called++
         return Promise.resolve(generated)
       }
@@ -262,7 +265,7 @@ describe('BackendAction', () => {
       let generated = {frontend: {id: 'myGeneratedExtension'}}
 
       let called = 0
-      subjectUnderTest.dcClient.generateExtensionConfig = () => {
+      subjectUnderTest.dcHttpClient.generateExtensionConfig = () => {
         called++
         return Promise.resolve(generated)
       }
@@ -281,7 +284,7 @@ describe('BackendAction', () => {
 
     it('should throw error if dcClient is not reachable', (done) => {
       const pipeline = {pipeline: {id: 'dCPlTest2'}}
-      subjectUnderTest.dcClient = {
+      subjectUnderTest.dcHttpClient = {
         uploadPipeline: sinon.stub().rejects(new Error('error'))
       }
 
@@ -300,7 +303,7 @@ describe('BackendAction', () => {
       const pipeline = {pipeline: {id: 'dCPlTest3'}}
       const file = path.join(subjectUnderTest.pipelinesFolder, 'dCPlTest3.json')
 
-      subjectUnderTest.dcClient = {
+      subjectUnderTest.dcHttpClient = {
         uploadPipeline: sinon.stub().resolves()
       }
 
@@ -367,7 +370,7 @@ describe('BackendAction', () => {
       const pipelineId = 'dCPlTest4'
       let called = false
       subjectUnderTest._writeLocalPipelines = sinon.mock().resolves()
-      subjectUnderTest.dcClient.removePipeline = (plId, id, trusted) => {
+      subjectUnderTest.dcHttpClient.removePipeline = (plId, id, trusted) => {
         assert.equal(plId, pipelineId)
         called = true
       }

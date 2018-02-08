@@ -550,7 +550,7 @@ describe('ExtensionAction', () => {
         assert.doesNotThrow(() => subjectUnderTest._installFrontendDependencies({toBeCreated: {}}, {}, {}))
       })
 
-      it('should fail because the command failed', () => {
+      it('should fail because the command failed', (done) => {
         const state = { extensionPath }
         const userInput = {
           toBeCreated: {
@@ -565,10 +565,14 @@ describe('ExtensionAction', () => {
           params: ['i', 'nonExistentPackage']
         }
 
-        return subjectUnderTest
+        subjectUnderTest
           ._installFrontendDependencies(userInput, state, c)
+          .then(() => {
+            assert.fail('Expected an exception to be thrown.')
+          })
           .catch((err) => {
             assert.ok(err.message.startsWith('Install process exited with code'))
+            done()
           })
       }).timeout(10000)
     })
