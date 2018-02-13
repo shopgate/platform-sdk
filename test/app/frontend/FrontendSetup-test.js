@@ -190,10 +190,9 @@ describe('FrontendSetup', () => {
 
     it('should set the startPageUrl at the developer connector', () => {
       frontendSetup.dcClient = {
-        setStartPageUrl: (actualAppId, startPageUrl, cb) => {
+        setStartPageUrl: (actualAppId, startPageUrl) => {
           assert.equal(actualAppId, appId)
           assert.equal(startPageUrl, `http://${defaultConfig.ip}:${defaultConfig.port}/`)
-          cb()
         }
       }
       return frontendSetup.run()
@@ -202,10 +201,10 @@ describe('FrontendSetup', () => {
 
     it('should throw an error if startPageUrl cant be set at the developer connector', (done) => {
       frontendSetup.dcClient = {
-        setStartPageUrl: (actualAppId, startPageUrl, cb) => {
+        setStartPageUrl: (actualAppId, startPageUrl) => {
           assert.equal(actualAppId, appId)
           assert.equal(startPageUrl, `http://${defaultConfig.ip}:${defaultConfig.port}/`)
-          cb(new Error('Something'))
+          throw new Error('Something')
         }
       }
       frontendSetup.run()

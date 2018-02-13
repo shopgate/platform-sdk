@@ -28,18 +28,14 @@ describe('DcHttpClient', () => {
     const appId = 'foobarAppId'
     const deviceId = 'foobarDeviceId'
 
-    it('should get infos', (done) => {
+    it('should get infos', async () => {
       const data = {foo: {body: {bar: 'foobar'}}}
       const dcMock = nock(dcClient.dcAddress)
         .get(`/applications/${appId}/${infoType}/${deviceId}`)
         .reply(200, data)
 
-      dcClient.getInfos(infoType, appId, deviceId, (err, body) => {
-        assert.ifError(err)
-        assert.deepEqual(body, data)
-        dcMock.done()
-        done()
-      })
+      assert.deepEqual(await dcClient.getInfos(infoType, appId, deviceId), data)
+      dcMock.done()
     })
 
     it('should update the usertoken on jwt-update', async () => {
@@ -48,23 +44,24 @@ describe('DcHttpClient', () => {
         .get(`/applications/${appId}/${infoType}/${deviceId}`)
         .reply(200, null, {'x-jwt': newToken})
 
-      dcClient.getInfos(infoType, appId, deviceId, async (err) => {
-        assert.ifError(err)
-        assert.equal(await dcClient.userSettings.getToken(), newToken)
-        dcMock.done()
-      })
+      await dcClient.getInfos(infoType, appId, deviceId)
+      assert.equal(await dcClient.userSettings.getToken(), newToken)
+      dcMock.done()
     })
 
-    it('should callback error on dc error', (done) => {
+    it('should throw error on dc error', async () => {
       const dcMock = nock(dcClient.dcAddress)
         .get(`/applications/${appId}/${infoType}/${deviceId}`)
         .reply(500)
 
-      dcClient.getInfos(infoType, appId, deviceId, (err) => {
+      try {
+        await dcClient.getInfos(infoType, appId, deviceId)
+        assert.fail('Expected an error to be thrown.')
+      } catch (err) {
         assert.ok(err)
+      } finally {
         dcMock.done()
-        done()
-      })
+      }
     })
   })
 
@@ -175,45 +172,40 @@ describe('DcHttpClient', () => {
   })
 
   describe('setStartPageUrl', () => {
-    it('should set the start page url', (done) => {
+    it('should set the start page url', async () => {
       const startPageUrl = 'http://someurl'
       const dcMock = nock(dcClient.dcAddress)
         .put('/applications/shop_10006/settings/startpage', {startPageUrl})
         .reply(204)
 
-      dcClient.setStartPageUrl('shop_10006', startPageUrl, (err) => {
-        assert.ifError(err)
-        dcMock.done()
-        done()
-      })
+      await dcClient.setStartPageUrl('shop_10006', startPageUrl)
+      dcMock.done()
     })
 
-    it('should update the usertoken on jwt-update', (done) => {
+    it('should update the usertoken on jwt-update', async () => {
       const newToken = 'newToken341'
       const dcMock = nock(dcClient.dcAddress)
         .put('/applications/shop_10006/settings/startpage')
         .reply(204, {}, {'x-jwt': newToken})
 
-      dcClient.setStartPageUrl('shop_10006', 'http://someurl', (err) => {
-        assert.ifError(err)
-        dcClient.userSettings.getToken().then(token => {
-          assert.equal(token, newToken)
-          dcMock.done()
-          done()
-        })
-      })
+      await dcClient.setStartPageUrl('shop_10006', 'http://someurl')
+      dcMock.done()
+      assert.equal(await dcClient.userSettings.getToken(), newToken)
     })
 
-    it('should return an error on dc-error', (done) => {
+    it('should return an error on dc-error', async () => {
       const dcMock = nock(dcClient.dcAddress)
         .put('/applications/shop_10006/settings/startpage')
         .reply(500)
 
-      dcClient.setStartPageUrl('shop_10006', 'http://someurl', (err) => {
+      try {
+        await dcClient.setStartPageUrl('shop_10006', 'http://someurl')
+        assert.fail('Expected an error to be thrown.')
+      } catch (err) {
         assert.ok(err)
+      } finally {
         dcMock.done()
-        done()
-      })
+      }
     })
   })
 
