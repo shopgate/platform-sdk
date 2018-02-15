@@ -160,7 +160,7 @@ describe('BackendAction', () => {
         on: () => sinon.stub().resolves()
       }
 
-      subjectUnderTest._extensionChanged = sinon.stub().resolves()
+      subjectUnderTest._extensionConfigChanged = sinon.stub().resolves()
 
       subjectUnderTest._startSubProcess()
         .then(() => fsEx.readJson(path.join(appPath, 'pipelines', 'testPipeline.json')))
@@ -193,7 +193,7 @@ describe('BackendAction', () => {
         on: () => sinon.stub().resolves()
       }
 
-      subjectUnderTest._extensionChanged = sinon.stub().resolves()
+      subjectUnderTest._extensionConfigChanged = sinon.stub().resolves()
 
       fsEx.writeJson(path.join(appPath, 'pipelines', 'testPipeline.json'), {pipeline: {id: 'testPipeline123'}}, err => {
         assert.ifError(err)
@@ -253,7 +253,7 @@ describe('BackendAction', () => {
       const cfgPath = path.join(appPath, 'extensions', 'testExt')
 
       try {
-        await subjectUnderTest._extensionChanged({file: generated, path: cfgPath})
+        await subjectUnderTest._extensionConfigChanged({file: generated, path: cfgPath})
         const content = await fsEx.readJson(path.join(cfgPath, 'extension', 'config.json'))
         assert.deepEqual(content, {id: 'myGeneratedExtension'})
         assert.equal(called, 1)
@@ -274,7 +274,7 @@ describe('BackendAction', () => {
       const cfgPath = path.join(appPath, 'extension', 'testExt')
 
       try {
-        await subjectUnderTest._extensionChanged({file: generated, path: cfgPath})
+        await subjectUnderTest._extensionConfigChanged({file: generated, path: cfgPath})
         const content = await fsEx.readJson(path.join(cfgPath, 'frontend', 'config.json'))
         assert.deepEqual(content, {id: 'myGeneratedExtension'})
         assert.equal(called, 1)
