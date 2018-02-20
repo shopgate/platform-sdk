@@ -1,3 +1,6 @@
+## v1.2.4
+* Updated to use `@shopgate/cloud-sdk-webpack@^1.10.0`.
+
 ## v1.2.3
 * Updated to use `@shopgate/cloud-sdk-webpack@^1.9.0`.
 
