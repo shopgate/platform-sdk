@@ -2,6 +2,7 @@ const assert = require('assert')
 const proxyquire = require('proxyquire')
 const path = require('path')
 const fsEx = require('fs-extra')
+const sinon = require('sinon')
 const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
 
@@ -45,6 +46,12 @@ describe('FrontendAction', () => {
 
     new AppSettings().setId('foobarTest')
     frontendAction = new FrontendAction()
+
+    frontendAction.extensionConfigWatcher = {
+      start: () => sinon.stub().resolves(),
+      on: () => sinon.stub().resolves(),
+      stop: () => sinon.stub().resolves()
+    }
 
     done()
   })
