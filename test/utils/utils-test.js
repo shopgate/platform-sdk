@@ -68,4 +68,64 @@ describe('utils', () => {
       }, 1000)
     })
   })
+
+  describe('_generateComponentsJson', () => {
+    const projectDir = 'build'
+    const extensionFolder = path.join(projectDir, 'themes')
+    const extensionPath = path.join(extensionFolder, 'ex1')
+
+    const components = [{
+      id: 'comp1',
+      type: 'type1',
+      path: 'path1'
+    }, {
+      id: 'comp2',
+      type: 'type2',
+      path: 'path2'
+    }]
+
+    beforeEach((done) => {
+      fsEx.ensureDir(projectDir, (err) => {
+        assert.ifError(err)
+        done()
+      })
+    })
+
+    afterEach((done) => {
+      fsEx.remove(projectDir, (err) => {
+        assert.ifError(err)
+        done()
+      })
+    })
+
+    it('should write the componentsJson file', (done) => {
+      const result = {
+        type1: {'id1/comp1': { path: 'id1/path1' }},
+        type2: {'id1/comp2': { path: 'id1/path2' }}
+      }
+
+      fsEx.ensureDir(extensionPath, (err) => {
+        assert.ifError(err)
+        fsEx.writeFile(path.join(extensionPath, 'extension-config.json'), {}, (err) => {
+          assert.ifError(err)
+          utils.generateComponentsJson(projectDir, 'id1', components)
+
+          fsEx.readJson(path.join(extensionPath, 'components.json'), (err, componentsJson) => {
+            assert.ifError(err)
+            assert.deepEqual(componentsJson, result)
+            done()
+          })
+        })
+      })
+    })
+
+    it('should\'t be able to write the file', (done) => {
+      utils.generateComponentsJson(projectDir, 'id1', components)
+
+      fsEx.readJson(path.join(extensionPath, 'components.json'), (err, res) => {
+        assert.ok(err.message.startsWith('ENOENT: no such file or directory'))
+        done()
+      })
+    })
+  })
 })

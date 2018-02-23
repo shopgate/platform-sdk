@@ -14,7 +14,7 @@ const userSettingsFolder = path.join('build', 'usersettings')
 const appPath = path.join('build', 'appsettings')
 
 describe('ExtensionAction', () => {
-  const action = new ExtensionAction()
+  let action
   let userSettings
   let appSettings
 
@@ -29,6 +29,8 @@ describe('ExtensionAction', () => {
 
     fsEx.emptyDirSync(userSettingsFolder)
     userSettings = new UserSettings().setToken({})
+
+    action = new ExtensionAction()
   })
 
   afterEach((done) => {

@@ -400,4 +400,67 @@ describe('BackendAction', () => {
       }
     })
   })
+
+  describe('_configChangeHandler', () => {
+    let oldExtensionChanged
+    let oldGenerateComponentsJson
+
+    beforeEach(() => {
+      oldExtensionChanged = backendAction._extensionChanged
+      oldGenerateComponentsJson = utils.generateComponentsJson
+    })
+
+    afterEach(() => {
+      backendAction._extensionChanged = oldExtensionChanged
+      utils.generateComponentsJson = oldGenerateComponentsJson
+    })
+
+    it('should call _extensionChanged and utils.generateComponentsJson', (done) => {
+      let extensionChangedCalled = false
+      let generateComponentsJson = false
+
+      backendAction._extensionChanged = () => {
+        extensionChangedCalled = true
+      }
+
+      utils.generateComponentsJson = () => {
+        generateComponentsJson = true
+      }
+
+      const config = {
+        file: {
+          components: [
+            'sth...'
+          ]
+        }
+      }
+
+      backendAction._configChangeHandler(config).then(() => {
+        assert.ok(extensionChangedCalled)
+        assert.ok(generateComponentsJson)
+        done()
+      })
+    })
+
+    it('should call _extensionChanged and not utils.generateComponentsJson (there are no components)', (done) => {
+      let extensionChangedCalled = false
+      let generateComponentsJson = false
+
+      backendAction._extensionChanged = () => {
+        extensionChangedCalled = true
+      }
+
+      utils.generateComponentsJson = () => {
+        generateComponentsJson = true
+      }
+
+      const config = {file: {}}
+
+      backendAction._configChangeHandler(config).then(() => {
+        assert.ok(extensionChangedCalled)
+        assert.ok(!generateComponentsJson)
+        done()
+      })
+    })
+  })
 })
