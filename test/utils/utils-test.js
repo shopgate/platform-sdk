@@ -110,7 +110,7 @@ describe('utils', () => {
           assert.ifError(err)
           utils.generateComponentsJson(projectDir, 'id1', components)
 
-          fsEx.readJson(path.join(extensionPath, 'components.json'), (err, componentsJson) => {
+          fsEx.readJson(path.join(extensionPath, 'config', 'components.json'), (err, componentsJson) => {
             assert.ifError(err)
             assert.deepEqual(componentsJson, result)
             done()
@@ -122,7 +122,7 @@ describe('utils', () => {
     it('should\'t be able to write the file', (done) => {
       utils.generateComponentsJson(projectDir, 'id1', components)
 
-      fsEx.readJson(path.join(extensionPath, 'components.json'), (err, res) => {
+      fsEx.readJson(path.join(extensionPath, 'config', 'components.json'), (err, res) => {
         assert.ok(err.message.startsWith('ENOENT: no such file or directory'))
         done()
       })
