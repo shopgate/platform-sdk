@@ -404,10 +404,10 @@ describe('BackendAction', () => {
     })
 
     it('should write the extension configs for the app', done => {
-      backendAction.appSettings.EXTENSIONS_FOLDER = '..'
+      backendAction.appSettings.EXTENSIONS_FOLDER = 'extensions'
       const extensionConfigPath = path.join(
         backendAction.appSettings.getApplicationFolder(), AppSettings.EXTENSIONS_FOLDER,
-        'testExtension',
+        'test-extension',
         'extension-config.json')
 
       fsEx.createFileSync(extensionConfigPath)
@@ -428,7 +428,7 @@ describe('BackendAction', () => {
             return Promise.resolve(config)
           }
 
-          appSettings.loadAttachedExtensions = () => { return {testExtension: {path: '..'}} }
+          appSettings.loadAttachedExtensions = () => { return {testExtension: {path: 'test-extension'}} }
           backendAction._startSubProcess = () => {}
 
           backendAction.run({}).then(() => {
