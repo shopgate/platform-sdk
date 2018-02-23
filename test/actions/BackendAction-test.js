@@ -160,7 +160,7 @@ describe('BackendAction', () => {
         on: () => sinon.stub().resolves()
       }
 
-      backendAction._extensionChanged = sinon.stub().resolves()
+      backendAction._extensionConfigChanged = sinon.stub().resolves()
 
       backendAction._startSubProcess()
         .then(() => fsEx.readJson(path.join(process.env.APP_PATH, 'pipelines', 'testPipeline.json')))
@@ -193,7 +193,7 @@ describe('BackendAction', () => {
         on: () => sinon.stub().resolves()
       }
 
-      backendAction._extensionChanged = sinon.stub().resolves()
+      backendAction._extensionConfigChanged = sinon.stub().resolves()
 
       fsEx.writeJson(path.join(process.env.APP_PATH, 'pipelines', 'testPipeline.json'), {pipeline: {id: 'testPipeline123'}}, err => {
         assert.ifError(err)
@@ -257,7 +257,7 @@ describe('BackendAction', () => {
       const cfgPath = path.join(process.env.APP_PATH, 'extensions', 'testExt')
 
       try {
-        await backendAction._extensionChanged({file: generated, path: cfgPath})
+        await backendAction._extensionConfigChanged({file: generated, path: cfgPath})
         const content = await fsEx.readJson(path.join(cfgPath, 'extension', 'config.json'))
         assert.deepEqual(content, {id: 'myGeneratedExtension'})
         assert.equal(called, 1)
@@ -278,7 +278,7 @@ describe('BackendAction', () => {
       const cfgPath = path.join(process.env.APP_PATH, 'extension', 'testExt')
 
       try {
-        await backendAction._extensionChanged({file: generated, path: cfgPath})
+        await backendAction._extensionConfigChanged({file: generated, path: cfgPath})
         const content = await fsEx.readJson(path.join(cfgPath, 'frontend', 'config.json'))
         assert.deepEqual(content, {id: 'myGeneratedExtension'})
         assert.equal(called, 1)
@@ -393,6 +393,7 @@ describe('BackendAction', () => {
     })
 
     it('should work', () => {
+      appSettings.loadAttachedExtensions = () => { return {testExtension: {path: '..'}} }
       backendAction._startSubProcess = () => {}
       try {
         backendAction.run({})
