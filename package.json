@@ -1,6 +1,6 @@
 {
   "name": "@shopgate/platform-sdk",
-  "version": "1.2.3",
+  "version": "1.3.0-beta.1",
   "description": "Shopgate's Platform SDK",
   "main": "index.js",
   "scripts": {
@@ -27,13 +27,12 @@
     "sdk"
   ],
   "contributors": [
-    "Metin Kul <metinkul@outlook.com> (https://github.com/daddy-cool)",
-    "Michael Freund <michael.freund@shopgate.com> (https://github.com/xFragger)",
+    "Pascal Vomhoff <pascal.vomhoff@shopgate.com (https://github.com/pvomhoff)",
+    "Steffen Zull <steffen.zull@shopgate.com> (https://github.com/szll)",
+    "Timo Ebel <timo.ebel@shopgate.com> (https://github.com/Rekhyt)",
     "Florian Müller <florian.mueller81@gmx.de> (https://github.com/devbucket)",
-    "Daniel Huth <daniel.huth@shopgate.com> (https://github.com/Agreon)",
-    "Richard Gorman <richardgorman@outlook.com> (https://github.com/richardgorman)",
-    "Frithjof Klös <frithjof.kloes@shopgate.com> (https://github.com/kernelkiller)",
-    "Steffen Zull <steffen.zull@shopgate.com> (https://github.com/szll)"
+    "Philipp Heyse <philipp.heyse@shopgate.com> (https://github.com/philipp-heyse)",
+    "Patrick Schneider <patrick.schneider@shopgate.com> (https://github.com/DocSnyderOnGithub)"
   ],
   "license": "Apache-2.0",
   "bugs": {
@@ -49,13 +48,13 @@
     ]
   },
   "dependencies": {
-    "@shopgate/cloud-sdk-webpack": "^1.9.0",
+    "@shopgate/cloud-sdk-webpack": "^1.10.0",
     "ansicolors": "^0.3.2",
     "ansistyles": "^0.1.3",
     "bunyan": "^1.8.12",
     "caporal": "^0.9.0",
     "chalk": "^2.3.0",
-    "chokidar": "^1.7.0",
+    "chokidar": "^2.0.2",
     "errio": "^1.2.2",
     "fs-extra": "^4.0.3",
     "glob": "^7.1.2",
@@ -82,7 +81,7 @@
     "mock-stdin": "^0.3.1",
     "nock": "^9.1.6",
     "nsp": "^3.1.0",
-    "nyc": "^11.4.0",
+    "nyc": "^11.5.0",
     "portfinder": "^1.0.13",
     "pre-commit": "^1.2.2",
     "proxyquire": "^1.8.0",

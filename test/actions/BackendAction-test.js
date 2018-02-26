@@ -160,7 +160,7 @@ describe('BackendAction', () => {
         on: () => sinon.stub().resolves()
       }
 
-      subjectUnderTest._extensionConfigChanged = sinon.stub().resolves()
+      subjectUnderTest._updateExtensionConfig = sinon.stub().resolves()
 
       subjectUnderTest._startSubProcess()
         .then(() => fsEx.readJson(path.join(appPath, 'pipelines', 'testPipeline.json')))
@@ -193,7 +193,7 @@ describe('BackendAction', () => {
         on: () => sinon.stub().resolves()
       }
 
-      subjectUnderTest._extensionConfigChanged = sinon.stub().resolves()
+      subjectUnderTest._updateExtensionConfig = sinon.stub().resolves()
 
       fsEx.writeJson(path.join(appPath, 'pipelines', 'testPipeline.json'), {pipeline: {id: 'testPipeline123'}}, err => {
         assert.ifError(err)
@@ -253,7 +253,7 @@ describe('BackendAction', () => {
       const cfgPath = path.join(appPath, 'extensions', 'testExt')
 
       try {
-        await subjectUnderTest._extensionConfigChanged({file: generated, path: cfgPath})
+        await subjectUnderTest._updateExtensionConfig({file: generated, path: cfgPath})
         const content = await fsEx.readJson(path.join(cfgPath, 'extension', 'config.json'))
         assert.deepEqual(content, {id: 'myGeneratedExtension'})
         assert.equal(called, 1)
@@ -274,7 +274,7 @@ describe('BackendAction', () => {
       const cfgPath = path.join(appPath, 'extension', 'testExt')
 
       try {
-        await subjectUnderTest._extensionConfigChanged({file: generated, path: cfgPath})
+        await subjectUnderTest._updateExtensionConfig({file: generated, path: cfgPath})
         const content = await fsEx.readJson(path.join(cfgPath, 'frontend', 'config.json'))
         assert.deepEqual(content, {id: 'myGeneratedExtension'})
         assert.equal(called, 1)
@@ -389,15 +389,43 @@ describe('BackendAction', () => {
     })
 
     it('should work', async () => {
+      appSettings.loadAttachedExtensions = () => { return {testExtension: {path: '..'}} }
       subjectUnderTest._startSubProcess = () => {}
       try {
+        subjectUnderTest.writeExtensionConfigs = () => {}
         await subjectUnderTest.run({})
       } catch (err) {
         assert.ifError(err)
       }
     })
 
+    it('should write the extension configs for the app', async () => {
+      subjectUnderTest.appSettings.EXTENSIONS_FOLDER = 'extensions'
+      const extensionConfigPath = path.join(
+        subjectUnderTest.appSettings.getApplicationFolder(), AppSettings.EXTENSIONS_FOLDER,
+        'test-extension',
+        'extension-config.json'
+      )
+
+      fsEx.createFileSync(extensionConfigPath)
+      let mockConf = {someKey: 'someVal'}
+      await fsEx.writeJson(extensionConfigPath, mockConf)
+      let called = 0
+      subjectUnderTest.appSettings.getId = () => 1
+      subjectUnderTest.dcHttpClient.generateExtensionConfig = (config) => {
+        called++
+        return Promise.resolve(config)
+      }
+
+      appSettings.loadAttachedExtensions = () => { return {testExtension: {path: 'test-extension'}} }
+      subjectUnderTest._startSubProcess = () => {}
+
+      await subjectUnderTest.run({})
+      assert.ok(called !== 0, 'dcClient generateExtensionConfig should have been called at least once')
+    })
+
     it('should pass true to StepExecutor\'s "inspect" constructor argument when called with --inspect', async () => {
+      subjectUnderTest.writeExtensionConfigs = () => {}
       subjectUnderTest._startSubProcess = async function () {
         if (this.backendProcess.executor.inspect !== true) throw new Error('Expected third constructor argument "inspect" to true.')
       }
