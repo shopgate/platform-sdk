@@ -403,7 +403,7 @@ describe('BackendAction', () => {
       }
     })
 
-    it('should write the extension configs for the app', done => {
+    it('should write the extension configs for the app', async () => {
       backendAction.appSettings.EXTENSIONS_FOLDER = 'extensions'
       const extensionConfigPath = path.join(
         backendAction.appSettings.getApplicationFolder(), AppSettings.EXTENSIONS_FOLDER,
@@ -411,34 +411,20 @@ describe('BackendAction', () => {
         'extension-config.json')
 
       fsEx.createFileSync(extensionConfigPath)
-
       let mockConf = {someKey: 'someVal'}
-      fsEx.writeJson(
-        extensionConfigPath,
-        mockConf,
-        (err) => {
-          assert.ifError(err)
-          let called = 0
-          backendAction.appSettings.getId = () => {
-            return 1
-          }
-          backendAction.dcClient.generateExtensionConfig = (config) => {
-            called++
-            return Promise.resolve(config)
-          }
+      await fsEx.writeJson(extensionConfigPath, mockConf)
+      let called = 0
+      backendAction.appSettings.getId = () => 1
+      backendAction.dcClient.generateExtensionConfig = (config) => {
+        called++
+        return Promise.resolve(config)
+      }
 
-          appSettings.loadAttachedExtensions = () => { return {testExtension: {path: 'test-extension'}} }
-          backendAction._startSubProcess = () => {}
+      appSettings.loadAttachedExtensions = () => { return {testExtension: {path: 'test-extension'}} }
+      backendAction._startSubProcess = () => {}
 
-          backendAction.run({}).then(() => {
-            assert.ok(called !== 0, 'dcClient generateExtensionConfig should have been called at least once')
-            done()
-          }).catch(err => {
-            assert.ifError(err)
-            done()
-          })
-        }
-      )
+      await backendAction.run({})
+      assert.ok(called !== 0, 'dcClient generateExtensionConfig should have been called at least once')
     })
 
     it('should pass true to StepExecutor\'s "inspect" constructor argument when called with --inspect', async () => {
