@@ -1,7 +1,17 @@
 const assert = require('assert')
 const path = require('path')
 const fsEx = require('fs-extra')
-const utils = require('../../lib/utils/utils')
+const proxyquire = require('proxyquire')
+const { EXTENSIONS_FOLDER, THEMES_FOLDER } = require('../../lib/app/Constants')
+
+const logger = {
+  debug: (message) => {},
+  warn: (message) => {}
+}
+
+const utils = proxyquire('../../lib/utils/utils', {
+  '../logger': logger
+})
 
 describe('utils', () => {
   describe('resetProject', () => {
@@ -69,63 +79,90 @@ describe('utils', () => {
     })
   })
 
-  describe('_generateComponentsJson', () => {
-    const projectDir = 'build'
-    const extensionFolder = path.join(projectDir, 'themes')
-    const extensionPath = path.join(extensionFolder, 'ex1')
+  describe('generateComponentsJson', () => {
+    const projectDir = path.join('build', 'componentsJSON')
 
-    const components = [{
-      id: 'comp1',
-      type: 'type1',
-      path: 'path1'
-    }, {
-      id: 'comp2',
-      type: 'type2',
-      path: 'path2'
-    }]
+    const attachedExtensions = {
+      '@a/b': {
+        path: 'b'
+      },
+      '@a/c': {
+        path: 'c'
+      }
+    }
 
-    beforeEach((done) => {
-      fsEx.ensureDir(projectDir, (err) => {
-        assert.ifError(err)
-        done()
-      })
-    })
+    const extensionConfigs = {
+      '@a/b': {
+        components: [{
+          id: 'comp1',
+          type: 'type1',
+          path: 'path1'
+        }, {
+          id: 'comp2',
+          type: 'type2',
+          path: 'path2'
+        }]
+      },
+      '@a/c': {
+        components: [{
+          id: 'comp3',
+          type: 'type3',
+          path: 'path3'
+        }, {
+          id: 'comp4',
+          type: 'type4',
+          path: 'path4'
+        }]
+      }
+    }
 
-    afterEach((done) => {
-      fsEx.remove(projectDir, (err) => {
-        assert.ifError(err)
-        done()
-      })
-    })
+    const appSettings = {
+      loadAttachedExtensions: () => attachedExtensions,
+      getApplicationFolder: () => projectDir
+    }
 
-    it('should write the componentsJson file', (done) => {
-      const result = {
-        type1: {'id1/comp1': { path: 'id1/path1' }},
-        type2: {'id1/comp2': { path: 'id1/path2' }}
+    const themes = [
+      'gmd',
+      'ios'
+    ]
+
+    beforeEach(async () => {
+      await fsEx.ensureDir(projectDir)
+
+      // ensure extensions and extension configs
+      for (let extensionId in attachedExtensions) {
+        const extDir = path.join(projectDir, EXTENSIONS_FOLDER, attachedExtensions[extensionId].path)
+        await fsEx.ensureDir(extDir)
+        await fsEx.writeJson(path.join(extDir, 'extension-config.json'), extensionConfigs[extensionId])
       }
 
-      fsEx.ensureDir(extensionPath, (err) => {
-        assert.ifError(err)
-        fsEx.writeFile(path.join(extensionPath, 'extension-config.json'), {}, (err) => {
-          assert.ifError(err)
-          utils.generateComponentsJson(projectDir, 'id1', components)
-
-          fsEx.readJson(path.join(extensionPath, 'config', 'components.json'), (err, componentsJson) => {
-            assert.ifError(err)
-            assert.deepEqual(componentsJson, result)
-            done()
-          })
-        })
-      })
+      // ensure themes and theme config dirs
+      for (let i in themes) {
+        const themeDir = path.join(projectDir, THEMES_FOLDER, themes[i])
+        await fsEx.ensureDir(path.join(themeDir, 'config'))
+        await fsEx.writeJson(path.join(themeDir, 'extension-config.json'), {})
+      }
     })
 
-    it('should\'t be able to write the file', (done) => {
-      utils.generateComponentsJson(projectDir, 'id1', components)
+    afterEach(async () => {
+      await fsEx.remove(projectDir)
+    })
 
-      fsEx.readJson(path.join(extensionPath, 'config', 'components.json'), (err, res) => {
-        assert.ok(err.message.startsWith('ENOENT: no such file or directory'))
-        done()
-      })
+    it('should create components json', async () => {
+      utils.generateComponentsJson(appSettings)
+
+      const t1 = await fsEx.readJson(path.join(projectDir, THEMES_FOLDER, 'gmd', 'config', 'components.json'))
+      const t2 = await fsEx.readJson(path.join(projectDir, THEMES_FOLDER, 'ios', 'config', 'components.json'))
+
+      const result = {
+        type1: { '@a/b/comp1': { path: '@a/b/path1' } },
+        type2: { '@a/b/comp2': { path: '@a/b/path2' } },
+        type3: { '@a/c/comp3': { path: '@a/c/path3' } },
+        type4: { '@a/c/comp4': { path: '@a/c/path4' } }
+      }
+
+      assert.deepEqual(t1, result)
+      assert.deepEqual(t2, result)
     })
   })
 })

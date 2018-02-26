@@ -10,6 +10,7 @@ const UserSettings = require('../../../../lib/user/UserSettings')
 const utils = require('../../../../lib/utils/utils')
 const appPath = path.join('build', 'appsettings')
 const proxyquire = require('proxyquire').noPreserveCache()
+const { EXTENSIONS_FOLDER } = require('../../../../lib/app/Constants')
 
 describe('StepExecutor', () => {
   describe('watcher', () => {
@@ -116,7 +117,7 @@ describe('StepExecutor', () => {
       new AppSettings().setId('shop_10006')._saveExtensions({'@foo/bar': {path: 'foobar'}})
       new UserSettings().setToken({})
 
-      const extensionDir = path.join(appPath, AppSettings.EXTENSIONS_FOLDER, 'foobar', 'extension')
+      const extensionDir = path.join(appPath, EXTENSIONS_FOLDER, 'foobar', 'extension')
       fsEx.emptyDirSync(extensionDir)
 
       glob(path.join(__dirname, 'fakeSteps', '*.js'), {}, (err, files) => {

@@ -5,6 +5,7 @@ const fsEx = require('fs-extra')
 const sinon = require('sinon')
 const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
+const { SETTINGS_FOLDER } = require('../../lib/app/Constants')
 
 const appPath = path.join('build', 'appsettings')
 const userPath = path.join('build', 'usersettings')
@@ -37,7 +38,7 @@ describe('FrontendAction', () => {
     fsEx.emptyDirSync(userPath)
     new UserSettings().setToken({})
     process.env.APP_PATH = appPath
-    fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
+    fsEx.emptyDirSync(path.join(appPath, SETTINGS_FOLDER))
 
     fsExtraMock.existsSync = () => true
     fsExtraMock.readJSONSync = () => {}

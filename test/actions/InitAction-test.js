@@ -8,6 +8,7 @@ const appPath = path.join('build', 'appsettings')
 const sinon = require('sinon')
 const fsEx = require('fs-extra')
 const nock = require('nock')
+const { SETTINGS_FOLDER } = require('../../lib/app/Constants')
 
 describe('InitAction', () => {
   let userSettings
@@ -58,7 +59,7 @@ describe('InitAction', () => {
     const appId = 'foobarTest'
     process.env.APP_PATH = appPath
     const appSettings = new AppSettings()
-    fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
+    fsEx.emptyDirSync(path.join(appPath, SETTINGS_FOLDER))
     appSettings.setId(appId)
 
     const dcMock = nock(process.env.SGCLOUD_DC_ADDRESS)
