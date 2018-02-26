@@ -424,7 +424,6 @@ describe('BackendAction', () => {
           }
           backendAction.dcClient.generateExtensionConfig = (config) => {
             called++
-            console.log(config)
             return Promise.resolve(config)
           }
 
@@ -435,7 +434,6 @@ describe('BackendAction', () => {
             assert.ok(called !== 0, 'dcClient generateExtensionConfig should have been called at least once')
             done()
           }).catch(err => {
-            console.log(err)
             assert.ifError(err)
             done()
           })
