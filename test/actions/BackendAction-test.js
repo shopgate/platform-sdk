@@ -29,17 +29,21 @@ describe('BackendAction', () => {
 
   before(async () => {
     process.env.USER_PATH = userSettingsFolder
-    process.env.APP_PATH = appPath
     mockFs()
+    await fsEx.emptyDir(userSettingsFolder)
+    await fsEx.emptyDir(path.join(appPath, AppSettings.SETTINGS_FOLDER))
   })
 
   beforeEach(async () => {
     process.env.USER_PATH = userSettingsFolder
-    return fsEx.emptyDir(userSettingsFolder)
-      .then(() => fsEx.emptyDir(path.join(appPath, AppSettings.SETTINGS_FOLDER)))
-      .then(() => {
-        userSettings = new UserSettings().setToken({})
-        appSettings = new AppSettings().setId('foobarTest')
+
+    await fsEx.emptyDir(userSettingsFolder)
+    await fsEx.emptyDir(path.join(appPath, AppSettings.SETTINGS_FOLDER))
+
+    appSettings = await new AppSettings(appPath).setId('foobarTest')
+    appSettings.loadAttachedExtensions = sinon.stub().resolves()
+    userSettings = await new UserSettings().setToken({})
+    dcHttpClient = new DcHttpClient(userSettings, null)
 
     subjectUnderTest = new BackendAction(appSettings, userSettings, dcHttpClient)
 
@@ -77,7 +81,9 @@ describe('BackendAction', () => {
     await subjectUnderTest.extensionConfigWatcher.stop()
   })
 
-  after(() => {
+  after(async () => {
+    await fsEx.remove(userSettingsFolder)
+    await fsEx.remove(appPath)
     mockFs.restore()
   })
 

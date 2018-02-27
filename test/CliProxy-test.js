@@ -8,22 +8,17 @@ const CliProxy = require('../lib/app/backend/CliProxy')
 const AppSettings = require('../lib/app/AppSettings')
 const mockFs = require('mock-fs')
 describe('CliProxy', () => {
+  const appPath = path.join('build', 'cli-test')
+  let cliProxy
 
-  before(done => {
+  before(async () => {
     mockFs()
-    done()
+    return fsEx.emptyDir(appPath)
   })
 
   after(done => {
     mockFs.restore()
     done()
-  })
-
-  let cliProxy
-
-  before(() => {
-    process.env.APP_PATH = path.join('build', 'cli-test')
-    return fsEx.emptyDir(process.env.APP_PATH)
   })
 
   beforeEach(async () => {
@@ -36,9 +31,9 @@ describe('CliProxy', () => {
     await cliProxy.close()
   })
 
-  after(() => {
-    return fsEx.remove(process.env.APP_PATH)
-      .then(() => delete process.env.APP_PATH)
+  after(async() => {
+    await fsEx.remove(appPath)
+    return delete process.env.APP_PATH
   })
 
   describe('start()', () => {

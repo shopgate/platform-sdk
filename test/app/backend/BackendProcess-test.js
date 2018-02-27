@@ -3,17 +3,13 @@ const assert = require('assert')
 const sinon = require('sinon')
 const path = require('path')
 const fsEx = require('fs-extra')
-const AppSettings = require('../../../lib/app/AppSettings')
 const UserSettings = require('../../../lib/user/UserSettings')
 const portfinder = require('portfinder')
-
 const proxyquire = require('proxyquire')
 
 class SocketIOMock extends EventEmitter {
   connect () { this.emit('connect') }
-
   disconnect () { this.disconnected = true }
-
   removeListener () {}
 }
 
@@ -23,7 +19,6 @@ describe('BackendProcess', () => {
   let userTestFolder
   let appTestFolder
   let userSettings
-  let appSettings
   let logger
 
   const socketIOMock = new SocketIOMock()
@@ -34,8 +29,6 @@ describe('BackendProcess', () => {
 
   beforeEach(async () => {
     appTestFolder = path.join('build', 'appsettings')
-    appSettings = await new AppSettings(appTestFolder).setId('shop_10006')
-
     userTestFolder = path.join('build', 'usersettings')
     process.env.USER_PATH = userTestFolder
     userSettings = await new UserSettings().setToken({})
@@ -53,7 +46,7 @@ describe('BackendProcess', () => {
 
       process.env.SGCLOUD_DC_ADDRESS = `http://localhost:${port}`
       logger = {info: () => {}, error: () => {}, debug: () => {}}
-      backendProcess = new BackendProcess(userSettings, appSettings, logger)
+      backendProcess = new BackendProcess(userSettings, logger)
       backendProcess.executor = stepExecutor
     })
   })
