@@ -44,6 +44,7 @@ describe('BackendAction', () => {
 
         backendAction.userSettings = userSettings
         backendAction.appSettings = appSettings
+        backendAction.executor = {}
       })
       .then(() => fsEx.emptyDir(backendAction.pipelinesFolder))
       .then(() => {
@@ -406,9 +407,11 @@ describe('BackendAction', () => {
     it('should write the extension configs for the app', async () => {
       backendAction.appSettings.EXTENSIONS_FOLDER = 'extensions'
       const extensionConfigPath = path.join(
-        backendAction.appSettings.getApplicationFolder(), AppSettings.EXTENSIONS_FOLDER,
+        backendAction.appSettings.getApplicationFolder(),
+        AppSettings.EXTENSIONS_FOLDER,
         'test-extension',
-        'extension-config.json')
+        'extension-config.json'
+      )
 
       fsEx.createFileSync(extensionConfigPath)
       let mockConf = {someKey: 'someVal'}
