@@ -149,7 +149,7 @@ describe('utils', () => {
     })
 
     it('should create components json', async () => {
-      utils.generateComponentsJson(appSettings)
+      await utils.generateComponentsJson(appSettings)
 
       const t1 = await fsEx.readJson(path.join(projectDir, THEMES_FOLDER, 'gmd', 'config', 'components.json'))
       const t2 = await fsEx.readJson(path.join(projectDir, THEMES_FOLDER, 'ios', 'config', 'components.json'))
