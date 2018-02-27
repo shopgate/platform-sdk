@@ -1,6 +1,7 @@
 ## v1.3.0
 * Add promise support for steps
 * Added option `--inspect` to `backend start` to allow for inspection/debugging of extensions (props @Menes1337)
+* Creation of (theme)/config/components.json on `frontend start` and extension-config.json change
 
 ## v1.2.4
 * Updated to use `@shopgate/cloud-sdk-webpack@^1.10.0`.

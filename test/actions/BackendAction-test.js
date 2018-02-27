@@ -5,7 +5,7 @@ const fsEx = require('fs-extra')
 const proxyquire = require('proxyquire')
 
 const utils = require('../../lib/utils/utils')
-
+const { SETTINGS_FOLDER, EXTENSIONS_FOLDER } = require('../../lib/app/Constants')
 const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
 const userSettingsFolder = path.join('build', 'usersettings')
@@ -28,14 +28,14 @@ describe('BackendAction', () => {
     process.env.USER_PATH = userSettingsFolder
     process.env.APP_PATH = appPath
     fsEx.emptyDir(userSettingsFolder)
-      .then(() => fsEx.emptyDir(path.join(appPath, AppSettings.SETTINGS_FOLDER)))
+      .then(() => fsEx.emptyDir(path.join(appPath, SETTINGS_FOLDER)))
   })
 
   beforeEach(function () {
     process.env.USER_PATH = userSettingsFolder
 
     return fsEx.emptyDir(userSettingsFolder)
-      .then(() => fsEx.emptyDir(path.join(appPath, AppSettings.SETTINGS_FOLDER)))
+      .then(() => fsEx.emptyDir(path.join(appPath, SETTINGS_FOLDER)))
       .then(() => {
         userSettings = new UserSettings().setToken({})
         appSettings = new AppSettings().setId('foobarTest')
@@ -111,7 +111,7 @@ describe('BackendAction', () => {
 
     it('should fail because a backend process is already running', (done) => {
       const pid = process.pid
-      const processFile = path.join(appPath, AppSettings.SETTINGS_FOLDER)
+      const processFile = path.join(appPath, SETTINGS_FOLDER)
 
       utils.setProcessFile('backend', processFile, pid)
 
@@ -406,7 +406,7 @@ describe('BackendAction', () => {
     it('should write the extension configs for the app', async () => {
       backendAction.appSettings.EXTENSIONS_FOLDER = 'extensions'
       const extensionConfigPath = path.join(
-        backendAction.appSettings.getApplicationFolder(), AppSettings.EXTENSIONS_FOLDER,
+        backendAction.appSettings.getApplicationFolder(), EXTENSIONS_FOLDER,
         'test-extension',
         'extension-config.json')
 

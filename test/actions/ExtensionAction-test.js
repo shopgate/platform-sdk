@@ -9,12 +9,13 @@ const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
 const ExtensionAction = require('../../lib/actions/ExtensionAction')
 const logger = require('../../lib/logger')
+const { SETTINGS_FOLDER, EXTENSIONS_FOLDER } = require('../../lib/app/Constants')
 
 const userSettingsFolder = path.join('build', 'usersettings')
 const appPath = path.join('build', 'appsettings')
 
 describe('ExtensionAction', () => {
-  const action = new ExtensionAction()
+  let action
   let userSettings
   let appSettings
 
@@ -24,11 +25,13 @@ describe('ExtensionAction', () => {
     const appId = 'foobarTest'
 
     appSettings = new AppSettings()
-    fsEx.emptyDirSync(path.join(appPath, AppSettings.SETTINGS_FOLDER))
+    fsEx.emptyDirSync(path.join(appPath, SETTINGS_FOLDER))
     appSettings.setId(appId)
 
     fsEx.emptyDirSync(userSettingsFolder)
     userSettings = new UserSettings().setToken({})
+
+    action = new ExtensionAction()
   })
 
   afterEach((done) => {
@@ -293,7 +296,7 @@ describe('ExtensionAction', () => {
       let folderPath
       beforeEach(() => {
         tempFolder = fsEx.mkdtempSync('checkIfExtensionExists')
-        folderPath = path.join(tempFolder, AppSettings.EXTENSIONS_FOLDER, 'testExtension')
+        folderPath = path.join(tempFolder, EXTENSIONS_FOLDER, 'testExtension')
         fsEx.ensureDirSync(folderPath)
       })
 
