@@ -8,6 +8,7 @@ const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
 const ExtensionAction = require('../../lib/actions/ExtensionAction')
 const logger = require('../../lib/logger')
+const { SETTINGS_FOLDER, EXTENSIONS_FOLDER } = require('../../lib/app/Constants')
 
 const userSettingsFolder = path.join('build', 'usersettings')
 const appPath = path.join('build', 'appsettings')
@@ -22,7 +23,7 @@ describe('ExtensionAction', () => {
     const appId = 'foobarTest'
 
     appSettings = new AppSettings(appPath)
-    await fsEx.emptyDir(path.join(appPath, AppSettings.SETTINGS_FOLDER))
+    await fsEx.emptyDir(path.join(appPath, SETTINGS_FOLDER))
     await appSettings.setId(appId)
 
     await fsEx.emptyDir(userSettingsFolder)
@@ -291,7 +292,7 @@ describe('ExtensionAction', () => {
       let folderPath
       beforeEach(() => {
         tempFolder = fsEx.mkdtempSync('checkIfExtensionExists')
-        folderPath = path.join(tempFolder, AppSettings.EXTENSIONS_FOLDER, 'testExtension')
+        folderPath = path.join(tempFolder, EXTENSIONS_FOLDER, 'testExtension')
         fsEx.ensureDirSync(folderPath)
       })
 

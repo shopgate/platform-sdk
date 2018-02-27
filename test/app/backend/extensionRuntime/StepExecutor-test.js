@@ -8,6 +8,7 @@ const AppSettings = require('../../../../lib/app/AppSettings')
 const UserSettings = require('../../../../lib/user/UserSettings')
 const appPath = path.join('build', 'appsettings')
 const proxyquire = require('proxyquire').noPreserveCache()
+const { EXTENSIONS_FOLDER } = require('../../../../lib/app/Constants')
 
 describe('StepExecutor', () => {
   describe('watcher', () => {
@@ -116,7 +117,7 @@ describe('StepExecutor', () => {
 
       new UserSettings().setToken({})
 
-      const extensionDir = path.join(appPath, AppSettings.EXTENSIONS_FOLDER, 'foobar', 'extension')
+      const extensionDir = path.join(appPath, EXTENSIONS_FOLDER, 'foobar', 'extension')
       await fsEx.emptyDir(extensionDir)
 
       const files = glob(path.join(__dirname, 'fakeSteps', '*.js'), {sync: true})
