@@ -6,8 +6,19 @@ const fsEx = require('fs-extra')
 const nock = require('nock')
 const CliProxy = require('../lib/app/backend/CliProxy')
 const AppSettings = require('../lib/app/AppSettings')
-
+const mockFs = require('mock-fs')
 describe('CliProxy', () => {
+
+  before(done => {
+    mockFs()
+    done()
+  })
+
+  after(done => {
+    mockFs.restore()
+    done()
+  })
+
   let cliProxy
 
   before(() => {
@@ -15,8 +26,8 @@ describe('CliProxy', () => {
     return fsEx.emptyDir(process.env.APP_PATH)
   })
 
-  beforeEach(() => {
-    cliProxy = new CliProxy(new AppSettings().setId('foobarTest'), {info: () => {}})
+  beforeEach(async () => {
+    cliProxy = new CliProxy(await new AppSettings(appPath).setId('foobarTest'), {info: () => {}})
     nock.disableNetConnect()
   })
 

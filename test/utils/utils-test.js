@@ -1,9 +1,19 @@
 const assert = require('assert')
 const path = require('path')
+const mockFs = require('mock-fs')
 const fsEx = require('fs-extra')
 const utils = require('../../lib/utils/utils')
-
 describe('utils', () => {
+  before(done => {
+    mockFs()
+    done()
+  })
+
+  after(done => {
+    mockFs.restore()
+    done()
+  })
+
   describe('resetProject', () => {
     const testProjectDir = path.join('build', 'testProject')
 

@@ -2,7 +2,6 @@ const assert = require('assert')
 const path = require('path')
 const fsEx = require('fs-extra')
 const PipelineWatcher = require('../../../lib/app/backend/PipelineWatcher')
-const utils = require('../../../lib/utils/utils')
 const AppSettings = require('../../../lib/app/AppSettings')
 
 const appPath = path.join('build', 'appsettings')
@@ -13,8 +12,8 @@ describe('PipelineWatcher', () => {
 
   beforeEach(() => {
     process.env.APP_PATH = appPath
-    extensionsPipelineFolder = path.join(utils.getApplicationFolder(), AppSettings.EXTENSIONS_FOLDER, 'testExtension', 'pipelines')
-    pipelineWatcher = new PipelineWatcher({getApplicationFolder: utils.getApplicationFolder})
+    extensionsPipelineFolder = path.join(appPath, AppSettings.EXTENSIONS_FOLDER, 'testExtension', 'pipelines')
+    pipelineWatcher = new PipelineWatcher({getApplicationFolder: () => appPath})
     return fsEx.emptyDir(extensionsPipelineFolder)
   })
 

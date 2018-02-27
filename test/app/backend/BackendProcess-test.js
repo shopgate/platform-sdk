@@ -3,6 +3,7 @@ const assert = require('assert')
 const sinon = require('sinon')
 const path = require('path')
 const fsEx = require('fs-extra')
+const AppSettings = require('../../../lib/app/AppSettings')
 const UserSettings = require('../../../lib/user/UserSettings')
 const portfinder = require('portfinder')
 
@@ -22,6 +23,7 @@ describe('BackendProcess', () => {
   let userTestFolder
   let appTestFolder
   let userSettings
+  let appSettings
   let logger
 
   const socketIOMock = new SocketIOMock()
@@ -30,12 +32,13 @@ describe('BackendProcess', () => {
     'socket.io-client': () => socketIOMock
   })
 
-  beforeEach((done) => {
+  beforeEach(async () => {
     appTestFolder = path.join('build', 'appsettings')
-    process.env.APP_PATH = appTestFolder
+    appSettings = await new AppSettings(appTestFolder).setId('shop_10006')
+
     userTestFolder = path.join('build', 'usersettings')
     process.env.USER_PATH = userTestFolder
-    userSettings = new UserSettings().setToken({})
+    userSettings = await new UserSettings().setToken({})
 
     stepExecutor = {
       start: () => sinon.stub().resolves(),
@@ -50,9 +53,8 @@ describe('BackendProcess', () => {
 
       process.env.SGCLOUD_DC_ADDRESS = `http://localhost:${port}`
       logger = {info: () => {}, error: () => {}, debug: () => {}}
-      backendProcess = new BackendProcess(userSettings, logger)
+      backendProcess = new BackendProcess(userSettings, appSettings, logger)
       backendProcess.executor = stepExecutor
-      done()
     })
   })
 
@@ -92,7 +94,7 @@ describe('BackendProcess', () => {
         stepCallWasCalled = true
       }
 
-      backendProcess.updateToken = (data) => {
+      backendProcess.updateToken = async (data) => {
         assert.deepEqual(data, {foo: 'bar'})
         updateTokenWasCalled = true
       }
@@ -279,9 +281,9 @@ describe('BackendProcess', () => {
   describe('update token', () => {
     const token = {foo: 'bar'}
 
-    it('should update the token', () => {
-      backendProcess.updateToken(token)
-      assert.deepEqual(userSettings.getToken(), token)
+    it('should update the token', async () => {
+      await backendProcess.updateToken(token)
+      assert.deepEqual(await userSettings.getToken(), token)
     })
   })
 

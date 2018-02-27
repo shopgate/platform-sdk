@@ -16,7 +16,19 @@ const FrontendSettings = proxyquire('../../../lib/app/frontend/FrontendSettings'
   '../../logger': logger
 })
 
+const mockFs = require('mock-fs')
+
 describe('FrontendSettings', () => {
+  before(done => {
+    mockFs()
+    done()
+  })
+
+  after(done => {
+    mockFs.restore()
+    done()
+  })
+
   let settingsPath
   let settings
 

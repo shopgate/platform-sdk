@@ -69,6 +69,8 @@ const defaultConfig = {
 }
 const runError = 'Had an error'
 
+const mockFs = require('mock-fs')
+
 let frontendSettings = null
 let appSettings = {
   getFrontendSettings: () => frontendSettings
@@ -77,6 +79,17 @@ let appSettings = {
 let frontendSetup
 
 describe('FrontendSetup', () => {
+
+  before(done => {
+    mockFs()
+    done()
+  })
+
+  after(done => {
+    mockFs.restore()
+    done()
+  })
+
   beforeEach(() => {
     process.env.USER_PATH = userSettingsPath
     process.env.APP_PATH = appSettingsPath
@@ -190,10 +203,9 @@ describe('FrontendSetup', () => {
 
     it('should set the startPageUrl at the developer connector', () => {
       frontendSetup.dcClient = {
-        setStartPageUrl: (actualAppId, startPageUrl, cb) => {
+        setStartPageUrl: (actualAppId, startPageUrl) => {
           assert.equal(actualAppId, appId)
           assert.equal(startPageUrl, `http://${defaultConfig.ip}:${defaultConfig.port}/`)
-          cb()
         }
       }
       return frontendSetup.run()
@@ -202,10 +214,10 @@ describe('FrontendSetup', () => {
 
     it('should throw an error if startPageUrl cant be set at the developer connector', (done) => {
       frontendSetup.dcClient = {
-        setStartPageUrl: (actualAppId, startPageUrl, cb) => {
+        setStartPageUrl: (actualAppId, startPageUrl) => {
           assert.equal(actualAppId, appId)
           assert.equal(startPageUrl, `http://${defaultConfig.ip}:${defaultConfig.port}/`)
-          cb(new Error('Something'))
+          throw new Error('Something')
         }
       }
       frontendSetup.run()
@@ -288,7 +300,7 @@ describe('FrontendSetup', () => {
     })
 
     it('should throw if something went wrong', (done) => {
-      frontendSetup.settings.getFrontendSettings = () => {
+      frontendSetup.appSettings.getFrontendSettings = () => {
         throw new Error('error')
       }
 

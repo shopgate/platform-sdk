@@ -1,23 +1,24 @@
 const assert = require('assert')
+const sinon = require('sinon')
 const path = require('path')
 const fsEx = require('fs-extra')
 const AttachedExtensionsWatcher = require('../../lib/app/AttachedExtensionsWatcher')
+const UserSettings = require('../../lib/user/UserSettings')
 const utils = require('../../lib/utils/utils')
-
 const appPath = path.join('build', 'appsettings')
 
 describe('AttachedExtensionsWatcher', () => {
   let attachedExtensionsWatcher
   let appSettingsMock
 
-  beforeEach(done => {
-    process.env.APP_PATH = appPath
+  beforeEach(async () => {
+    await new UserSettings().setToken({})
     appSettingsMock = {
-      attachedExtensionsFile: path.join(utils.getApplicationFolder(), '.sgcloud', 'attachedExtensions.json'),
+      attachedExtensionsFile: path.join(appPath, '.sgcloud', 'attachedExtensions.json'),
       getApplicationFolder: utils.getApplicationFolder
     }
     attachedExtensionsWatcher = new AttachedExtensionsWatcher(appSettingsMock)
-    fsEx.emptyDir(path.join(appPath, '.sgcloud'), done)
+    await fsEx.emptyDir(path.join(appPath, '.sgcloud'))
   })
 
   afterEach(async () => {
@@ -32,7 +33,7 @@ describe('AttachedExtensionsWatcher', () => {
     let attachedExtensionsFileContents = '{"attachedExtensions":{"@shopgate/auth0Login":{"path":"auth0-login","trusted":true}}}'
     let expectedExtensionToBeAttached = {path: 'auth0-login', trusted: true, id: '@shopgate/auth0Login'}
 
-    appSettingsMock.loadAttachedExtensions = () => initialAttachedExtensions
+    appSettingsMock.loadAttachedExtensions = sinon.stub().resolves(initialAttachedExtensions)
 
     attachedExtensionsWatcher.on('attach', (extension) => {
       assert.deepEqual(extension, expectedExtensionToBeAttached)
@@ -62,7 +63,7 @@ describe('AttachedExtensionsWatcher', () => {
     let attachedExtensionsFileContents = '{"attachedExtensions":{}}'
     let expectedExtensionToBeDetached = {path: 'auth0-login', trusted: true, id: '@shopgate/auth0Login'}
 
-    appSettingsMock.loadAttachedExtensions = () => initialAttachedExtensions
+    appSettingsMock.loadAttachedExtensions = sinon.stub().resolves(initialAttachedExtensions)
 
     attachedExtensionsWatcher.on('detach', (extension) => {
       assert.deepEqual(extension, expectedExtensionToBeDetached)
