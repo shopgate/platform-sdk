@@ -154,15 +154,15 @@ describe('utils', () => {
       const t1 = await fsEx.readJson(path.join(projectDir, THEMES_FOLDER, 'gmd', 'config', 'components.json'))
       const t2 = await fsEx.readJson(path.join(projectDir, THEMES_FOLDER, 'ios', 'config', 'components.json'))
 
-      const result = {
+      const expectedResult = {
         type1: { '@a/b/comp1': { path: '@a/b/path1' } },
         type2: { '@a/b/comp2': { path: '@a/b/path2' } },
         type3: { '@a/c/comp3': { path: '@a/c/path3' } },
         type4: { '@a/c/comp4': { path: '@a/c/path4' } }
       }
 
-      assert.deepEqual(t1, result)
-      assert.deepEqual(t2, result)
+      assert.deepEqual(t1, expectedResult)
+      assert.deepEqual(t2, expectedResult)
     })
   })
 })

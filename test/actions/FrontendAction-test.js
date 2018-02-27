@@ -6,6 +6,7 @@ const sinon = require('sinon')
 const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
 const { SETTINGS_FOLDER } = require('../../lib/app/Constants')
+const utils = require('../../lib/utils/utils')
 
 const appPath = path.join('build', 'appsettings')
 const userPath = path.join('build', 'usersettings')
@@ -30,7 +31,8 @@ describe('FrontendAction', () => {
     '../app/frontend/FrontendProcess': FrontendActionMock,
     'fs-extra': fsExtraMock,
     'inquirer': inquirer,
-    '../DcHttpClient': dcClientMock
+    '../DcHttpClient': dcClientMock,
+    '../utils/utils': utils
   })
 
   beforeEach((done) => {
@@ -98,8 +100,12 @@ describe('FrontendAction', () => {
       fsExtraMock.lstat = () => Promise.resolve({isDirectory: () => true})
       frontendAction.dcClient.generateExtensionConfig = () => Promise.resolve({})
 
+      let gotCalled = false
+      utils.generateComponentsJson = () => { gotCalled = true }
+
       try {
         await frontendAction.run('start', {}, options)
+        assert.ok(gotCalled)
       } catch (err) {
         assert.ifError(err)
       }
