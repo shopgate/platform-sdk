@@ -32,14 +32,13 @@ describe('BackendProcess', () => {
     'socket.io-client': () => socketIOMock
   })
 
-  beforeEach((done) => {
+  beforeEach(async () => {
     appTestFolder = path.join('build', 'appsettings')
-    process.env.APP_PATH = appTestFolder
-    appSettings = new AppSettings().setId('shop_10006')
+    appSettings = await new AppSettings(appTestFolder).setId('shop_10006')
 
     userTestFolder = path.join('build', 'usersettings')
     process.env.USER_PATH = userTestFolder
-    userSettings = new UserSettings().setToken({})
+    userSettings = await new UserSettings().setToken({})
 
     stepExecutor = {
       start: () => sinon.stub().resolves(),
@@ -56,7 +55,6 @@ describe('BackendProcess', () => {
       logger = {info: () => {}, error: () => {}, debug: () => {}}
       backendProcess = new BackendProcess(userSettings, appSettings, logger)
       backendProcess.executor = stepExecutor
-      done()
     })
   })
 
@@ -96,7 +94,7 @@ describe('BackendProcess', () => {
         stepCallWasCalled = true
       }
 
-      backendProcess.updateToken = (data) => {
+      backendProcess.updateToken = async (data) => {
         assert.deepEqual(data, {foo: 'bar'})
         updateTokenWasCalled = true
       }
@@ -283,9 +281,9 @@ describe('BackendProcess', () => {
   describe('update token', () => {
     const token = {foo: 'bar'}
 
-    it('should update the token', () => {
-      backendProcess.updateToken(token)
-      assert.deepEqual(userSettings.getToken(), token)
+    it('should update the token', async () => {
+      await backendProcess.updateToken(token)
+      assert.deepEqual(await userSettings.getToken(), token)
     })
   })
 

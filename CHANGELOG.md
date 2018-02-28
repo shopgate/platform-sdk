@@ -1,15 +1,24 @@
+## v1.4.0
+* Added `logout` command
+
+## v1.3.0
+* Add promise support for steps
+* Added option `--inspect` to `backend start` to allow for inspection/debugging of extensions (props @Menes1337)
+* Added generation of config.json for attached extensions on `backend start`
+* Creation of (theme)/config/components.json on `frontend start` and extension-config.json change
+
 ## v1.2.4
-* Updated to use `@shopgate/cloud-sdk-webpack@^1.10.0`.
+* Updated to use `@shopgate/cloud-sdk-webpack@^1.10.0`
 
 ## v1.2.3
-* Updated to use `@shopgate/cloud-sdk-webpack@^1.9.0`.
+* Updated to use `@shopgate/cloud-sdk-webpack@^1.9.0`
 
 ## v1.2.2
 * Fix issue of starting the frontend processes twice when using the option '-t' on 'frontend start' command
-* Updated to use `@shopgate/cloud-sdk-webpack@^1.8.0`.
+* Updated to use `@shopgate/cloud-sdk-webpack@^1.8.0`
 
 ## v1.2.1
-* Only pipeline files with the ending `.json` will uploaded on `backend start`
+* Only pipeline files with the ending: `.json` will be uploaded on `backend start`
 * Fix storage issue that local storage can only be used if `backend start` is executed in project root
 * Fix error handing for `frontend` action. The error message are show up now and has the correct format
 * Fix problems that configs does not get generated correctly when it has a subpath

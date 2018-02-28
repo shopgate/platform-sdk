@@ -8,15 +8,15 @@ const CliProxy = require('../lib/app/backend/CliProxy')
 const AppSettings = require('../lib/app/AppSettings')
 
 describe('CliProxy', () => {
+  const appPath = path.join('build', 'cli-test')
   let cliProxy
 
   before(() => {
-    process.env.APP_PATH = path.join('build', 'cli-test')
-    return fsEx.emptyDir(process.env.APP_PATH)
+    return fsEx.emptyDir(appPath)
   })
 
-  beforeEach(() => {
-    cliProxy = new CliProxy(new AppSettings().setId('foobarTest'), {info: () => {}})
+  beforeEach(async () => {
+    cliProxy = new CliProxy(await new AppSettings(appPath).setId('foobarTest'), {info: () => {}})
     nock.disableNetConnect()
   })
 
@@ -26,7 +26,7 @@ describe('CliProxy', () => {
   })
 
   after(() => {
-    return fsEx.remove(process.env.APP_PATH)
+    return fsEx.remove(appPath)
       .then(() => delete process.env.APP_PATH)
   })
 
