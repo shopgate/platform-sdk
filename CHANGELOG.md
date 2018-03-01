@@ -1,5 +1,6 @@
 ## v1.4.0
 * Added `logout` command
+* Fixed concurrent read/write operations when accessing context.storage objects
 
 ## v1.3.0
 * Add promise support for steps
