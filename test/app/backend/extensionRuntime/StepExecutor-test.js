@@ -7,6 +7,7 @@ const AppSettings = require('../../../../lib/app/AppSettings')
 const UserSettings = require('../../../../lib/user/UserSettings')
 const appPath = path.join('build', 'appsettings')
 const proxyquire = require('proxyquire').noPreserveCache()
+const { EXTENSIONS_FOLDER, SETTINGS_FOLDER } = require('../../../../lib/app/Constants')
 const mockFs = require('mock-fs')
 let forkMock = () => (true)
 describe('StepExecutor', () => {
@@ -35,7 +36,7 @@ describe('StepExecutor', () => {
           }
         }
       })
-      const stepExecutor = new StepExecutorMocked({ info: () => { } }, { getApplicationFolder: () => appPath })
+      const stepExecutor = new StepExecutorMocked({info: () => {}}, {getApplicationFolder: () => appPath})
       stepExecutor.start = sinon.stub().resolves()
       stepExecutor.stop = () => {
         return new Promise((resolve, reject) => {
@@ -64,7 +65,7 @@ describe('StepExecutor', () => {
         emit: function (event, param1, param2, cb) {
           this.events[event](param1, param2)
         },
-        removeAllListeners: () => { }
+        removeAllListeners: () => {}
       }
 
       const pathes = [
@@ -81,7 +82,7 @@ describe('StepExecutor', () => {
         }
       })
 
-      const stepExecutor = new StepExecutorMocked({ info: () => { } }, { getApplicationFolder: () => appPath })
+      const stepExecutor = new StepExecutorMocked({info: () => {}}, {getApplicationFolder: () => appPath})
 
       stepExecutor.startWatcher()
       watcher.emit('ready')
@@ -122,10 +123,10 @@ describe('StepExecutor', () => {
       userSettings = new UserSettings().setToken({})
       executor = new StepExecutor(log, appSettings, userSettings)
       executor.stepTimeout = 1000
-      executor.stepLogger = { info: () => { }, error: () => { }, debug: () => { }, warn: () => { } }
+      executor.stepLogger = {info: () => {}, error: () => {}, debug: () => {}, warn: () => {}}
 
       try {
-        await fsEx.ensureDir(path.join(appTestFolder, AppSettings.SETTINGS_FOLDER))
+        await fsEx.ensureDir(path.join(appTestFolder, SETTINGS_FOLDER))
         await fsEx.writeJson(appSettings.attachedExtensionsFile, { attachedExtensions: { '@foo/bar': { path: 'foobar' } } })
         await fsEx.emptyDir(extensionDir)
       } catch (error) {
@@ -137,6 +138,7 @@ describe('StepExecutor', () => {
       delete process.env.SGCLOUD_DC_WS_ADDRESS
       delete process.env.APP_PATH
       delete process.env.USER_PATH
+
       try {
         await Promise.all([
           fsEx.remove(appTestFolder),

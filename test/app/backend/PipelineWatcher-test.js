@@ -2,7 +2,7 @@ const assert = require('assert')
 const path = require('path')
 const fsEx = require('fs-extra')
 const PipelineWatcher = require('../../../lib/app/backend/PipelineWatcher')
-const AppSettings = require('../../../lib/app/AppSettings')
+const { EXTENSIONS_FOLDER } = require('../../../lib/app/Constants')
 const mockFs = require('mock-fs')
 const appPath = path.join('build', 'appsettings')
 
@@ -13,7 +13,7 @@ describe('PipelineWatcher', () => {
   beforeEach(() => {
     mockFs()
     process.env.APP_PATH = appPath
-    extensionsPipelineFolder = path.join(appPath, AppSettings.EXTENSIONS_FOLDER, 'testExtension', 'pipelines')
+    extensionsPipelineFolder = path.join(appPath, EXTENSIONS_FOLDER, 'testExtension', 'pipelines')
     pipelineWatcher = new PipelineWatcher({getApplicationFolder: () => appPath})
     return fsEx.emptyDir(extensionsPipelineFolder)
   })

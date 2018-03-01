@@ -2,7 +2,18 @@ const assert = require('assert')
 const path = require('path')
 const mockFs = require('mock-fs')
 const fsEx = require('fs-extra')
-const utils = require('../../lib/utils/utils')
+const proxyquire = require('proxyquire')
+const { EXTENSIONS_FOLDER, THEMES_FOLDER } = require('../../lib/app/Constants')
+
+const logger = {
+  debug: (message) => {},
+  warn: (message) => {}
+}
+
+const utils = proxyquire('../../lib/utils/utils', {
+  '../logger': logger
+})
+
 describe('utils', () => {
   before(done => {
     mockFs()
@@ -76,6 +87,93 @@ describe('utils', () => {
         files.forEach(file => assert.ok(!fsEx.pathExistsSync(file), `${file} should not exists`))
         done()
       }, 1000)
+    })
+  })
+
+  describe('generateComponentsJson', () => {
+    const projectDir = path.join('build', 'componentsJSON')
+
+    const attachedExtensions = {
+      '@a/b': {
+        path: 'b'
+      },
+      '@a/c': {
+        path: 'c'
+      }
+    }
+
+    const extensionConfigs = {
+      '@a/b': {
+        components: [{
+          id: 'comp1',
+          type: 'type1',
+          path: 'path1'
+        }, {
+          id: 'comp2',
+          type: 'type2',
+          path: 'path2'
+        }]
+      },
+      '@a/c': {
+        components: [{
+          id: 'comp3',
+          type: 'type3',
+          path: 'path3'
+        }, {
+          id: 'comp4',
+          type: 'type4',
+          path: 'path4'
+        }]
+      }
+    }
+
+    const appSettings = {
+      loadAttachedExtensions: () => attachedExtensions,
+      getApplicationFolder: () => projectDir
+    }
+
+    const themes = [
+      'gmd',
+      'ios'
+    ]
+
+    beforeEach(async () => {
+      await fsEx.ensureDir(projectDir)
+
+      // ensure extensions and extension configs
+      for (let extensionId in attachedExtensions) {
+        const extDir = path.join(projectDir, EXTENSIONS_FOLDER, attachedExtensions[extensionId].path)
+        await fsEx.ensureDir(extDir)
+        await fsEx.writeJson(path.join(extDir, 'extension-config.json'), extensionConfigs[extensionId])
+      }
+
+      // ensure themes and theme config dirs
+      for (let i in themes) {
+        const themeDir = path.join(projectDir, THEMES_FOLDER, themes[i])
+        await fsEx.ensureDir(path.join(themeDir, 'config'))
+        await fsEx.writeJson(path.join(themeDir, 'extension-config.json'), {})
+      }
+    })
+
+    afterEach(async () => {
+      await fsEx.remove(projectDir)
+    })
+
+    it('should create components json', async () => {
+      await utils.generateComponentsJson(appSettings)
+
+      const t1 = await fsEx.readJson(path.join(projectDir, THEMES_FOLDER, 'gmd', 'config', 'components.json'))
+      const t2 = await fsEx.readJson(path.join(projectDir, THEMES_FOLDER, 'ios', 'config', 'components.json'))
+
+      const expectedResult = {
+        type1: { '@a/b/comp1': { path: '@a/b/path1' } },
+        type2: { '@a/b/comp2': { path: '@a/b/path2' } },
+        type3: { '@a/c/comp3': { path: '@a/c/path3' } },
+        type4: { '@a/c/comp4': { path: '@a/c/path4' } }
+      }
+
+      assert.deepEqual(t1, expectedResult)
+      assert.deepEqual(t2, expectedResult)
     })
   })
 })

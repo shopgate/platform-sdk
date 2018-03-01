@@ -13,6 +13,7 @@ const fsEx = require('fs-extra')
 const userSettingsPath = join('build', 'usersettings')
 const appSettingsPath = join('build', 'appsettings')
 const appId = 'foobarTest'
+const { SETTINGS_FOLDER } = require('../../../lib/app/Constants')
 
 /**
  * Creates an application environment for tests.
@@ -22,7 +23,7 @@ const setupAppEnvironment = async () => {
   process.env.APP_PATH = appSettingsPath
   process.env.appId = appId
 
-  await fsEx.emptyDir(join(appSettingsPath, AppSettings.SETTINGS_FOLDER))
+  await fsEx.emptyDir(join(appSettingsPath, SETTINGS_FOLDER))
   await new AppSettings(appSettingsPath).setId(appId)
   new UserSettings().setToken({})
 }

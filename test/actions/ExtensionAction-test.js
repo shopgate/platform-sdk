@@ -7,6 +7,7 @@ const sinon = require('sinon')
 const nock = require('nock')
 const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
+const { SETTINGS_FOLDER, EXTENSIONS_FOLDER } = require('../../lib/app/Constants')
 const mockFs = require('mock-fs')
 let callbacks = {}
 
@@ -332,7 +333,7 @@ describe('ExtensionAction', () => {
       let folderPath
       beforeEach(() => {
         tempFolder = fsEx.mkdtempSync('checkIfExtensionExists')
-        folderPath = path.join(tempFolder, AppSettings.EXTENSIONS_FOLDER, 'testExtension')
+        folderPath = path.join(tempFolder, EXTENSIONS_FOLDER, 'testExtension')
         fsEx.ensureDirSync(folderPath)
       })
 

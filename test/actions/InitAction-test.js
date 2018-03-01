@@ -10,6 +10,7 @@ const mockFs = require('mock-fs')
 const userSettingsFolder = path.join('build', 'usersettings')
 const appPath = path.join('build', 'appsettings')
 const fsEx = require('fs-extra')
+const { SETTINGS_FOLDER } = require('../../lib/app/Constants')
 
 describe('InitAction', () => {
   let subjectUnderTest
@@ -76,7 +77,7 @@ describe('InitAction', () => {
 
   it('should reinit the application if selected', async () => {
     const appId = 'foobarTest'
-    await fsEx.emptyDir(path.join(appPath, AppSettings.SETTINGS_FOLDER))
+    await fsEx.emptyDir(path.join(appPath, SETTINGS_FOLDER))
     await appSettings.setId(appId)
 
     const dcMock = nock(process.env.SGCLOUD_DC_ADDRESS)

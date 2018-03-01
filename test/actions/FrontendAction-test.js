@@ -2,10 +2,13 @@ const assert = require('assert')
 const proxyquire = require('proxyquire')
 const path = require('path')
 const fsEx = require('fs-extra')
+const sinon = require('sinon')
 const AppSettings = require('../../lib/app/AppSettings')
 const UserSettings = require('../../lib/user/UserSettings')
 const DcHttpClient = require('../../lib/DcHttpClient')
 const mockFs = require('mock-fs')
+const { SETTINGS_FOLDER } = require('../../lib/app/Constants')
+const utils = require('../../lib/utils/utils')
 
 const appPath = path.join('build', 'appsettings')
 const userPath = path.join('build', 'usersettings')
@@ -32,7 +35,8 @@ describe('FrontendAction', () => {
     },
     '../app/frontend/FrontendProcess': FrontendProcessMock,
     'fs-extra': fsExtraMock,
-    'inquirer': inquirer
+    'inquirer': inquirer,
+    '../utils/utils': utils
   })
 
   beforeEach(async () => {
@@ -40,7 +44,7 @@ describe('FrontendAction', () => {
     process.env.USER_PATH = userPath
     await fsEx.emptyDir(userPath)
     userSettings = await new UserSettings().setToken({})
-    await fsEx.emptyDir(path.join(appPath, AppSettings.SETTINGS_FOLDER))
+    await fsEx.emptyDir(path.join(appPath, SETTINGS_FOLDER))
     dcHttpClient = new DcHttpClient(userSettings, null)
 
     fsExtraMock.existsSync = () => true
@@ -50,6 +54,12 @@ describe('FrontendAction', () => {
 
     appSettings = await new AppSettings(appPath).setId('foobarTest')
     subjectUnderTest = new FrontendAction(appSettings, userSettings, dcHttpClient)
+
+    subjectUnderTest.extensionConfigWatcher = {
+      start: () => sinon.stub().resolves(),
+      on: () => sinon.stub().resolves(),
+      stop: () => sinon.stub().resolves()
+    }
   })
 
   afterEach(() => {
@@ -96,8 +106,12 @@ describe('FrontendAction', () => {
       fsExtraMock.lstat = () => Promise.resolve({isDirectory: () => true})
       subjectUnderTest.dcHttpClient.generateExtensionConfig = () => Promise.resolve({})
 
+      let gotCalled = false
+      utils.generateComponentsJson = () => { gotCalled = true }
+
       try {
         await subjectUnderTest.run('start', {}, options)
+        assert.ok(gotCalled)
       } catch (err) {
         assert.ifError(err)
       }
