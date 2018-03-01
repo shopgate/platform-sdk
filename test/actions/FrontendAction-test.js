@@ -53,6 +53,7 @@ describe('FrontendAction', () => {
     fsExtraMock.lstat = () => Promise.resolve()
 
     appSettings = await new AppSettings(appPath).setId('foobarTest')
+    appSettings.loadAttachedExtensions = async() => ({})
     subjectUnderTest = new FrontendAction(appSettings, userSettings, dcHttpClient)
 
     subjectUnderTest.extensionConfigWatcher = {
@@ -83,7 +84,6 @@ describe('FrontendAction', () => {
 
   describe('run() -> start', () => {
     it('should throw an error if the theme is not existing', async () => {
-      await new UserSettings().setToken({})
       const options = {theme: 'theme-gmd'}
       fsExtraMock.readdir = (source) => Promise.resolve(['a', 'b'])
       fsExtraMock.lstat = () => Promise.resolve({isDirectory: () => true})

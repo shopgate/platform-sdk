@@ -99,7 +99,7 @@ describe('StepExecutor', () => {
 
     let appSettings
     let userSettings
-    const extensionDir = path.join(appPath, AppSettings.EXTENSIONS_FOLDER, 'foobar', 'extension')
+    const extensionDir = path.join(appPath, EXTENSIONS_FOLDER, 'foobar', 'extension')
 
     let basicProcessMock
     beforeEach(async function () {

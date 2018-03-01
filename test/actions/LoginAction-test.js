@@ -15,7 +15,7 @@ describe('LoginAction', () => {
   let dcHttpClient
   let subjectUnderTest
 
-  beforeEach(async() => {
+  beforeEach(async () => {
     stdin = require('mock-stdin').stdin()
     mockFs()
     process.env.USER_PATH = settingsFolder
@@ -102,6 +102,7 @@ describe('LoginAction', () => {
 
     try {
       setTimeout(() => stdin.send('bar\n'), 10)
+
       await subjectUnderTest.run({})
       api.done()
       assert.equal(await userSettings.getToken(), 'token3')
@@ -145,7 +146,7 @@ describe('LoginAction', () => {
     }
   })
 
-  it('should not write username to session on invalid login', async () => {
+  it(`should not write username to session on invalid login`, async () => {
     const api = nock('http://dc.shopgate.cloud')
       .post('/login', {username: 'foo', password: 'bar'})
       .reply(400)
@@ -160,39 +161,30 @@ describe('LoginAction', () => {
       api.done()
     }
   })
-
-  it('should store and repopulate the username when logged in successfully', async () => {
-    const api = nock('http://dc.shopgate.cloud')
+  it('should repopulate the username if possible', async () => {
+    let api = nock('http://dc.shopgate.cloud')
       .post('/login', {username: 'foo', password: 'bar'})
-      .reply(200, {accessToken: 'token3'})
+      .reply(200, {accessToken: 'token4'})
 
-    try {
-      setTimeout(() => stdin.send('foo\n'), 10)
-      setTimeout(() => stdin.send('bar\n'), 20)
-      await subjectUnderTest.run({})
+    let retry = nock('http://dc.shopgate.cloud')
+      .post('/login', {username: 'foo', password: 'bar'})
+      .reply(200, {accessToken: 'token4'})
 
-      api.done()
-      assert.equal(await userSettings.getToken(), 'token3')
-      assert.equal(await userSettings.getUsername(), 'foo')
-      await userSettings.setToken(null)
-
-      try {
-        setTimeout(() => stdin.send('\n'), 30)
-        setTimeout(() => stdin.send('bar\n'), 40)
-
-        const nextLoginRequest = nock('http://dc.shopgate.cloud')
-          .post('/login', {username: 'foo', password: 'bar'})
-          .reply(200, {accessToken: 'token3'})
-
-        await subjectUnderTest.run({})
-        nextLoginRequest.done()
-        assert.equal(await userSettings.getToken(), 'token3')
-        assert.equal(await userSettings.getUsername(), 'foo')
-      } catch (err) {
-        assert.ifError(err)
-      }
-    } catch (err) {
-      assert.ifError(err)
-    }
+    const options = {username: 'foo', password: 'bar'}
+    await subjectUnderTest.run(options)
+    setTimeout(() => {
+      subjectUnderTest.options = {}
+      process.env.SGCLOUD_USER = null
+      // check prompts
+      stdin.send('\n')
+      setTimeout(() => {
+        stdin.send('bar\n')
+        setTimeout(() => {
+          api.done()
+          retry.done()
+        }, 50)
+      }, 50)
+    }, 50)
+    return subjectUnderTest.run({})
   })
 })
