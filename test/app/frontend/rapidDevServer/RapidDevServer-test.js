@@ -9,7 +9,7 @@ const sinon = require('sinon')
 const assert = require('assert')
 const proxyquire = require('proxyquire')
 const helper = require('../helper')
-
+const mockFs = require('mock-fs')
 let logFail = false
 
 const logHelper = {
@@ -74,8 +74,6 @@ let rapidDevServer
 
 describe('RapidDevServer', () => {
   beforeEach(async () => {
-    await helper.setupAppEnvironment()
-
     rapidDevServer = proxyquire('../../../../lib/app/frontend/rapidDevServer/RapidDevServer', {
       '../LogHelper': logHelper,
       '../../../logger': logger,
@@ -83,6 +81,9 @@ describe('RapidDevServer', () => {
       restify,
       request
     })
+
+    mockFs()
+    await helper.setupAppEnvironment()
   })
 
   afterEach(async () => {
@@ -96,6 +97,7 @@ describe('RapidDevServer', () => {
     server.post.reset()
     request.get.reset()
     this.rapidApi = null
+    mockFs.restore()
   })
 
   describe('start()', () => {

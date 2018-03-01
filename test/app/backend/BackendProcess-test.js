@@ -6,7 +6,7 @@ const fsEx = require('fs-extra')
 const UserSettings = require('../../../lib/user/UserSettings')
 const portfinder = require('portfinder')
 const proxyquire = require('proxyquire')
-
+const mockFs = require('mock-fs')
 class SocketIOMock extends EventEmitter {
   connect () { this.emit('connect') }
   disconnect () { this.disconnected = true }
@@ -28,6 +28,7 @@ describe('BackendProcess', () => {
   })
 
   beforeEach(async () => {
+    mockFs()
     appTestFolder = path.join('build', 'appsettings')
     userTestFolder = path.join('build', 'usersettings')
     process.env.USER_PATH = userTestFolder
@@ -58,11 +59,12 @@ describe('BackendProcess', () => {
 
     socketIOMock.removeAllListeners()
 
-    return Promise.all([
+    await Promise.all([
       fsEx.remove(appTestFolder),
       fsEx.remove(userTestFolder),
       backendProcess.disconnect()
     ])
+    mockFs.restore()
   })
 
   describe('connect', () => {
@@ -252,7 +254,14 @@ describe('BackendProcess', () => {
   })
 
   describe('startStepExecutor', () => {
-    it('should start the step executor', () => {
+    it('should start the step executor', async () => {
+      let startCalled = false
+      backendProcess.start = () => {
+        startCalled = true
+      }
+      backendProcess.start = () => {
+        assert.ok(startCalled)
+      }
       return backendProcess.startStepExecutor()
     })
   })

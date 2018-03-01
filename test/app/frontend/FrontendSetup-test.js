@@ -45,8 +45,8 @@ const questionSpy = sinon.spy(() => {
 const FrontendSetup = proxyquire('../../../lib/app/frontend/FrontendSetup', {
   request,
   './LogHelper': {
-    logSetupLogo: () => {},
-    getPrefix: () => {}
+    logSetupLogo: () => { },
+    getPrefix: () => { }
   },
   '../../logger': {
     plain: loggerSpy
@@ -79,7 +79,6 @@ let appSettings = {
 let frontendSetup
 
 describe('FrontendSetup', () => {
-
   before(done => {
     mockFs()
     done()
@@ -94,7 +93,7 @@ describe('FrontendSetup', () => {
     process.env.USER_PATH = userSettingsPath
     process.env.APP_PATH = appSettingsPath
 
-    appSettings.getId = () => {}
+    appSettings.getId = () => { }
     frontendSettings = {}
 
     frontendSettings.getIpAddress = () => Promise.resolve(defaultConfig.ip)
@@ -131,8 +130,8 @@ describe('FrontendSetup', () => {
     beforeEach(() => {
       appSettings.getId = () => 'shop_10006'
 
-      frontendSetup.registerSettings = () => {}
-      frontendSetup.save = () => {}
+      frontendSetup.registerSettings = () => { }
+      frontendSetup.save = () => { }
     })
 
     it('should throw an error if something goes wrong', (done) => {
@@ -198,7 +197,7 @@ describe('FrontendSetup', () => {
   describe('registerSettings()', () => {
     beforeEach(() => {
       appSettings.getId = () => appId
-      frontendSetup.save = () => {}
+      frontendSetup.save = () => { }
     })
 
     it('should set the startPageUrl at the developer connector', () => {

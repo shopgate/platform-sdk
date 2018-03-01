@@ -18,17 +18,6 @@ class FrontendProcessMock {
 }
 
 describe('FrontendAction', () => {
-
-  before(done => {
-    mockFs()
-    done()
-  })
-
-  after(done => {
-    mockFs.restore()
-    done()
-  })
-
   let subjectUnderTest
   let appSettings
   let userSettings
@@ -47,6 +36,7 @@ describe('FrontendAction', () => {
   })
 
   beforeEach(async () => {
+    mockFs()
     process.env.USER_PATH = userPath
     await fsEx.emptyDir(userPath)
     userSettings = await new UserSettings().setToken({})
@@ -65,6 +55,7 @@ describe('FrontendAction', () => {
   afterEach(() => {
     delete process.env.APP_PATH
     delete process.env.USER_PATH
+    mockFs.restore()
   })
 
   describe('constructor', async () => {
@@ -80,9 +71,9 @@ describe('FrontendAction', () => {
     })
   })
 
-  describe('run() -> start', async () => {
-    await new UserSettings().setToken({})
+  describe('run() -> start', () => {
     it('should throw an error if the theme is not existing', async () => {
+      await new UserSettings().setToken({})
       const options = {theme: 'theme-gmd'}
       fsExtraMock.readdir = (source) => Promise.resolve(['a', 'b'])
       fsExtraMock.lstat = () => Promise.resolve({isDirectory: () => true})
@@ -110,6 +101,26 @@ describe('FrontendAction', () => {
       } catch (err) {
         assert.ifError(err)
       }
+    })
+  })
+
+  describe('requestThemeOption', () => {
+    it('should ask which theme to use', (done) => {
+      const choice = 'theme-gmd'
+      const choices = ['theme-gmd', 'theme-super']
+      inquirer.prompt = async (args) => {
+        assert.deepEqual(args[0].choices, choices)
+        return {theme: choice}
+      }
+
+      fsExtraMock.readdir = () => Promise.resolve(choices)
+      fsExtraMock.lstat = (dir) => ({
+        isDirectory: () => (true)
+      })
+      subjectUnderTest.requestThemeOption().then((result) => {
+        assert.equal(choice, result)
+        done()
+      })
     })
   })
 

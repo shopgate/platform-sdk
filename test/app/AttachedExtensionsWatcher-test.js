@@ -1,23 +1,18 @@
 const assert = require('assert')
-const sinon = require('sinon')
 const path = require('path')
 const fsEx = require('fs-extra')
 const AttachedExtensionsWatcher = require('../../lib/app/AttachedExtensionsWatcher')
 const UserSettings = require('../../lib/user/UserSettings')
 const utils = require('../../lib/utils/utils')
 const appPath = path.join('build', 'appsettings')
-
+const mockFs = require('mock-fs')
 describe('AttachedExtensionsWatcher', () => {
   let attachedExtensionsWatcher
   let appSettingsMock
 
   beforeEach(async () => {
+    mockFs()
     await new UserSettings().setToken({})
-    appSettingsMock = {
-      attachedExtensionsFile: path.join(appPath, '.sgcloud', 'attachedExtensions.json'),
-      getApplicationFolder: utils.getApplicationFolder
-    }
-    attachedExtensionsWatcher = new AttachedExtensionsWatcher(appSettingsMock)
     await fsEx.emptyDir(path.join(appPath, '.sgcloud'))
   })
 
@@ -26,55 +21,67 @@ describe('AttachedExtensionsWatcher', () => {
 
     await attachedExtensionsWatcher.stop()
     await fsEx.remove(appPath)
+    mockFs.restore()
   })
 
-  it('should emit "attach" event', (done) => {
-    let initialAttachedExtensions = {}
+  const getWatcher = (chokidar, attachedExtensions) => {
+    appSettingsMock = {
+      attachedExtensionsFile: path.join(appPath, '.sgcloud', 'attachedExtensions.json'),
+      getApplicationFolder: utils.getApplicationFolder,
+      loadAttachedExtensions: async () => (attachedExtensions)
+    }
+    attachedExtensionsWatcher = new AttachedExtensionsWatcher(appSettingsMock)
+    fsEx.ensureDirSync(path.dirname(attachedExtensionsWatcher.configPath))
+    attachedExtensionsWatcher.chokidar = chokidar
+    return attachedExtensionsWatcher
+  }
+
+  it('should emit "attach" and "detach" events', (done) => {
     let attachedExtensionsFileContents = '{"attachedExtensions":{"@shopgate/auth0Login":{"path":"auth0-login","trusted":true}}}'
-    let expectedExtensionToBeAttached = {path: 'auth0-login', trusted: true, id: '@shopgate/auth0Login'}
+    let expectedExtensionToBeAttached = { path: 'auth0-login', trusted: true, id: '@shopgate/auth0Login' }
 
-    appSettingsMock.loadAttachedExtensions = sinon.stub().resolves(initialAttachedExtensions)
+    let callbacks = []
+    const chokidar = {
+      closed: false,
+      watch: (path, options) => {
+        assert.equal(path, attachedExtensionsWatcher.configPath)
+        return attachedExtensionsWatcher.chokidar
+      },
+      on: (event, cb) => {
+        if (event === 'ready') cb()
+        if (!callbacks[event]) callbacks[event] = []
+        callbacks[event].push(cb)
+        return attachedExtensionsWatcher.chokidar
+      },
+      close: () => {
+        setTimeout(() => {
+          attachedExtensionsWatcher.chokidar.closed = true
+        }, 30)
+      }
+    }
 
-    attachedExtensionsWatcher.on('attach', (extension) => {
-      assert.deepEqual(extension, expectedExtensionToBeAttached)
-      done()
+    let attached = false
+    let detached = false
+    const watcher = getWatcher(chokidar, { 'someId': { 'path': 'something preattached', tusted: false } })
+    watcher.start().then(() => {
+      watcher.emit = (event, extension) => {
+        if (event === 'attach') {
+          attached = true
+          assert.deepEqual(extension, expectedExtensionToBeAttached)
+        }
+
+        if (event === 'detach') {
+          detached = true
+        }
+
+        if (attached && detached) {
+          done()
+        }
+      }
+      setTimeout(() => {
+        fsEx.writeFileSync(path.join(attachedExtensionsWatcher.configPath), attachedExtensionsFileContents)
+        callbacks['all'][0]('all', path.join(attachedExtensionsWatcher.configPath))
+      })
     })
-
-    attachedExtensionsWatcher.start()
-      .then(() => fsEx.ensureDir(path.dirname(attachedExtensionsWatcher.configPath)))
-      .then(() => {
-        return new Promise((resolve, reject) => {
-          // Workaround for race condition ...
-          setTimeout(() => {
-            fsEx.writeFile(path.join(attachedExtensionsWatcher.configPath), attachedExtensionsFileContents, (err) => {
-              if (err) reject(err)
-              resolve()
-            })
-          }, 500)
-        })
-      })
-      .catch((err) => {
-        assert.ifError(err)
-      })
-  })
-
-  it('should emit "detach" event', (done) => {
-    let initialAttachedExtensions = {'@shopgate/auth0Login': {path: 'auth0-login', trusted: true}}
-    let attachedExtensionsFileContents = '{"attachedExtensions":{}}'
-    let expectedExtensionToBeDetached = {path: 'auth0-login', trusted: true, id: '@shopgate/auth0Login'}
-
-    appSettingsMock.loadAttachedExtensions = sinon.stub().resolves(initialAttachedExtensions)
-
-    attachedExtensionsWatcher.on('detach', (extension) => {
-      assert.deepEqual(extension, expectedExtensionToBeDetached)
-      done()
-    })
-
-    attachedExtensionsWatcher.start()
-      .then(() => fsEx.ensureDir(path.dirname(attachedExtensionsWatcher.configPath)))
-      .then(() => fsEx.writeFile(path.join(attachedExtensionsWatcher.configPath), attachedExtensionsFileContents))
-      .catch((err) => {
-        assert.ifError(err)
-      })
   })
 })
