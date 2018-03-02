@@ -7,7 +7,7 @@ const sinon = require('sinon')
 const nock = require('nock')
 const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
-const { SETTINGS_FOLDER, EXTENSIONS_FOLDER } = require('../../lib/app/Constants')
+const { EXTENSIONS_FOLDER } = require('../../lib/app/Constants')
 const mockFs = require('mock-fs')
 let callbacks = {}
 
@@ -427,11 +427,8 @@ describe('ExtensionAction', () => {
         return subjectUnderTest
           ._renameBoilerplate(userInput, defaultPath, extensionFolder, state)
           .then(() => {
-            if (/^win/.test(process.platform)) return
             assert.fail('It should fail')
           }).catch((err) => {
-            if (/^win/.test(process.platform)) return assert.ok(err.message.indexOf('EPERM') !== -1)
-            if (/^darwin/.test(process.platform)) return assert.ok(err.message.indexOf('ENOTEMPTY') !== -1)
             assert.ok(
               (err.message.indexOf('EEXIST') !== -1) ||
               (err.message.indexOf('ENOTEMPTY') !== -1)
