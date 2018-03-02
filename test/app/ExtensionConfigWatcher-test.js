@@ -40,8 +40,8 @@ describe('ExtensionConfigWatcher', () => {
 
     extensionConfigWatcher.chokidar = {
       closed: false,
-      watch: (path, options) => {
-        assert.equal(path, 'build/appsettings/extensions/**/extension-config.json')
+      watch: (givenPath, options) => {
+        assert.equal(givenPath, path.join('build/appsettings/extensions/**', 'extension-config.json'))
         return extensionConfigWatcher.chokidar
       },
       on: (event, cb) => {
