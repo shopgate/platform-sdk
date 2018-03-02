@@ -3,6 +3,7 @@
 * Added option `--inspect` to `backend start` to allow for inspection/debugging of extensions (props @Menes1337)
 * Creation of (theme)/config/components.json on `frontend start` and extension-config.json change
 * Extension pipelines folder can now be empty or missing
+* Returning an non error as error in step will show a useful error message
 
 ## v1.2.4
 * Updated to use `@shopgate/cloud-sdk-webpack@^1.10.0`.
