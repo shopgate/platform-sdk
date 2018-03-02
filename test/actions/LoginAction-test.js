@@ -83,8 +83,8 @@ describe('LoginAction', () => {
         stdin.send('foo\n')
         setTimeout(() => {
           stdin.send('bar\n')
-        }, 10)
-      }, 10)
+        }, 50)
+      }, 50)
       await subjectUnderTest.run({})
       api.done()
       assert.equal(await userSettings.getToken(), 'token2')
@@ -119,7 +119,7 @@ describe('LoginAction', () => {
 
     const options = {password: 'bar'}
     try {
-      setTimeout(() => stdin.send('foo\n'), 10)
+      setTimeout(() => stdin.send('foo\n'), 50)
       await subjectUnderTest.run(options)
       api.done()
       assert.equal(await userSettings.getToken(), 'token4')
@@ -162,29 +162,28 @@ describe('LoginAction', () => {
     }
   })
   it('should repopulate the username if possible', async () => {
-    let api = nock('http://dc.shopgate.cloud')
-      .post('/login', {username: 'foo', password: 'bar'})
-      .reply(200, {accessToken: 'token4'})
+    const wait = async (ms) => (new Promise(resolve => setTimeout(resolve, ms)))
 
-    let retry = nock('http://dc.shopgate.cloud')
+    let api = nock('http://dc.shopgate.cloud')
       .post('/login', {username: 'foo', password: 'bar'})
       .reply(200, {accessToken: 'token4'})
 
     const options = {username: 'foo', password: 'bar'}
     await subjectUnderTest.run(options)
-    setTimeout(() => {
-      subjectUnderTest.options = {}
-      process.env.SGCLOUD_USER = null
-      // check prompts
-      stdin.send('\n')
-      setTimeout(() => {
-        stdin.send('bar\n')
-        setTimeout(() => {
-          api.done()
-          retry.done()
-        }, 200)
-      }, 200)
-    }, 200)
-    return subjectUnderTest.run({})
+    await wait(50)
+    api.done()
+    subjectUnderTest.options = {}
+    delete process.env.SGCLOUD_USER
+    let retry = nock('http://dc.shopgate.cloud')
+      .post('/login', {username: 'foo', password: 'bar'})
+      .reply(200, {accessToken: 'token4'})
+
+    const promise = subjectUnderTest.run({})
+    await wait(50)
+    stdin.send('\n')
+    await wait(50)
+    stdin.send('bar\n')
+    await wait(50)
+    return promise.then(() => (retry.done()))
   })
 })
