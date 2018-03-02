@@ -18,12 +18,12 @@ describe('ExtensionRuntime Logger', () => {
   describe('test each log level', () => {
     const logger = new Logger()
     if (!process.send) process.send = function () {}
-    let spy
     beforeEach(() => {
-      spy = sinon.spy(process, 'send')
+      sinon.sandbox.create()
+      sinon.sandbox.stub(process, 'send')
     })
     afterEach(() => {
-      spy.restore()
+      sinon.sandbox.restore()
     })
 
     for (let i = 0; i < logLevels.length; i++) {

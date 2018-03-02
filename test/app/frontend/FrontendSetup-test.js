@@ -114,7 +114,7 @@ describe('FrontendSetup', () => {
 
     inquirer.prompt = setPromptBody()
 
-    questionSpy.reset()
+    questionSpy.resetHistory()
     questionSpyFail = false
   })
 
@@ -139,13 +139,13 @@ describe('FrontendSetup', () => {
       questionSpyFail = true
       frontendSetup.run()
         .then(() => {
-          spy.reset()
+          spy.resetHistory()
           done('Did not throw!')
         })
         .catch((error) => {
           assert.ok(typeof error === 'string')
           sinon.assert.calledOnce(spy)
-          spy.reset()
+          spy.resetHistory()
           done()
         })
     })
@@ -165,7 +165,7 @@ describe('FrontendSetup', () => {
       frontendSetup.run()
         .then(() => {
           assert.ok(spy.calledOnce)
-          spy.reset()
+          spy.resetHistory()
           done()
         })
         .catch(error => done(error))
@@ -176,7 +176,7 @@ describe('FrontendSetup', () => {
       frontendSetup.run()
         .then(() => {
           assert.ok(spy.calledOnce)
-          spy.reset()
+          spy.resetHistory()
           done()
         })
         .catch(error => done(error))
@@ -187,7 +187,7 @@ describe('FrontendSetup', () => {
       frontendSetup.run()
         .then(() => {
           assert.ok(spy.calledOnce)
-          spy.reset()
+          spy.resetHistory()
           done()
         })
         .catch(error => done(error))
@@ -238,7 +238,7 @@ describe('FrontendSetup', () => {
         .catch((error) => {
           sinon.assert.notCalled(request)
           assert.equal(error.message, 'Sorry, you canceled the setup! Please try again.')
-          request.reset()
+          request.resetHistory()
           done()
         })
     })
@@ -249,7 +249,7 @@ describe('FrontendSetup', () => {
 
     beforeEach(() => {
       saveSpy = sinon.spy()
-      loggerSpy.reset()
+      loggerSpy.resetHistory()
 
       frontendSettings.setIpAddress = (ip) => {
         assert.equal(ip, defaultConfig.ip)
@@ -283,8 +283,8 @@ describe('FrontendSetup', () => {
     })
 
     afterEach(() => {
-      saveSpy.reset()
-      loggerSpy.reset()
+      saveSpy.resetHistory()
+      loggerSpy.resetHistory()
     })
 
     it('should save the settings', () => {
