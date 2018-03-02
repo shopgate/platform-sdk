@@ -182,9 +182,9 @@ describe('LoginAction', () => {
         setTimeout(() => {
           api.done()
           retry.done()
-        }, 50)
-      }, 50)
-    }, 50)
+        }, 200)
+      }, 200)
+    }, 200)
     return subjectUnderTest.run({})
   })
 })
