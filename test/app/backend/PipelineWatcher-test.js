@@ -28,8 +28,8 @@ describe('PipelineWatcher', () => {
     const callbacks = []
     pipelineWatcher.chokidar = {
       closed: false,
-      watch: (path, options) => {
-        assert.equal(path, 'build/appsettings/extensions/**/pipelines/*.json')
+      watch: (givenPath, options) => {
+        assert.equal(givenPath, path.join('build/appsettings/extensions/**/pipelines', '*.json'))
         return pipelineWatcher.chokidar
       },
       on: (event, cb) => {
