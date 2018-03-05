@@ -6,7 +6,8 @@ const { EXTENSIONS_FOLDER, THEMES_FOLDER } = require('../../lib/app/Constants')
 
 const logger = {
   debug: (message) => {},
-  warn: (message) => {}
+  warn: (message) => {},
+  info: (message) => {}
 }
 
 const utils = proxyquire('../../lib/utils/utils', {
