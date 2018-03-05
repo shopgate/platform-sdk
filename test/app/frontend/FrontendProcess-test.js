@@ -5,7 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-const { join } = require('path')
+const {join} = require('path')
 const sinon = require('sinon')
 const assert = require('assert')
 const proxyquire = require('proxyquire')
@@ -24,7 +24,8 @@ describe('FrontendProcess', () => {
   let frontendSettings = null
   let appSettings = {
     getApplicationFolder: () => {},
-    getFrontendSettings: () => frontendSettings
+    getFrontendSettings: () => frontendSettings,
+    loadAttachedExtensions: () => {}
   }
 
   beforeEach(() => {
