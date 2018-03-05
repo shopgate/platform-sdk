@@ -4,6 +4,7 @@
 * Creation of (theme)/config/components.json on `frontend start` and extension-config.json change
 * Extension pipelines folder can now be empty or missing
 * Fix startup/close bug of frontend/backend process
+* Fix path bug of components.json creation
 
 ## v1.2.4
 * Updated to use `@shopgate/cloud-sdk-webpack@^1.10.0`.
