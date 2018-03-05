@@ -35,9 +35,19 @@ describe('ExtensionConfigWatcher', () => {
       })
     })
 
+    const extensionFolder = path.join(extensionConfigWatcher.watchFolder, 'testExt')
+
     extensionConfigWatcher.start()
-    .then(() => fsEx.ensureDir(path.join(extensionConfigWatcher.watchFolder, 'testExt')))
-    .then(() => fsEx.writeJson(path.join(extensionConfigWatcher.watchFolder, 'testExt', 'extension-config.json'), writtenConfig, () => {}))
+    .then(() => fsEx.ensureDir(extensionFolder))
+    .then(() => {
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          const configPath = path.join(extensionFolder, 'extension-config.json')
+          fsEx.writeJson(configPath, writtenConfig, () => {})
+          resolve()
+        }, 20)
+      })
+    })
     .catch((err) => {
       assert.ifError(err)
     })
