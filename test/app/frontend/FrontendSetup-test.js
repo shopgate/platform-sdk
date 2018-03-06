@@ -10,6 +10,7 @@ const sinon = require('sinon')
 const assert = require('assert')
 const proxyquire = require('proxyquire')
 const fsEx = require('fs-extra')
+const mockFs = require('mock-fs')
 
 let requestSpyFail = false
 let requestStatusCode = 201
@@ -68,8 +69,6 @@ const defaultConfig = {
   sourceMapsType: 'cheap-module-eval-source-map'
 }
 const runError = 'Had an error'
-
-const mockFs = require('mock-fs')
 
 let frontendSettings = null
 let appSettings = {

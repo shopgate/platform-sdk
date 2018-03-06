@@ -14,7 +14,7 @@ describe('PipelineWatcher', () => {
     mockFs()
     process.env.APP_PATH = appPath
     extensionsPipelineFolder = path.join(appPath, EXTENSIONS_FOLDER, 'testExtension', 'pipelines')
-    pipelineWatcher = new PipelineWatcher({getApplicationFolder: () => appPath})
+    pipelineWatcher = new PipelineWatcher({ getApplicationFolder: () => appPath })
     return fsEx.emptyDir(extensionsPipelineFolder)
   })
 
@@ -29,7 +29,7 @@ describe('PipelineWatcher', () => {
     pipelineWatcher.chokidar = {
       closed: false,
       watch: (givenPath, options) => {
-        assert.equal(givenPath, path.join('build/appsettings/extensions/**/pipelines', '*.json'))
+        assert.equal(givenPath, path.join('build/appsettings/extensions/*/pipelines', '*.json'))
         return pipelineWatcher.chokidar
       },
       on: (event, cb) => {

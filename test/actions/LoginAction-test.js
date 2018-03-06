@@ -4,19 +4,21 @@ const fsEx = require('fs-extra')
 const nock = require('nock')
 const sinon = require('sinon')
 const mockFs = require('mock-fs')
+const mockStdin = require('mock-stdin').stdin
+
 const UserSettings = require('../../lib/user/UserSettings')
 const LoginAction = require('../../lib/actions/LoginAction')
 const DcHttpClient = require('../../lib/DcHttpClient')
-const settingsFolder = path.join('build', 'user')
 
 describe('LoginAction', () => {
+  const settingsFolder = path.join('build', 'user')
   let stdin
   let userSettings
   let dcHttpClient
   let subjectUnderTest
 
   beforeEach(async () => {
-    stdin = require('mock-stdin').stdin()
+    stdin = mockStdin()
     mockFs()
     process.env.USER_PATH = settingsFolder
     process.env.SGCLOUD_DC_ADDRESS = 'http://dc.shopgate.cloud'
@@ -57,10 +59,10 @@ describe('LoginAction', () => {
 
   it('should login using command line params', async () => {
     const api = nock('http://dc.shopgate.cloud')
-      .post('/login', {username: 'foo', password: 'bar'})
-      .reply(200, {accessToken: 'token'})
+      .post('/login', { username: 'foo', password: 'bar' })
+      .reply(200, { accessToken: 'token' })
 
-    const options = {username: 'foo', password: 'bar'}
+    const options = { username: 'foo', password: 'bar' }
     try {
       await subjectUnderTest.run(options)
       api.done()
@@ -75,8 +77,8 @@ describe('LoginAction', () => {
 
   it('should login asking for username and password', async () => {
     const api = nock('http://dc.shopgate.cloud')
-      .post('/login', {username: 'foo', password: 'bar'})
-      .reply(200, {accessToken: 'token2'})
+      .post('/login', { username: 'foo', password: 'bar' })
+      .reply(200, { accessToken: 'token2' })
 
     try {
       setTimeout(() => {
@@ -97,8 +99,8 @@ describe('LoginAction', () => {
   it('should login using password from commandline and user from env', async () => {
     process.env.SGCLOUD_USER = 'foo'
     const api = nock('http://dc.shopgate.cloud')
-      .post('/login', {username: 'foo', password: 'bar'})
-      .reply(200, {accessToken: 'token3'})
+      .post('/login', { username: 'foo', password: 'bar' })
+      .reply(200, { accessToken: 'token3' })
 
     try {
       setTimeout(() => stdin.send('bar\n'), 10)
@@ -114,10 +116,10 @@ describe('LoginAction', () => {
 
   it('should login using user from commandline and password from parameter', async () => {
     const api = nock('http://dc.shopgate.cloud')
-      .post('/login', {username: 'foo', password: 'bar'})
-      .reply(200, {accessToken: 'token4'})
+      .post('/login', { username: 'foo', password: 'bar' })
+      .reply(200, { accessToken: 'token4' })
 
-    const options = {password: 'bar'}
+    const options = { password: 'bar' }
     try {
       setTimeout(() => stdin.send('foo\n'), 50)
       await subjectUnderTest.run(options)
@@ -131,10 +133,10 @@ describe('LoginAction', () => {
 
   it('should fail login in with invalid credentials', async () => {
     const api = nock('http://dc.shopgate.cloud')
-      .post('/login', {username: 'foo', password: 'bar'})
+      .post('/login', { username: 'foo', password: 'bar' })
       .reply(400)
 
-    const options = {username: 'foo', password: 'bar'}
+    const options = { username: 'foo', password: 'bar' }
 
     try {
       await subjectUnderTest.run(options)
@@ -148,10 +150,10 @@ describe('LoginAction', () => {
 
   it(`should not write username to session on invalid login`, async () => {
     const api = nock('http://dc.shopgate.cloud')
-      .post('/login', {username: 'foo', password: 'bar'})
+      .post('/login', { username: 'foo', password: 'bar' })
       .reply(400)
 
-    const options = {username: 'foo', password: 'bar'}
+    const options = { username: 'foo', password: 'bar' }
     try {
       await subjectUnderTest.run(options)
     } catch (err) {
@@ -165,18 +167,18 @@ describe('LoginAction', () => {
     const wait = async (ms) => (new Promise(resolve => setTimeout(resolve, ms)))
 
     let api = nock('http://dc.shopgate.cloud')
-      .post('/login', {username: 'foo', password: 'bar'})
-      .reply(200, {accessToken: 'token4'})
+      .post('/login', { username: 'foo', password: 'bar' })
+      .reply(200, { accessToken: 'token4' })
 
-    const options = {username: 'foo', password: 'bar'}
+    const options = { username: 'foo', password: 'bar' }
     await subjectUnderTest.run(options)
     await wait(50)
     api.done()
     subjectUnderTest.options = {}
     delete process.env.SGCLOUD_USER
     let retry = nock('http://dc.shopgate.cloud')
-      .post('/login', {username: 'foo', password: 'bar'})
-      .reply(200, {accessToken: 'token4'})
+      .post('/login', { username: 'foo', password: 'bar' })
+      .reply(200, { accessToken: 'token4' })
 
     const promise = subjectUnderTest.run({})
     await wait(50)
