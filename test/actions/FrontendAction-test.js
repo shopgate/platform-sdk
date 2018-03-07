@@ -6,6 +6,7 @@ const sinon = require('sinon')
 const AppSettings = require('../../lib/app/AppSettings')
 const UserSettings = require('../../lib/user/UserSettings')
 const DcHttpClient = require('../../lib/DcHttpClient')
+const mockFs = require('mock-fs')
 const { SETTINGS_FOLDER } = require('../../lib/app/Constants')
 const utils = require('../../lib/utils/utils')
 
@@ -39,6 +40,7 @@ describe('FrontendAction', () => {
   })
 
   beforeEach(async () => {
+    mockFs()
     process.env.USER_PATH = userPath
     await fsEx.emptyDir(userPath)
     userSettings = await new UserSettings().setToken({})
@@ -51,6 +53,7 @@ describe('FrontendAction', () => {
     fsExtraMock.lstat = () => Promise.resolve()
 
     appSettings = await new AppSettings(appPath).setId('foobarTest')
+    appSettings.loadAttachedExtensions = async() => ({})
     subjectUnderTest = new FrontendAction(appSettings, userSettings, dcHttpClient)
 
     subjectUnderTest.extensionConfigWatcher = {
@@ -63,6 +66,7 @@ describe('FrontendAction', () => {
   afterEach(() => {
     delete process.env.APP_PATH
     delete process.env.USER_PATH
+    mockFs.restore()
   })
 
   describe('constructor', async () => {
@@ -78,8 +82,7 @@ describe('FrontendAction', () => {
     })
   })
 
-  describe('run() -> start', async () => {
-    await new UserSettings().setToken({})
+  describe('run() -> start', () => {
     it('should throw an error if the theme is not existing', async () => {
       const options = {theme: 'theme-gmd'}
       fsExtraMock.readdir = (source) => Promise.resolve(['a', 'b'])
@@ -112,6 +115,26 @@ describe('FrontendAction', () => {
       } catch (err) {
         assert.ifError(err)
       }
+    })
+  })
+
+  describe('requestThemeOption', () => {
+    it('should ask which theme to use', (done) => {
+      const choice = 'theme-gmd'
+      const choices = ['theme-gmd', 'theme-super']
+      inquirer.prompt = async (args) => {
+        assert.deepEqual(args[0].choices, choices)
+        return {theme: choice}
+      }
+
+      fsExtraMock.readdir = () => Promise.resolve(choices)
+      fsExtraMock.lstat = (dir) => ({
+        isDirectory: () => (true)
+      })
+      subjectUnderTest.requestThemeOption().then((result) => {
+        assert.equal(choice, result)
+        done()
+      })
     })
   })
 
