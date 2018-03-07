@@ -10,10 +10,10 @@ const Storage = proxyquire('../../../../../lib/app/backend/extensionRuntime/cont
 
 describe('Storage', () => {
   let log
-  const appSettings = {settingsFolder: 'fooBar'}
+  const appSettings = { settingsFolder: 'fooBar' }
 
   beforeEach(() => {
-    log = {log: true, debug: () => {}}
+    log = { log: true, debug: () => {} }
     fsEx.readJSON = (file, options, cb) => cb(new Error('not implemented'))
     fsEx.writeJSON = (file, content, options, cb) => cb(new Error('not implemented'))
   })
