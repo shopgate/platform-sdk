@@ -4,28 +4,29 @@ const fsExtra = require('fs-extra')
 const path = require('path')
 const request = require('request')
 
+const defaultMeta = { appId: 'shop_1337', deviceId: '1234567890' }
+
 describe('Context', () => {
   it('should have meta', () => {
-    const meta = {foo: {bar: {}}}
-    const context = new Context(null, null, null, null, meta)
-    assert.deepEqual(context.meta, meta)
+    const context = new Context(null, null, null, '', defaultMeta, null)
+    assert.deepEqual(context.meta, defaultMeta)
   })
 
   it('should have config', () => {
-    const config = {foo: {bar: {}}}
-    const context = new Context(null, null, config, null, {})
+    const config = { foo: { bar: {} } }
+    const context = new Context(null, config, null, '', defaultMeta, null)
     assert.deepEqual(context.config, config)
   })
 
   it('should have log', () => {
     const log = {}
-    const context = new Context(null, null, null, null, {}, log)
+    const context = new Context(null, null, null, '', defaultMeta, log)
     assert.equal(context.log, log)
   })
 
   describe('storageInterfaces', () => {
     it('should have storageInterfaces', () => {
-      const context = new Context(null, null, null, null, {})
+      const context = new Context(null, null, null, '', defaultMeta, null)
       const storageInterfaceNames = ['extension', 'device', 'user']
       const storageInterfaceFunctionNames = ['get', 'set', 'del']
       assert.deepEqual(Object.keys(context.storage), storageInterfaceNames)
@@ -50,7 +51,8 @@ describe('Context', () => {
           }
         }
 
-        const context = new Context(storage, null, null, test.extensionId, test.meta || {})
+        const context = new Context(storage, null, null, test.extensionId, test.meta || defaultMeta, null)
+
         function doneCb (err, value) {
           if (!test.err) {
             assert.equal(value, test.method === 'get' ? test.value : undefined)
@@ -60,6 +62,7 @@ describe('Context', () => {
           assert.equal(value, undefined)
           done()
         }
+
         context.storage[test.type][test.method](test.key, test.method === 'set' ? test.value : doneCb, doneCb)
       })
     })
@@ -69,13 +72,15 @@ describe('Context', () => {
     const settingsKey = 'settingsValue'
     const settingsValue = 'settingsValue'
     const extensionId = 'settings.extension.get'
-    const appId = 'settingsAppIdGet'
-    const storage = {get: (path, cb) => {
-      assert.equal(path, `${appId}/${extensionId}/settings/${settingsKey}`)
-      cb(null, settingsValue)
-    }}
+    const appId = 'shop_1337'
+    const storage = {
+      get: (path, cb) => {
+        assert.equal(path, `${appId}/${extensionId}/settings/${settingsKey}`)
+        cb(null, settingsValue)
+      }
+    }
 
-    const context = new Context(storage, null, null, extensionId, {appId})
+    const context = new Context(storage, null, null, extensionId, defaultMeta, null)
     assert.deepEqual(Object.keys(context.settings), ['get'])
 
     context.settings.get(settingsKey, (err, value) => {
@@ -86,35 +91,53 @@ describe('Context', () => {
   })
 
   it('should have app info', (done) => {
-    const meta = {deviceId: 'foobarDeviceId', appId: 'foobarAppId'}
-    const dcHttpClient = {
-      getInfos: async (infoType, appId, deviceId) => {
-        assert.equal(infoType, 'appinfos')
-        assert.equal(appId, meta.appId)
-        assert.equal(deviceId, meta.deviceId)
+    const expected = { appInfo: '1337' }
+    let requestAppInfoCallCounter = 0
+
+    const dcResponseHandlerMock = {
+      requestAppInfo: (appId, deviceId, cb) => {
+        assert.equal(appId, defaultMeta.appId)
+        assert.equal(deviceId, defaultMeta.deviceId)
+        requestAppInfoCallCounter++
+        cb(null, expected)
       }
     }
-    const context = new Context(null, dcHttpClient, null, null, meta)
+
+    const context = new Context(null, null, dcResponseHandlerMock, '', defaultMeta, null)
     assert.equal(Object.keys(context.app), 'getInfo')
-    context.app.getInfo(done)
+    context.app.getInfo((err, actual) => {
+      assert.ifError(err)
+      assert.equal(requestAppInfoCallCounter, 1)
+      assert.equal(actual, expected)
+      done()
+    })
   })
 
   it('should have device info', (done) => {
-    const meta = {deviceId: 'foobarDeviceId', appId: 'foobarAppId'}
-    const dcHttpClient = {
-      getInfos: async (infoType, appId, deviceId) => {
-        assert.equal(infoType, 'deviceinfos')
-        assert.equal(appId, meta.appId)
-        assert.equal(deviceId, meta.deviceId)
+    const expected = { deviceInfo: '1337' }
+    let requestDeviceInfoCallCounter = 0
+
+    const dcResponseHandlerMock = {
+      requestDeviceInfo: (appId, deviceId, cb) => {
+        assert.equal(appId, defaultMeta.appId)
+        assert.equal(deviceId, defaultMeta.deviceId)
+        requestDeviceInfoCallCounter++
+        cb(null, expected)
       }
     }
-    const context = new Context(null, dcHttpClient, null, null, meta)
+
+    const context = new Context(null, null, dcResponseHandlerMock, '', defaultMeta, null)
     assert.equal(Object.keys(context.device), 'getInfo')
-    context.device.getInfo(done)
+    context.device.getInfo((err, actual) => {
+      assert.ifError(err)
+      assert.equal(requestDeviceInfoCallCounter, 1)
+      assert.equal(actual, expected)
+      done()
+    })
   })
 
   it('should have tracedRequest', () => {
-    const context = new Context(null, null, null, null, {})
+    const context = new Context(null, null, null, '', defaultMeta, null)
     assert.equal(typeof context.tracedRequest, 'function')
     assert.equal(context.tracedRequest(), request)
   })
