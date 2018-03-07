@@ -6,6 +6,7 @@ const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
 const DcHttpClient = require('../../lib/DcHttpClient')
 const path = require('path')
+const mockFs = require('mock-fs')
 const userSettingsFolder = path.join('build', 'usersettings')
 const appPath = path.join('build', 'appsettings')
 const fsEx = require('fs-extra')
@@ -16,6 +17,16 @@ describe('InitAction', () => {
   let userSettings
   let appSettings
   let dcHttpClient
+
+  before(done => {
+    mockFs()
+    done()
+  })
+
+  after(done => {
+    mockFs.restore()
+    done()
+  })
 
   it('should register', () => {
     const commander = {}

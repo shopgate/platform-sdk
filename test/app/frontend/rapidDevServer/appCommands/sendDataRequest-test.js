@@ -58,7 +58,7 @@ const expected2 = {
 
 describe('sendDataRequest Command', () => {
   beforeEach(() => {
-    callback.reset()
+    callback.resetHistory()
   })
 
   it('should return the default command response', () => {

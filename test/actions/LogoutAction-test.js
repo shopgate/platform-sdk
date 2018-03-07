@@ -5,6 +5,7 @@ const sinon = require('sinon')
 const LogoutAction = require('../../lib/actions/LogoutAction')
 const UserSettings = require('../../lib/user/UserSettings')
 const settingsFolder = path.join('build', 'user')
+const mockFs = require('mock-fs')
 const fsEx = require('fs-extra')
 
 describe('LogoutAction', () => {
@@ -12,6 +13,7 @@ describe('LogoutAction', () => {
   let subjectUnderTest
 
   beforeEach(async () => {
+    mockFs()
     process.env.USER_PATH = settingsFolder
     process.env.SGCLOUD_DC_ADDRESS = 'http://dc.shopgate.cloud'
     nock.disableNetConnect()
@@ -29,20 +31,28 @@ describe('LogoutAction', () => {
     delete process.env.SGCLOUD_PASS
     nock.enableNetConnect()
     await fsEx.remove(settingsFolder)
+    mockFs.restore()
   })
 
   it('should register', (done) => {
+    LogoutAction.build({})
     const commander = {}
     commander.command = sinon.stub().returns(commander)
     commander.description = sinon.stub().returns(commander)
     commander.option = sinon.stub().returns(commander)
-    commander.action = sinon.stub().returns(commander)
+    commander.action = (cb) => {
+      cb()
+    }
 
+    LogoutAction.build = () => {
+      return {
+        run: async () => (true)
+      }
+    }
     LogoutAction.register(commander, null, userSettings)
 
     assert(commander.command.calledWith('logout'))
     assert(commander.description.calledOnce)
-    assert(commander.action.calledOnce)
     done()
   })
 

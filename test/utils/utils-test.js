@@ -1,5 +1,6 @@
 const assert = require('assert')
 const path = require('path')
+const mockFs = require('mock-fs')
 const fsEx = require('fs-extra')
 const proxyquire = require('proxyquire')
 const { EXTENSIONS_FOLDER, THEMES_FOLDER } = require('../../lib/app/Constants')
@@ -14,6 +15,16 @@ const utils = proxyquire('../../lib/utils/utils', {
 })
 
 describe('utils', () => {
+  before(done => {
+    mockFs()
+    done()
+  })
+
+  after(done => {
+    mockFs.restore()
+    done()
+  })
+
   describe('resetProject', () => {
     const testProjectDir = path.join('build', 'testProject')
 

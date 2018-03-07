@@ -3,19 +3,25 @@ const nock = require('nock')
 const DcHttpClient = require('../lib/DcHttpClient')
 const UserSettings = require('../lib/user/UserSettings')
 const path = require('path')
-const fsEx = require('fs-extra')
 const UnauthorizedError = require('../lib/errors/UnauthorizedError')
-
+const mockFs = require('mock-fs')
 describe('DcHttpClient', () => {
+  before(done => {
+    mockFs()
+    done()
+  })
+
+  after(done => {
+    mockFs.restore()
+    done()
+  })
   let dcClient
 
   before(() => {
     process.env.USER_PATH = path.join('build', 'usersettings')
-    fsEx.emptyDirSync(process.env.USER_PATH)
   })
 
   after(() => {
-    fsEx.removeSync(process.env.USER_PATH)
     delete process.env.USER_PATH
   })
 

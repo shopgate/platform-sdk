@@ -60,6 +60,8 @@
     "glob": "^7.1.2",
     "inquirer": "^4.0.2",
     "jsonlint": "^1.6.2",
+    "longjohn": "^0.2.12",
+    "mock-fs": "^4.4.2",
     "morgan": "^1.9.0",
     "neo-async": "^2.5.0",
     "os": "^0.1.1",
