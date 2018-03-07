@@ -94,7 +94,7 @@ describe('Context', () => {
     const expected = { appInfo: '1337' }
     let requestAppInfoCallCounter = 0
 
-    const dcResponseHandlerMock = {
+    const dcRequesterMock = {
       requestAppInfo: (appId, deviceId, cb) => {
         assert.equal(appId, defaultMeta.appId)
         assert.equal(deviceId, defaultMeta.deviceId)
@@ -103,7 +103,7 @@ describe('Context', () => {
       }
     }
 
-    const context = new Context(null, null, dcResponseHandlerMock, '', defaultMeta, null)
+    const context = new Context(null, null, dcRequesterMock, '', defaultMeta, null)
     assert.equal(Object.keys(context.app), 'getInfo')
     context.app.getInfo((err, actual) => {
       assert.ifError(err)
@@ -117,7 +117,7 @@ describe('Context', () => {
     const expected = { deviceInfo: '1337' }
     let requestDeviceInfoCallCounter = 0
 
-    const dcResponseHandlerMock = {
+    const dcRequesterMock = {
       requestDeviceInfo: (appId, deviceId, cb) => {
         assert.equal(appId, defaultMeta.appId)
         assert.equal(deviceId, defaultMeta.deviceId)
@@ -126,7 +126,7 @@ describe('Context', () => {
       }
     }
 
-    const context = new Context(null, null, dcResponseHandlerMock, '', defaultMeta, null)
+    const context = new Context(null, null, dcRequesterMock, '', defaultMeta, null)
     assert.equal(Object.keys(context.device), 'getInfo')
     context.device.getInfo((err, actual) => {
       assert.ifError(err)
