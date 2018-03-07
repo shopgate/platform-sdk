@@ -2,9 +2,20 @@ const AppSettings = require('../../lib/app/AppSettings')
 const assert = require('assert')
 const path = require('path')
 const fsEx = require('fs-extra')
+const mockFs = require('mock-fs')
 
 describe('AppSettings', () => {
   let testFolder
+
+  before(done => {
+    mockFs()
+    done()
+  })
+
+  after(done => {
+    mockFs.restore()
+    done()
+  })
 
   beforeEach(() => {
     testFolder = path.join('build', 'appsettings')

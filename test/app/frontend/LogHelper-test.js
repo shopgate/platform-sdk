@@ -22,7 +22,7 @@ process.env.silent = false
 
 describe('LogHelper', () => {
   afterEach(() => {
-    logger.plain.reset()
+    logger.plain.resetHistory()
   })
 
   it('should return the divider', () => {
