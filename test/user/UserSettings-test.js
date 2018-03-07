@@ -2,10 +2,19 @@ const UserSettings = require('../../lib/user/UserSettings')
 const assert = require('assert')
 const path = require('path')
 const fsEx = require('fs-extra')
+const mockFs = require('mock-fs')
 
 describe('UserSettings', () => {
   let testFolder
+  before(done => {
+    mockFs()
+    done()
+  })
 
+  after(done => {
+    mockFs.restore()
+    done()
+  })
   beforeEach(() => {
     testFolder = path.join('build', 'usersettings')
     process.env.USER_PATH = testFolder
