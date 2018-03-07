@@ -72,7 +72,7 @@ describe('ExtensionAction', () => {
       it('should throw if user not logged in', async () => {
         await userSettings.setToken(null)
         try {
-          await subjectUnderTest.attachExtensions({extensions: []})
+          await subjectUnderTest.attachExtensions({ extensions: [] })
           assert.fail('Expected error to be thrown.')
         } catch (err) {
           assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
@@ -87,12 +87,12 @@ describe('ExtensionAction', () => {
 
         const extPath = path.join(appPath, 'extensions', name)
         await fsEx.ensureDir(extPath)
-        await fsEx.writeJSON(path.join(extPath, 'extension-config.json'), {id, trusted: false})
+        await fsEx.writeJSON(path.join(extPath, 'extension-config.json'), { id, trusted: false })
 
-        await subjectUnderTest.attachExtensions({extensions: [name]})
+        await subjectUnderTest.attachExtensions({ extensions: [name] })
 
         const config = await fsEx.readJson(appSettings.attachedExtensionsFile)
-        assert.deepEqual(config.attachedExtensions[id], {path: name, trusted: false})
+        assert.deepEqual(config.attachedExtensions[id], { path: name, trusted: false })
       })
 
       it('should attach all local extensions if no one is given', async () => {
@@ -103,10 +103,10 @@ describe('ExtensionAction', () => {
         const extPath2 = path.join(appPath, 'extensions', name2)
         await fsEx.ensureDir(extPath1)
         await fsEx.ensureDir(extPath2)
-        await fsEx.writeJSON(path.join(extPath1, 'extension-config.json'), {id: 'existentExtension1', trusted: false})
-        await fsEx.writeJSON(path.join(extPath2, 'extension-config.json'), {id: 'existentExtension2', trusted: false})
+        await fsEx.writeJSON(path.join(extPath1, 'extension-config.json'), { id: 'existentExtension1', trusted: false })
+        await fsEx.writeJSON(path.join(extPath2, 'extension-config.json'), { id: 'existentExtension2', trusted: false })
 
-        await subjectUnderTest.attachExtensions({extensions: [name1]})
+        await subjectUnderTest.attachExtensions({ extensions: [name1] })
         await subjectUnderTest.attachExtensions({})
         const config = await fsEx.readJson(appSettings.attachedExtensionsFile)
         assert.deepEqual(config.attachedExtensions, {
@@ -119,7 +119,7 @@ describe('ExtensionAction', () => {
         const name = 'notExitstentExtension'
 
         try {
-          await subjectUnderTest.attachExtensions({extensions: [name]})
+          await subjectUnderTest.attachExtensions({ extensions: [name] })
         } catch (e) {
           assert.equal(e.message, `Config file of 'notExitstentExtension' is invalid or not existent`)
         }
@@ -133,7 +133,7 @@ describe('ExtensionAction', () => {
         await fsEx.writeJSON(path.join(extPath, 'extension-config.json'), {})
 
         try {
-          await subjectUnderTest.attachExtensions({extensions: [name]})
+          await subjectUnderTest.attachExtensions({ extensions: [name] })
         } catch (e) {
           assert.equal(e.message, `Config file of '${name}' is invalid or not existent`)
         }
@@ -144,11 +144,11 @@ describe('ExtensionAction', () => {
 
         const extPath = path.join(appPath, 'extensions', name)
         await fsEx.ensureDir(extPath)
-        await fsEx.writeJSON(path.join(extPath, 'extension-config.json'), {id: name})
+        await fsEx.writeJSON(path.join(extPath, 'extension-config.json'), { id: name })
 
-        await subjectUnderTest.attachExtensions({extensions: [name]})
+        await subjectUnderTest.attachExtensions({ extensions: [name] })
         try {
-          await subjectUnderTest.attachExtensions({extensions: [name]})
+          await subjectUnderTest.attachExtensions({ extensions: [name] })
         } catch (e) {
           assert.equal(e.message, `Extension 'existentExtension (existentExtension) is already attached`)
         }
@@ -170,10 +170,10 @@ describe('ExtensionAction', () => {
 
         const extPath = path.join(appPath, 'extensions', name)
         await fsEx.ensureDir(extPath)
-        await fsEx.writeJSON(path.join(extPath, 'extension-config.json'), {id: name})
+        await fsEx.writeJSON(path.join(extPath, 'extension-config.json'), { id: name })
 
-        await appSettings.attachExtension(name, {id: name, trusted: false})
-        await subjectUnderTest.detachExtensions({extensions: [name]})
+        await appSettings.attachExtension(name, { id: name, trusted: false })
+        await subjectUnderTest.detachExtensions({ extensions: [name] })
 
         const config = await fsEx.readJson(appSettings.attachedExtensionsFile)
         assert.deepEqual(config.attachedExtensions, {})
@@ -184,22 +184,22 @@ describe('ExtensionAction', () => {
 
         const extPath = path.join(appPath, 'extensions', name)
         await fsEx.ensureDir(extPath)
-        await fsEx.writeJSON(path.join(extPath, 'extension-config.json'), {id: name})
+        await fsEx.writeJSON(path.join(extPath, 'extension-config.json'), { id: name })
 
         let warning
         logger.warn = (text) => {
           warning = text
         }
 
-        await subjectUnderTest.detachExtensions({extensions: [name]})
+        await subjectUnderTest.detachExtensions({ extensions: [name] })
 
         assert.ok(warning)
         assert.equal(warning, `The extension '${name}' is not attached`)
       })
 
       it('should detach all extensions if none was specified', async () => {
-        await appSettings.attachExtension('ext2', {id: 'ext2'})
-        await appSettings.attachExtension('ext1', {id: 'ext1'})
+        await appSettings.attachExtension('ext2', { id: 'ext2' })
+        await appSettings.attachExtension('ext1', { id: 'ext1' })
 
         await subjectUnderTest.detachExtensions({})
         const config = await fsEx.readJson(appSettings.attachedExtensionsFile)
@@ -234,7 +234,7 @@ describe('ExtensionAction', () => {
         subjectUnderTest._updateBackendFiles = () => { return new Promise((resolve, reject) => { resolve({}) }) }
         subjectUnderTest._installFrontendDependencies = () => { return new Promise((resolve, reject) => { resolve({}) }) }
 
-        await subjectUnderTest.createExtension({types: []}, null)
+        await subjectUnderTest.createExtension({ types: [] }, null)
       })
 
       it('should catch an error because of sth.', async () => {
@@ -301,7 +301,7 @@ describe('ExtensionAction', () => {
       })
 
       it('should get the user input by command', () => {
-        subjectUnderTest.appSettings = {getApplicationFolder: () => tempFolder}
+        subjectUnderTest.appSettings = { getApplicationFolder: () => tempFolder }
 
         return subjectUnderTest._checkIfExtensionExists('testExtension')
           .then(() => {
@@ -319,7 +319,7 @@ describe('ExtensionAction', () => {
 
         const n = nock('https://github.com')
           .get('/shopgate/cloud-sdk-boilerplate-extension/archive/master.zip')
-          .replyWithFile(200, path.join('test', 'testfiles', 'cloud-sdk-boilerplate-extension.zip'), {'Content-Type': 'application/zip'})
+          .replyWithFile(200, path.join('test', 'testfiles', 'cloud-sdk-boilerplate-extension.zip'), { 'Content-Type': 'application/zip' })
 
         return subjectUnderTest
           ._downloadBoilerplate(extensionFolder, state)
@@ -335,7 +335,7 @@ describe('ExtensionAction', () => {
 
         const n = nock('https://github.com')
         .get('/shopgate/cloud-sdk-boilerplate-extension/archive/master.zip')
-        .reply(404, {error: 'error'})
+        .reply(404, { error: 'error' })
 
         return subjectUnderTest
           ._downloadBoilerplate(extensionFolder, state)
@@ -441,13 +441,13 @@ describe('ExtensionAction', () => {
           path.join(extensionPath, 'sth.json')
         ]
 
-        const currentFileContent = {extensionId: '@awesomeOrganization/awesomeExtension', pipelineId: 'awesomeOrganization.somePipeline'}
+        const currentFileContent = { extensionId: '@awesomeOrganization/awesomeExtension', pipelineId: 'awesomeOrganization.somePipeline' }
         files.forEach((file) => fsEx.writeJsonSync(file, currentFileContent))
 
         return subjectUnderTest
           ._removePlaceholders(userInput, state)
           .then(() => {
-            const expectedFileContent = {extensionId: '@o1/e1', pipelineId: 'o1.somePipeline'}
+            const expectedFileContent = { extensionId: '@o1/e1', pipelineId: 'o1.somePipeline' }
             files.forEach((file) => assert.deepEqual(fsEx.readJsonSync(file), expectedFileContent))
           })
       })
@@ -460,12 +460,12 @@ describe('ExtensionAction', () => {
         const state = { extensionPath }
 
         const file = path.join(extensionPath, 'sth.jsx')
-        fsEx.writeJsonSync(file, {awesomeExtension: 'awesomeOrganization'})
+        fsEx.writeJsonSync(file, { awesomeExtension: 'awesomeOrganization' })
 
         return subjectUnderTest
           ._removePlaceholders(userInput, state)
           .then(() => {
-            assert.deepEqual(fsEx.readJsonSync(file), {awesomeExtension: 'awesomeOrganization'})
+            assert.deepEqual(fsEx.readJsonSync(file), { awesomeExtension: 'awesomeOrganization' })
           })
       })
     })
@@ -504,12 +504,12 @@ describe('ExtensionAction', () => {
           ._updateBackendFiles(userInput, state)
           .then(() => {
             assert.ok(fsEx.exists(path.join(extensionPath, 'pipelines', 'o1.awesomePipeline.json')))
-            assert.deepEqual(fsEx.readJsonSync(exConfFile), {trusted: true})
+            assert.deepEqual(fsEx.readJsonSync(exConfFile), { trusted: true })
           })
       })
 
       it('should return early because the function has nothing to do', () => {
-        assert.doesNotThrow(() => subjectUnderTest._updateBackendFiles({toBeCreated: {}}, {}))
+        assert.doesNotThrow(() => subjectUnderTest._updateBackendFiles({ toBeCreated: {} }, {}))
       })
     })
 
@@ -548,7 +548,7 @@ describe('ExtensionAction', () => {
       })
 
       it('should return early because the function has nothing to do', () => {
-        assert.doesNotThrow(() => subjectUnderTest._installFrontendDependencies({toBeCreated: {}}, {}, {}))
+        assert.doesNotThrow(() => subjectUnderTest._installFrontendDependencies({ toBeCreated: {} }, {}, {}))
       })
 
       it('should fail because the command failed', (done) => {

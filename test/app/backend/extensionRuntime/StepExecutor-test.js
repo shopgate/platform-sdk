@@ -36,7 +36,7 @@ describe('StepExecutor', () => {
           }
         }
       })
-      const stepExecutor = new StepExecutorMocked({info: () => {}}, {getApplicationFolder: () => appPath})
+      const stepExecutor = new StepExecutorMocked({ info: () => {} }, { getApplicationFolder: () => appPath })
       stepExecutor.start = sinon.stub().resolves()
       stepExecutor.stop = () => {
         return new Promise((resolve, reject) => {
@@ -84,7 +84,7 @@ describe('StepExecutor', () => {
         }
       })
 
-      const stepExecutor = new StepExecutorMocked({info: () => {}}, {getApplicationFolder: () => appPath})
+      const stepExecutor = new StepExecutorMocked({ info: () => {} }, { getApplicationFolder: () => appPath })
 
       stepExecutor.startWatcher()
       watcher.emit('ready')
@@ -106,21 +106,21 @@ describe('StepExecutor', () => {
       appTestFolder = path.join('build', 'appsettings')
       process.env.SGCLOUD_DC_WS_ADDRESS = `http://nockedDc`
       process.env.APP_PATH = appTestFolder
-      log = {info: () => {}, error: () => {}, debug: () => {}, warn: () => {}}
+      log = { info: () => {}, error: () => {}, debug: () => {}, warn: () => {} }
 
       executor = new StepExecutor(log)
       executor.stepTimeout = 1000
-      executor.stepLogger = {info: () => {}, error: () => {}, debug: () => {}, warn: () => {}}
+      executor.stepLogger = { info: () => {}, error: () => {}, debug: () => {}, warn: () => {} }
 
       const appSettings = await new AppSettings(appTestFolder).setId('shop_10006')
-      await fsEx.writeJson(appSettings.attachedExtensionsFile, {attachedExtensions: {'@foo/bar': {path: 'foobar'}}})
+      await fsEx.writeJson(appSettings.attachedExtensionsFile, { attachedExtensions: { '@foo/bar': { path: 'foobar' } } })
 
       new UserSettings().setToken({})
 
       const extensionDir = path.join(appPath, EXTENSIONS_FOLDER, 'foobar', 'extension')
       await fsEx.emptyDir(extensionDir)
 
-      const files = glob(path.join(__dirname, 'fakeSteps', '*.js'), {sync: true})
+      const files = glob(path.join(__dirname, 'fakeSteps', '*.js'), { sync: true })
       const fileCopyResults = await Promise.all(files.map(file => fsEx.copy(file, path.join(extensionDir, path.basename(file)))))
       if (fileCopyResults) {
         await executor.start()
@@ -153,11 +153,11 @@ describe('StepExecutor', () => {
     })
 
     it('should call a local step action', (done) => {
-      const input = {foo: 'bar'}
+      const input = { foo: 'bar' }
       const stepMeta = {
         id: '@foo/bar',
         path: '@foo/bar/simple.js',
-        meta: {appId: 'shop_123'}
+        meta: { appId: 'shop_123' }
       }
       executor.onExit = () => {}
       executor.execute(input, stepMeta, (err, output) => {
@@ -168,11 +168,11 @@ describe('StepExecutor', () => {
     })
 
     it('should call a local promise step action', (done) => {
-      const input = {foo: 'bar'}
+      const input = { foo: 'bar' }
       const stepMeta = {
         id: '@foo/bar',
         path: '@foo/bar/promise-resolve.js',
-        meta: {appId: 'shop_123'}
+        meta: { appId: 'shop_123' }
       }
       executor.onExit = () => {}
       executor.execute(input, stepMeta, (err, output) => {
@@ -183,26 +183,26 @@ describe('StepExecutor', () => {
     })
 
     it('should callback error of step (with all fields)', (done) => {
-      const input = {foo: 'bar', bar: {nestedFoo: 'nestedBar'}}
+      const input = { foo: 'bar', bar: { nestedFoo: 'nestedBar' } }
       const stepMeta = {
         id: '@foo/bar',
         path: '@foo/bar/error.js',
-        meta: {appId: 'shop_123'}
+        meta: { appId: 'shop_123' }
       }
       executor.onExit = () => {}
       executor.execute(input, stepMeta, (err, output) => {
-        assert.deepEqual(err, Object.assign({name: 'Error', message: 'crashed ' + stepMeta.meta.appId}, input))
+        assert.deepEqual(err, Object.assign({ name: 'Error', message: 'crashed ' + stepMeta.meta.appId }, input))
         assert.equal(output, undefined)
         done()
       })
     })
 
     it('should callback error of promise step (with all fields)', (done) => {
-      const input = {foo: 'bar', bar: {nestedFoo: 'nestedBar'}}
+      const input = { foo: 'bar', bar: { nestedFoo: 'nestedBar' } }
       const stepMeta = {
         id: '@foo/bar',
         path: '@foo/bar/promise-reject.js',
-        meta: {appId: 'shop_123'}
+        meta: { appId: 'shop_123' }
       }
       executor.onExit = () => {}
       executor.execute(input, stepMeta, (err, output) => {
@@ -213,11 +213,11 @@ describe('StepExecutor', () => {
     })
 
     it('should fail if step file is not existent', (done) => {
-      const input = {foo: 'bar'}
+      const input = { foo: 'bar' }
       const stepMeta = {
         id: '@foo/bar',
         path: '@foo/bar/notThere.js',
-        meta: {appId: 'shop_123'}
+        meta: { appId: 'shop_123' }
       }
       executor.onExit = () => {}
       executor.execute(input, stepMeta, (err) => {
@@ -228,11 +228,11 @@ describe('StepExecutor', () => {
     })
 
     it('should fail if step file contains a syntax error', (done) => {
-      const input = {foo: 'bar'}
+      const input = { foo: 'bar' }
       const stepMeta = {
         id: '@foo/bar',
         path: '@foo/bar/crashing2.js',
-        meta: {appId: 'shop_123'}
+        meta: { appId: 'shop_123' }
       }
 
       let exitCalled = false
@@ -260,11 +260,11 @@ describe('StepExecutor', () => {
     })
 
     it('should fail if step file is invalid', (done) => {
-      const input = {foo: 'bar'}
+      const input = { foo: 'bar' }
       const stepMeta = {
         id: '@foo/bar',
         path: '@foo/bar/crashing3.js',
-        meta: {appId: 'shop_123'}
+        meta: { appId: 'shop_123' }
       }
 
       let exitCalled = false
@@ -292,11 +292,11 @@ describe('StepExecutor', () => {
     })
 
     it('should fail if module.exports is missing in step file', (done) => {
-      const input = {foo: 'bar'}
+      const input = { foo: 'bar' }
       const stepMeta = {
         id: '@foo/bar',
         path: '@foo/bar/crashing4.js',
-        meta: {appId: 'shop_123'}
+        meta: { appId: 'shop_123' }
       }
 
       let exitCalled = false
@@ -327,7 +327,7 @@ describe('StepExecutor', () => {
       const stepMeta = {
         id: '@foo/bar',
         path: '@foo/bar/crashing.js',
-        meta: {appId: 'shop_123'}
+        meta: { appId: 'shop_123' }
       }
 
       let exitCalled = false
@@ -355,7 +355,7 @@ describe('StepExecutor', () => {
       const stepMeta = {
         id: '@foo/bar',
         path: '@foo/bar/timeout.js',
-        meta: {appId: 'shop_123'}
+        meta: { appId: 'shop_123' }
       }
       executor.onExit = () => {}
       executor.execute({}, stepMeta, (err) => {
