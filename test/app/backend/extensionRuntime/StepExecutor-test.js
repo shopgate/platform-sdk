@@ -281,7 +281,7 @@ describe('StepExecutor', () => {
       })
 
       mockFs()
-      const executor = new StepExecutorMocked({ info: () => { } }, { getApplicationFolder: () => appPath }, true)
+      const executor = new StepExecutorMocked({ info: () => { } }, { getApplicationFolder: () => appPath }, null, true)
       await executor.start()
 
       const listeningToEvents = listeners.map(object => (object.event))
@@ -314,7 +314,7 @@ describe('StepExecutor', () => {
       })
 
       mockFs()
-      const executor = new StepExecutorMocked({ info: () => { } }, { getApplicationFolder: () => appPath }, false)
+      const executor = new StepExecutorMocked({ info: () => { } }, { getApplicationFolder: () => appPath }, null, false)
       await executor.start()
 
       const listeningToEvents = listeners.map(object => (object.event))
