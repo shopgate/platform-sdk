@@ -37,7 +37,7 @@ describe('StepExecutor', () => {
           }
         }
       })
-      const stepExecutor = new StepExecutorMocked({info: () => {}}, {getApplicationFolder: () => appPath})
+      const stepExecutor = new StepExecutorMocked({ info: () => {} }, { getApplicationFolder: () => appPath })
       stepExecutor.start = sinon.stub().resolves()
       stepExecutor.stop = () => {
         return new Promise((resolve, reject) => {
@@ -83,7 +83,7 @@ describe('StepExecutor', () => {
         }
       })
 
-      const stepExecutor = new StepExecutorMocked({info: () => {}}, {getApplicationFolder: () => appPath})
+      const stepExecutor = new StepExecutorMocked({ info: () => {} }, { getApplicationFolder: () => appPath })
 
       stepExecutor.startWatcher()
       watcher.emit('ready')
@@ -126,7 +126,7 @@ describe('StepExecutor', () => {
       dcHttpClient = new DcHttpClient(userSettings, log)
       executor = new StepExecutor(log, appSettings, dcHttpClient)
       executor.stepTimeout = 1000
-      executor.stepLogger = {info: () => {}, error: () => {}, debug: () => {}, warn: () => {}}
+      executor.stepLogger = { info: () => {}, error: () => {}, debug: () => {}, warn: () => {} }
 
       try {
         await fsEx.ensureDir(path.join(appTestFolder, SETTINGS_FOLDER))
