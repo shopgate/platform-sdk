@@ -4,7 +4,7 @@ const fsEx = require('fs-extra')
 const mockFs = require('mock-fs')
 const Storage = require('../../../../../lib/app/backend/extensionRuntime/context/Storage')
 
-describe.only('Storage', () => {
+describe('Storage', () => {
   let log
   const appSettings = { settingsFolder: 'fooBar' }
 
