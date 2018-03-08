@@ -34,7 +34,7 @@ describe('DcRequester', () => {
   })
 
   describe('Methods', () => {
-    let expectedUuid = 'randommm'
+    let expectedUuid = 'would normally be a random uuid, but not today'
     let uuidMock = () => { return expectedUuid }
     let subjectUnderTest
 
@@ -82,7 +82,7 @@ describe('DcRequester', () => {
         subjectUnderTest.requestAppInfo(expectedAppId, expectedDeviceId, () => {})
       })
 
-      it('should request appinfos when calling requestDeviceInfo()', done => {
+      it('should request deviceinfos when calling requestDeviceInfo()', done => {
         const expectedResourceName = 'deviceinfos'
 
         process.send = data => {
