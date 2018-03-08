@@ -1,23 +1,22 @@
 const assert = require('assert')
 const path = require('path')
-const proxyquire = require('proxyquire')
+const fsEx = require('fs-extra')
+const mockFs = require('mock-fs')
+const Storage = require('../../../../../lib/app/backend/extensionRuntime/context/Storage')
 
-const fsEx = {}
-
-const Storage = proxyquire('../../../../../lib/app/backend/extensionRuntime/context/Storage', {
-  'fs-extra': fsEx
-})
-
-describe('Storage', () => {
+describe.only('Storage', () => {
   let log
   const appSettings = { settingsFolder: 'fooBar' }
 
   beforeEach(() => {
-    log = { log: true, debug: () => {} }
-    fsEx.readJSON = (file, options, cb) => cb(new Error('not implemented'))
-    fsEx.writeJSON = (file, content, options, cb) => cb(new Error('not implemented'))
+    mockFs()
+    fsEx.ensureDirSync(appSettings.settingsFolder)
+    log = { log: true, debug: () => { } }
   })
 
+  afterEach(() => {
+    mockFs.restore()
+  })
   describe('constructor', () => {
     it('should construct with default path', () => {
       delete process.env.STORAGE_PATH
@@ -30,12 +29,10 @@ describe('Storage', () => {
 
   describe('get', () => {
     it('should cb undefined if path was not set', () => {
-      fsEx.readJSON = () => { throw new Error('file not found') }
-
       const storage = new Storage(appSettings, log)
 
       return new Promise((resolve, reject) => {
-        storage.get('foo/bar/foobar', (err, actual) => {
+        storage.get('baz', (err, actual) => {
           try {
             assert.ifError(err)
             assert.equal(actual, undefined)
@@ -49,20 +46,19 @@ describe('Storage', () => {
 
     it('should cb value if path was set', () => {
       const expected = { foo: 'bar' }
-      const path = 'foo/bar/foobar'
-      fsEx.readJSON = () => {
-        return {
-          'foo/bar/foobar': expected
-        }
-      }
+      const key = 'foo/bar/bar'
+      fsEx.ensureDirSync(path.join(appSettings.settingsFolder))
+      const content = {}
+      content[key] = expected
+      fsEx.writeJsonSync(path.join(appSettings.settingsFolder, 'storage.json'), content)
 
       const storage = new Storage(appSettings, log)
 
       return new Promise((resolve, reject) => {
-        storage.get(path, (err, actual) => {
+        storage.get(key, (err, actual) => {
           try {
             assert.ifError(err)
-            assert.equal(actual, expected)
+            assert.deepEqual(actual, expected)
           } catch (err) {
             reject(err)
           }
@@ -75,22 +71,16 @@ describe('Storage', () => {
   describe('set', () => {
     it('should set value and call save', () => {
       const value = { foo: 'bar' }
-      const path = 'foo/bar/foobar'
-      let called = 0
-
-      fsEx.readJSON = () => { return {} }
-      fsEx.writeJSON = (file, content) => {
-        assert.equal(content[path], value)
-        called++
-      }
+      const key = 'foo/bar/foobar'
 
       const storage = new Storage(appSettings, log)
 
       return new Promise((resolve, reject) => {
-        storage.set(path, value, err => {
+        storage.set(key, value, err => {
           try {
             assert.ifError(err)
-            assert.equal(called, 1)
+            const actual = fsEx.readJsonSync(path.join(appSettings.settingsFolder, 'storage.json'))
+            assert.deepEqual(actual[key], value)
           } catch (err) {
             reject(err)
           }
@@ -104,22 +94,22 @@ describe('Storage', () => {
   describe('del', () => {
     it('should delete value and call save', () => {
       const value = { foo: 'bar' }
-      const path = 'foo/bar/foobar'
-      let called = 0
-
-      fsEx.readJSON = () => { return { 'foo/bar/foobar': value } }
-      fsEx.writeJSON = (file, content) => {
-        assert.equal(content[path], undefined)
-        called++
+      const content = {
+        'foo/bar/foobar': value
       }
+      fsEx.writeJsonSync(path.join(appSettings.settingsFolder, 'storage.json'), content)
+
+      const confirmWrite = fsEx.readJsonSync(path.join(appSettings.settingsFolder, 'storage.json'))
+      assert.deepEqual(confirmWrite, content)
 
       const storage = new Storage(appSettings, log)
 
       return new Promise((resolve, reject) => {
-        storage.del(path, err => {
+        storage.del('foo/bar/foobar', err => {
           try {
             assert.ifError(err)
-            assert.equal(called, 1)
+            const actual = fsEx.readJsonSync(path.join(appSettings.settingsFolder, 'storage.json'))
+            assert.deepEqual(actual, {})
           } catch (err) {
             reject(err)
           }
