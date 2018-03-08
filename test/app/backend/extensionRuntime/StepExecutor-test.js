@@ -5,6 +5,7 @@ const sinon = require('sinon')
 const StepExecutor = require('../../../../lib/app/backend/extensionRuntime/StepExecutor')
 const AppSettings = require('../../../../lib/app/AppSettings')
 const UserSettings = require('../../../../lib/user/UserSettings')
+const DcHttpClient = require('../../../../lib/DcHttpClient')
 const appPath = path.join('build', 'appsettings')
 const proxyquire = require('proxyquire').noPreserveCache()
 const { EXTENSIONS_FOLDER, SETTINGS_FOLDER } = require('../../../../lib/app/Constants')
@@ -99,6 +100,7 @@ describe('StepExecutor', () => {
 
     let appSettings
     let userSettings
+    let dcHttpClient
     const extensionDir = path.join(appPath, EXTENSIONS_FOLDER, 'foobar', 'extension')
 
     let basicProcessMock
@@ -121,7 +123,8 @@ describe('StepExecutor', () => {
       appSettings = new AppSettings(appTestFolder)
       await appSettings.setId('shop_123')
       userSettings = new UserSettings().setToken({})
-      executor = new StepExecutor(log, appSettings, userSettings)
+      dcHttpClient = new DcHttpClient(userSettings, log)
+      executor = new StepExecutor(log, appSettings, dcHttpClient)
       executor.stepTimeout = 1000
       executor.stepLogger = {info: () => {}, error: () => {}, debug: () => {}, warn: () => {}}
 
@@ -288,6 +291,42 @@ describe('StepExecutor', () => {
       assert.ok(listeningToEvents.includes('error'))
       assert.ok(listeningToEvents.includes('exit'))
       assert.ok(listeningToEvents.includes('disconnect'))
+    })
+
+    it('should send the DC response back to child process upon incoming request', (done) => {
+      const expectedResourceName = 'some resource'
+      const expectedAppId = 'shop_1337'
+      const expectedDeviceId = 'shop_1773'
+
+      const expectedInformation = { information: 'whatever DC may return' }
+      const expectedRequestId = '1337'
+
+      dcHttpClient.getInfos = (infoType, appId, deviceId) => {
+        assert.equal(infoType, expectedResourceName)
+        assert.equal(appId, expectedAppId)
+        assert.equal(deviceId, expectedDeviceId)
+
+        return expectedInformation
+      }
+
+      executor.childProcess = {
+        send: message => {
+          assert.equal(message.type, 'dcResponse')
+          assert.equal(message.requestId, expectedRequestId)
+          assert.equal(message.info, expectedInformation)
+          done()
+        }
+      }
+
+      executor.onMessage({
+        type: 'dcRequest',
+        dcRequest: {
+          resourceName: expectedResourceName,
+          appId: expectedAppId,
+          deviceId: expectedDeviceId,
+          requestId: expectedRequestId
+        }
+      })
     })
 
     it('should start the sub process without "--inspect" if not requested', async () => {
