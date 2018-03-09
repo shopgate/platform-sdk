@@ -6,6 +6,7 @@
 * Returning an non error as error in step will show a useful error message
 * Fix startup/close bug of frontend/backend process
 * Fix path bug of components.json creation
+* Fix process termination bug on Windows (not MINGW though)
 
 ## v1.2.4
 * Updated to use `@shopgate/cloud-sdk-webpack@^1.10.0`.
