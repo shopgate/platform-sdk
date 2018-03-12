@@ -7,6 +7,8 @@
 * Fix startup/close bug of frontend/backend process
 * Fix path bug of components.json creation
 * Fix process termination bug on Windows (not MINGW though)
+* Now passing attached extensions to webpack dev server
+* Updated to use `@shopgate/cloud-sdk-webpack@^1.10.1`.
 
 ## v1.2.4
 * Updated to use `@shopgate/cloud-sdk-webpack@^1.10.0`.
