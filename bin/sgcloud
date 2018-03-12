@@ -20,8 +20,8 @@
     process.exit(1)
   }
 
-const notifier = updateNotifier({ pkg, updateCheckInterval: 0 })
-notifier.notify()
+  const notifier = updateNotifier({ pkg, updateCheckInterval: 0 })
+  notifier.notify()
 
   if (notifier.update) {
     process.exit(0)
@@ -30,20 +30,17 @@ notifier.notify()
   caporal.version(pkg.version)
 
 // Get SIGINT on windows (for CYGWIN and CMD)
-if (/^win/.test(process.platform)) {
-  const rl = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
-  })
+  if (/^win/.test(process.platform)) {
+    const rl = require('readline').createInterface({
+      input: process.stdin,
+      output: process.stdout
+    })
 
-  rl.on('SIGINT', () => {
-    process.emit('SIGINT')
-  })
-}
+    rl.on('SIGINT', () => {
+      process.emit('SIGINT')
+    })
+  }
 
-// load all custom actions
-const actions = require('../')
-Object.keys(actions).forEach(a => actions[a].register(caporal))
   let appFolder
 
   try {

@@ -34,10 +34,6 @@ interface FrontendJson {
     ip?: string
 }
 
-interface Session {
-    token: string
-}
-
 interface UserSettings {
     sessionFile: string,
     settingsFolder: string,
