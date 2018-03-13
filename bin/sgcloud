@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 (async function () {
   'use strict'
-
+  // @ts-check
+  // @type {Caporal}
   const caporal = require('caporal')
   const semver = require('semver')
   const updateNotifier = require('update-notifier')

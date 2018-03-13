@@ -21,7 +21,7 @@ interface ExtensionInfo {
 }
 
 interface AppJson {
-    id: string
+    id?: string
 }
 
 interface FrontendJson {
@@ -50,7 +50,7 @@ interface FrontendSettings {
     getRemotePort():Promise<number>,
     getAccessToken():Promise<string>,
     getSourceMapsType():Promise<string>,
-    setIpAddress(ip:number):Promise<void>,
+    setIpAddress(ip:string):Promise<void>,
     setPort(port:number):Promise<void>,
     setApiPort(apiPort:number):Promise<void>,
     setHmrPort(hmrPort:number):Promise<void>,
@@ -60,13 +60,19 @@ interface FrontendSettings {
 }
 
 interface AppSettings {
+    applicationFolder:string,
+    settingsFolder:string,
+    settingsFile:string,
+    attachedExtensionsFile:string,
+    frontendSettings:FrontendSettings,
     getApplicationFolder():string,
-    validate():AppSettings,
-    getId():string,
-    setId(id:string):AppSettings,
-    attachExtension(pathName:string,extensionInfo:ExtensionInfo,force?:boolean):AppSettings,
-    detachExtension(extensionId:string):AppSettings,
-    detachAllExtensions():AppSettings,
+    validate():Promimse<AppSettings>,
+    getId():Promimse<string>,
+    setId(id:string):Promise<AppSettings>,
+    attachExtension(pathName:string,extensionInfo:ExtensionInfo,force?:boolean):Promise<AppSettings>,
+    detachExtension(extensionId:string):Promise<AppSettings>,
+    detachAllExtensions():Promise<AppSettings>,
+    loadAttachedExtensions():Promise<Object.<string, AttachedExtension>>,
     getFrontendSettings():FrontendSettings
 }
 
@@ -89,6 +95,12 @@ interface DcHttpClient {
     getApplicationData(applicationId:string, cb:Function)
 }
 
+interface DcRequester {
+    requestAppInfo(appId:string, devideId:string, cb:Function):void,
+    requestDeviceInfo(appId:string, devideId:string, cb:Function):void,
+    request(resourceName:string, appId:string, deviceId:string, cb:Function):void,
+    pull(requestId:string):Function
+}
 
 interface Input {
     id: string;
