@@ -5,7 +5,7 @@ const fsEx = require('fs-extra')
 const proxyquire = require('proxyquire')
 
 const utils = require('../../lib/utils/utils')
-
+const { SETTINGS_FOLDER, EXTENSIONS_FOLDER } = require('../../lib/app/Constants')
 const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
 const userSettingsFolder = path.join('build', 'usersettings')
@@ -28,14 +28,14 @@ describe('BackendAction', () => {
     process.env.USER_PATH = userSettingsFolder
     process.env.APP_PATH = appPath
     fsEx.emptyDir(userSettingsFolder)
-      .then(() => fsEx.emptyDir(path.join(appPath, AppSettings.SETTINGS_FOLDER)))
+      .then(() => fsEx.emptyDir(path.join(appPath, SETTINGS_FOLDER)))
   })
 
   beforeEach(function () {
     process.env.USER_PATH = userSettingsFolder
 
     return fsEx.emptyDir(userSettingsFolder)
-      .then(() => fsEx.emptyDir(path.join(appPath, AppSettings.SETTINGS_FOLDER)))
+      .then(() => fsEx.emptyDir(path.join(appPath, SETTINGS_FOLDER)))
       .then(() => {
         userSettings = new UserSettings().setToken({})
         appSettings = new AppSettings().setId('foobarTest')
@@ -91,6 +91,7 @@ describe('BackendAction', () => {
       caporal.command = sinon.stub().returns(caporal)
       caporal.description = sinon.stub().returns(caporal)
       caporal.action = sinon.stub().returns(caporal)
+      caporal.option = sinon.stub().returns(caporal)
 
       BackendAction.register(caporal)
 
@@ -110,7 +111,7 @@ describe('BackendAction', () => {
 
     it('should fail because a backend process is already running', (done) => {
       const pid = process.pid
-      const processFile = path.join(appPath, AppSettings.SETTINGS_FOLDER)
+      const processFile = path.join(appPath, SETTINGS_FOLDER)
 
       utils.setProcessFile('backend', processFile, pid)
 
@@ -159,7 +160,7 @@ describe('BackendAction', () => {
         on: () => sinon.stub().resolves()
       }
 
-      backendAction._extensionChanged = sinon.stub().resolves()
+      backendAction._updateExtensionConfig = sinon.stub().resolves()
 
       backendAction._startSubProcess()
         .then(() => fsEx.readJson(path.join(process.env.APP_PATH, 'pipelines', 'testPipeline.json')))
@@ -192,7 +193,7 @@ describe('BackendAction', () => {
         on: () => sinon.stub().resolves()
       }
 
-      backendAction._extensionChanged = sinon.stub().resolves()
+      backendAction._updateExtensionConfig = sinon.stub().resolves()
 
       fsEx.writeJson(path.join(process.env.APP_PATH, 'pipelines', 'testPipeline.json'), {pipeline: {id: 'testPipeline123'}}, err => {
         assert.ifError(err)
@@ -256,7 +257,7 @@ describe('BackendAction', () => {
       const cfgPath = path.join(process.env.APP_PATH, 'extensions', 'testExt')
 
       try {
-        await backendAction._extensionChanged({file: generated, path: cfgPath})
+        await backendAction._updateExtensionConfig({file: generated, path: cfgPath})
         const content = await fsEx.readJson(path.join(cfgPath, 'extension', 'config.json'))
         assert.deepEqual(content, {id: 'myGeneratedExtension'})
         assert.equal(called, 1)
@@ -277,7 +278,7 @@ describe('BackendAction', () => {
       const cfgPath = path.join(process.env.APP_PATH, 'extension', 'testExt')
 
       try {
-        await backendAction._extensionChanged({file: generated, path: cfgPath})
+        await backendAction._updateExtensionConfig({file: generated, path: cfgPath})
         const content = await fsEx.readJson(path.join(cfgPath, 'frontend', 'config.json'))
         assert.deepEqual(content, {id: 'myGeneratedExtension'})
         assert.equal(called, 1)
@@ -392,12 +393,55 @@ describe('BackendAction', () => {
     })
 
     it('should work', () => {
+      appSettings.loadAttachedExtensions = () => { return {testExtension: {path: '..'}} }
       backendAction._startSubProcess = () => {}
       try {
-        backendAction.run()
+        backendAction.writeExtensionConfigs = () => {}
+        backendAction.run({})
       } catch (err) {
         assert.ifError(err)
       }
+    })
+
+    it('should write the extension configs for the app', async () => {
+      backendAction.appSettings.EXTENSIONS_FOLDER = 'extensions'
+      const extensionConfigPath = path.join(
+        backendAction.appSettings.getApplicationFolder(), EXTENSIONS_FOLDER,
+        'test-extension',
+        'extension-config.json')
+
+      fsEx.createFileSync(extensionConfigPath)
+      let mockConf = {someKey: 'someVal'}
+      await fsEx.writeJson(extensionConfigPath, mockConf)
+      let called = 0
+      backendAction.appSettings.getId = () => 1
+      backendAction.dcClient.generateExtensionConfig = (config) => {
+        called++
+        return Promise.resolve(config)
+      }
+
+      appSettings.loadAttachedExtensions = () => { return {testExtension: {path: 'test-extension'}} }
+      backendAction._startSubProcess = () => {}
+
+      await backendAction.run({})
+      assert.ok(called !== 0, 'dcClient generateExtensionConfig should have been called at least once')
+    })
+
+    it('should pass true to StepExecutor\'s "inspect" constructor argument when called with --inspect', async () => {
+      backendAction.writeExtensionConfigs = () => {}
+      backendAction._startSubProcess = async function () {
+        if (this.backendProcess.executor.inspect !== true) throw new Error('Expected third constructor argument "inspect" to true.')
+      }
+
+      await backendAction.run({inspect: true})
+    })
+
+    it('should pass false to StepExecutor\'s "inspect" constructor argument when called without --inspect', async () => {
+      backendAction._startSubProcess = async function () {
+        if (this.backendProcess.executor.inspect !== false) throw new Error('Expected third constructor argument "inspect" to false.')
+      }
+
+      await backendAction.run({})
     })
   })
 })

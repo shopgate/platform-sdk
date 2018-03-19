@@ -10,6 +10,7 @@ const UserSettings = require('../../../../lib/user/UserSettings')
 const utils = require('../../../../lib/utils/utils')
 const appPath = path.join('build', 'appsettings')
 const proxyquire = require('proxyquire').noPreserveCache()
+const { EXTENSIONS_FOLDER } = require('../../../../lib/app/Constants')
 
 describe('StepExecutor', () => {
   describe('watcher', () => {
@@ -116,7 +117,7 @@ describe('StepExecutor', () => {
       new AppSettings().setId('shop_10006')._saveExtensions({'@foo/bar': {path: 'foobar'}})
       new UserSettings().setToken({})
 
-      const extensionDir = path.join(appPath, AppSettings.EXTENSIONS_FOLDER, 'foobar', 'extension')
+      const extensionDir = path.join(appPath, EXTENSIONS_FOLDER, 'foobar', 'extension')
       fsEx.emptyDirSync(extensionDir)
 
       glob(path.join(__dirname, 'fakeSteps', '*.js'), {}, (err, files) => {
@@ -164,6 +165,21 @@ describe('StepExecutor', () => {
       })
     })
 
+    it('should call a local promise step action', (done) => {
+      const input = {foo: 'bar'}
+      const stepMeta = {
+        id: '@foo/bar',
+        path: '@foo/bar/promise-resolve.js',
+        meta: {appId: 'shop_123'}
+      }
+      executor.onExit = () => {}
+      executor.execute(input, stepMeta, (err, output) => {
+        assert.ifError(err)
+        assert.deepEqual(output, input)
+        done()
+      })
+    })
+
     it('should callback error of step (with all fields)', (done) => {
       const input = {foo: 'bar', bar: {nestedFoo: 'nestedBar'}}
       const stepMeta = {
@@ -174,6 +190,21 @@ describe('StepExecutor', () => {
       executor.onExit = () => {}
       executor.execute(input, stepMeta, (err, output) => {
         assert.deepEqual(err, Object.assign({name: 'Error', message: 'crashed ' + stepMeta.meta.appId}, input))
+        assert.equal(output, undefined)
+        done()
+      })
+    })
+
+    it('should callback error of promise step (with all fields)', (done) => {
+      const input = {foo: 'bar', bar: {nestedFoo: 'nestedBar'}}
+      const stepMeta = {
+        id: '@foo/bar',
+        path: '@foo/bar/promise-reject.js',
+        meta: {appId: 'shop_123'}
+      }
+      executor.onExit = () => {}
+      executor.execute(input, stepMeta, (err, output) => {
+        assert.equal(err.message, 'error')
         assert.equal(output, undefined)
         done()
       })
@@ -331,6 +362,32 @@ describe('StepExecutor', () => {
         assert.equal(err.code, 'ETIMEOUT')
         done()
       })
+    })
+
+    it('should start the sub process with "--inspect" if requested', async () => {
+      // stop the executor from beforeEach as we're going to instantiate our own
+      await executor.stop()
+
+      executor = new StepExecutor(log, {}, true)
+      await executor.start()
+
+      if (!executor.childProcess.spawnargs.reduce((val, current) => val || current === '--inspect', false)) {
+        await executor.stop()
+        assert.fail('Expected child process to be spawned with the "--inspect" argument.')
+      }
+    })
+
+    it('should start the sub process without "--inspect" if not requested', async () => {
+      // stop the executor from beforeEach as we're going to instantiate our own
+      await executor.stop()
+
+      executor = new StepExecutor(log, {}, false)
+      await executor.start()
+
+      if (executor.childProcess.spawnargs.reduce((val, current) => val || current === '--inspect', false)) {
+        await executor.stop()
+        assert.fail('Expected child process to be spawned with the "--inspect" argument.')
+      }
     })
   })
 })
