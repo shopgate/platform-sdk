@@ -1,5 +1,6 @@
 ## v1.4.0
 * Added `logout` command
+* Added proper message when onve developer runs `backend start` for the same shop while another is still connected
 * Fixed concurrent read/write operations when accessing context.storage objects
 
 ## v1.3.0
