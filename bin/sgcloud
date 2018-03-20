@@ -41,13 +41,19 @@
       process.emit('SIGINT')
     })
 
-    rl.on('close', () => {
-      console.log('close')
-     // process.emit('close')
+    process.stdin.resume()
+    let called = false
+    process.on('beforeExit', () => {
+     // console.log('beforeExit')
+      setTimeout(() => {
+        process.stdin.destroy()
+        if(!called) return process.kill(process.pid, process.exitCode)
+      }, 100)
     })
 
-    rl.on('exit', () => {
-      console.log('exit')
+    process.on('exit', () => {
+      //console.log('exxx')
+      if(!called) called = true
     })
   }
 

@@ -209,7 +209,7 @@ describe('BackendProcess', () => {
       socketIOMock.on('resetPipelines', (cb) => cb(null))
 
       backendProcess.connect()
-      .then(() => backendProcess.resetPipelines())
+        .then(() => backendProcess.resetPipelines())
     })
 
     it('should fail if socket sends error (resetPipelines)', (done) => {
@@ -237,7 +237,7 @@ describe('BackendProcess', () => {
       socketIOMock.on('reloadPipelines', (cb) => cb(null))
 
       backendProcess.connect()
-      .then(() => backendProcess.reloadPipelineController())
+        .then(() => backendProcess.reloadPipelineController())
     })
 
     it('should fail if socket sends error (reload)', (done) => {
