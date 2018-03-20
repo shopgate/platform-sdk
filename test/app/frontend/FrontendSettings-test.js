@@ -53,15 +53,15 @@ describe('FrontendSettings', () => {
       }
 
       return settings.loadSettings()
-      .then(result => {
-        assert.deepEqual({}, result)
-        assert.equal(called, 1)
-        fsEx.readJson = binding
-      })
-      .catch(err => {
-        assert.ifError(err)
-        fsEx.readJson = binding
-      })
+        .then(result => {
+          assert.deepEqual({}, result)
+          assert.equal(called, 1)
+          fsEx.readJson = binding
+        })
+        .catch(err => {
+          assert.ifError(err)
+          fsEx.readJson = binding
+        })
     })
   })
 
@@ -85,7 +85,7 @@ describe('FrontendSettings', () => {
       sourceMapsType: 'type'
     }
 
-    beforeEach(async() => {
+    beforeEach(async () => {
       mockFs()
       await fsEx.ensureDir(settingsPath)
       await fsEx.writeJson(settings.frontendSettingsFile, orgSettings)
@@ -106,48 +106,48 @@ describe('FrontendSettings', () => {
     describe('getPort', () => {
       it('should get the port', () => {
         return settings.getPort()
-        .then(port => assert.equal(port, orgSettings.port))
-        .catch((err) => assert.ifError(err))
+          .then(port => assert.equal(port, orgSettings.port))
+          .catch((err) => assert.ifError(err))
       })
     })
 
     describe('getApiPort', () => {
       it('should get the api port', () => {
         return settings.getApiPort()
-        .then(apiPort => assert.equal(apiPort, orgSettings.apiPort))
-        .catch((err) => assert.ifError(err))
+          .then(apiPort => assert.equal(apiPort, orgSettings.apiPort))
+          .catch((err) => assert.ifError(err))
       })
     })
 
     describe('getHmrPort', () => {
       it('should get the hmr port', () => {
         return settings.getHmrPort()
-        .then(hmrPort => assert.equal(hmrPort, orgSettings.hmrPort))
-        .catch((err) => assert.ifError(err))
+          .then(hmrPort => assert.equal(hmrPort, orgSettings.hmrPort))
+          .catch((err) => assert.ifError(err))
       })
     })
 
     describe('getRemotePort', () => {
       it('should get the remote port', () => {
         return settings.getRemotePort()
-        .then(remotePort => assert.equal(remotePort, orgSettings.remotePort))
-        .catch((err) => assert.ifError(err))
+          .then(remotePort => assert.equal(remotePort, orgSettings.remotePort))
+          .catch((err) => assert.ifError(err))
       })
     })
 
     describe('getAccessToken', () => {
       it('should get the access token', () => {
         return settings.getAccessToken()
-        .then(accessToken => assert.equal(accessToken, orgSettings.accessToken))
-        .catch((err) => assert.ifError(err))
+          .then(accessToken => assert.equal(accessToken, orgSettings.accessToken))
+          .catch((err) => assert.ifError(err))
       })
     })
 
     describe('getSourceMapsType', () => {
       it('should get the source maps type', () => {
         return settings.getSourceMapsType()
-        .then(sourceMapsType => assert.equal(sourceMapsType, orgSettings.sourceMapsType))
-        .catch((err) => assert.ifError(err))
+          .then(sourceMapsType => assert.equal(sourceMapsType, orgSettings.sourceMapsType))
+          .catch((err) => assert.ifError(err))
       })
     })
   })
@@ -167,7 +167,7 @@ describe('FrontendSettings', () => {
     })
 
     describe('setPort', () => {
-      it('should set the port', async() => {
+      it('should set the port', async () => {
         const port = 12345
         await settings.setPort(port)
         await checkField('port', port)
@@ -175,7 +175,7 @@ describe('FrontendSettings', () => {
     })
 
     describe('setApiPort', () => {
-      it('should set the api port', async() => {
+      it('should set the api port', async () => {
         const port = 12345
         await settings.setApiPort(port)
         await checkField('apiPort', port)
@@ -183,7 +183,7 @@ describe('FrontendSettings', () => {
     })
 
     describe('setHmrPort', () => {
-      it('should set the hmr port', async() => {
+      it('should set the hmr port', async () => {
         const hmrPort = 34567
         await settings.setHmrPort(hmrPort)
         await checkField('hmrPort', hmrPort)
@@ -207,7 +207,7 @@ describe('FrontendSettings', () => {
     })
 
     describe('setSourceMapsType', () => {
-      it('should set the source map type', async() => {
+      it('should set the source map type', async () => {
         const sourceMapsType = 'type'
         await settings.setSourceMapsType(sourceMapsType)
         await checkField('sourceMapsType', sourceMapsType)
