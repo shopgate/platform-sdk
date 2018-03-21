@@ -304,4 +304,100 @@ describe('BackendProcess', () => {
         .then(() => backendProcess.disconnect())
     })
   })
+
+  describe('disconnectedByOtherUser', () => {
+    it('should be called upon incoming "disconnectedByOtherUser" from socket', () => {
+      return new Promise((resolve, reject) => {
+        backendProcess.disconnectedByOtherUser = reason => {
+          try {
+            assert.equal(reason, 'reason')
+          } catch (err) {
+            reject(err)
+          }
+          resolve()
+        }
+
+        backendProcess.connect().then(() => {
+          socketIOMock.emit('disconnectedByOtherUser', 'reason')
+        })
+      })
+    })
+
+    it('should call "disconnect(false)" and send SIGINT upon incoming "disconnectedByOtherUser" from socket', () => {
+      return new Promise((resolve, reject) => {
+        let sigintSent = false
+        let disconnectCalled = false
+
+        process.removeAllListeners('SIGINT')
+
+        process.on('SIGINT', () => {
+          if (disconnectCalled) resolve()
+          sigintSent = true
+        })
+
+        backendProcess.disconnect = reconnect => {
+          try {
+            assert.ok(!reconnect)
+          } catch (err) {
+            reject(err)
+          }
+
+          if (sigintSent) resolve()
+          disconnectCalled = !reconnect
+        }
+
+        backendProcess.connect().then(() => {
+          socketIOMock.emit('disconnectedByOtherUser', 'reason')
+        })
+      })
+    })
+  })
+
+  describe('connectionInProgress', () => {
+    it('should be called upon incoming "connectionInProgress" from socket', () => {
+      return new Promise((resolve, reject) => {
+        backendProcess.connectionInProgress = reason => {
+          try {
+            assert.equal(reason, 'reason')
+          } catch (err) {
+            reject(err)
+          }
+          resolve()
+        }
+
+        backendProcess.connect().then(() => {
+          socketIOMock.emit('connectionInProgress', 'reason')
+        })
+      })
+    })
+
+    it('should call "disconnect(false)" and send SIGINT upon incoming "connectionInProgress" from socket', () => {
+      return new Promise((resolve, reject) => {
+        let sigintSent = false
+        let disconnectCalled = false
+
+        process.removeAllListeners('SIGINT')
+
+        process.on('SIGINT', () => {
+          if (disconnectCalled) resolve()
+          sigintSent = true
+        })
+
+        backendProcess.disconnect = reconnect => {
+          try {
+            assert.ok(!reconnect)
+          } catch (err) {
+            reject(err)
+          }
+
+          if (sigintSent) resolve()
+          disconnectCalled = !reconnect
+        }
+
+        backendProcess.connect().then(() => {
+          socketIOMock.emit('connectionInProgress', 'reason')
+        })
+      })
+    })
+  })
 })
