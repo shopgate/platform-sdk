@@ -1,5 +1,6 @@
 const assert = require('assert')
 const path = require('path')
+const mockFs = require('mock-fs')
 const fsEx = require('fs-extra')
 const proxyquire = require('proxyquire')
 const { EXTENSIONS_FOLDER, THEMES_FOLDER } = require('../../lib/app/Constants')
@@ -15,6 +16,16 @@ const utils = proxyquire('../../lib/utils/utils', {
 })
 
 describe('utils', () => {
+  before(done => {
+    mockFs()
+    done()
+  })
+
+  after(done => {
+    mockFs.restore()
+    done()
+  })
+
   describe('resetProject', () => {
     const testProjectDir = path.join('build', 'testProject')
 
@@ -150,7 +161,7 @@ describe('utils', () => {
     })
 
     it('should create components json', async () => {
-      utils.generateComponentsJson(appSettings)
+      await utils.generateComponentsJson(appSettings)
 
       const t1 = await fsEx.readJson(path.join(projectDir, THEMES_FOLDER, 'gmd', 'config', 'components.json'))
       const t2 = await fsEx.readJson(path.join(projectDir, THEMES_FOLDER, 'ios', 'config', 'components.json'))

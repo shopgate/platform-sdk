@@ -3,17 +3,13 @@ const assert = require('assert')
 const sinon = require('sinon')
 const path = require('path')
 const fsEx = require('fs-extra')
-const AppSettings = require('../../../lib/app/AppSettings')
 const UserSettings = require('../../../lib/user/UserSettings')
 const portfinder = require('portfinder')
-
 const proxyquire = require('proxyquire')
-
+const mockFs = require('mock-fs')
 class SocketIOMock extends EventEmitter {
   connect () { this.emit('connect') }
-
   disconnect () { this.disconnected = true }
-
   removeListener () {}
 }
 
@@ -23,7 +19,6 @@ describe('BackendProcess', () => {
   let userTestFolder
   let appTestFolder
   let userSettings
-  let appSettings
   let logger
 
   const socketIOMock = new SocketIOMock()
@@ -32,14 +27,12 @@ describe('BackendProcess', () => {
     'socket.io-client': () => socketIOMock
   })
 
-  beforeEach((done) => {
+  beforeEach(async () => {
+    mockFs()
     appTestFolder = path.join('build', 'appsettings')
-    process.env.APP_PATH = appTestFolder
-    appSettings = new AppSettings().setId('shop_10006')
-
     userTestFolder = path.join('build', 'usersettings')
     process.env.USER_PATH = userTestFolder
-    userSettings = new UserSettings().setToken({})
+    userSettings = await new UserSettings().setToken({})
 
     stepExecutor = {
       start: () => sinon.stub().resolves(),
@@ -54,9 +47,8 @@ describe('BackendProcess', () => {
 
       process.env.SGCLOUD_DC_ADDRESS = `http://localhost:${port}`
       logger = {info: () => {}, error: () => {}, debug: () => {}}
-      backendProcess = new BackendProcess(userSettings, appSettings, logger)
+      backendProcess = new BackendProcess(userSettings, logger)
       backendProcess.executor = stepExecutor
-      done()
     })
   })
 
@@ -67,11 +59,12 @@ describe('BackendProcess', () => {
 
     socketIOMock.removeAllListeners()
 
-    return Promise.all([
+    await Promise.all([
       fsEx.remove(appTestFolder),
       fsEx.remove(userTestFolder),
       backendProcess.disconnect()
     ])
+    mockFs.restore()
   })
 
   describe('connect', () => {
@@ -96,7 +89,7 @@ describe('BackendProcess', () => {
         stepCallWasCalled = true
       }
 
-      backendProcess.updateToken = (data) => {
+      backendProcess.updateToken = async (data) => {
         assert.deepEqual(data, {foo: 'bar'})
         updateTokenWasCalled = true
       }
@@ -261,7 +254,14 @@ describe('BackendProcess', () => {
   })
 
   describe('startStepExecutor', () => {
-    it('should start the step executor', () => {
+    it('should start the step executor', async () => {
+      let startCalled = false
+      backendProcess.start = () => {
+        startCalled = true
+      }
+      backendProcess.start = () => {
+        assert.ok(startCalled)
+      }
       return backendProcess.startStepExecutor()
     })
   })
@@ -283,9 +283,9 @@ describe('BackendProcess', () => {
   describe('update token', () => {
     const token = {foo: 'bar'}
 
-    it('should update the token', () => {
-      backendProcess.updateToken(token)
-      assert.deepEqual(userSettings.getToken(), token)
+    it('should update the token', async () => {
+      await backendProcess.updateToken(token)
+      assert.deepEqual(await userSettings.getToken(), token)
     })
   })
 
