@@ -84,9 +84,9 @@ describe('FrontendAction', () => {
 
   describe('run() -> start', () => {
     it('should throw an error if the theme is not existing', async () => {
-      const options = {theme: 'theme-gmd'}
+      const options = { theme: 'theme-gmd' }
       fsExtraMock.readdir = (source) => Promise.resolve(['a', 'b'])
-      fsExtraMock.lstat = () => Promise.resolve({isDirectory: () => true})
+      fsExtraMock.lstat = () => Promise.resolve({ isDirectory: () => true })
       fsExtraMock.exists = () => Promise.resolve(false)
       subjectUnderTest.dcHttpClient.generateExtensionConfig = (configFile, id, cb) => { cb(null, {}) }
 
@@ -99,11 +99,11 @@ describe('FrontendAction', () => {
     })
 
     it('should generate theme config', async () => {
-      const options = {theme: 'theme-gmd'}
+      const options = { theme: 'theme-gmd' }
       fsExtraMock.readJSON = () => Promise.resolve({})
       fsExtraMock.readdir = () => Promise.resolve(['theme-gmd'])
       fsExtraMock.exists = () => Promise.resolve(true)
-      fsExtraMock.lstat = () => Promise.resolve({isDirectory: () => true})
+      fsExtraMock.lstat = () => Promise.resolve({ isDirectory: () => true })
       subjectUnderTest.dcHttpClient.generateExtensionConfig = () => Promise.resolve({})
 
       let gotCalled = false
@@ -124,13 +124,11 @@ describe('FrontendAction', () => {
       const choices = ['theme-gmd', 'theme-super']
       inquirer.prompt = async (args) => {
         assert.deepEqual(args[0].choices, choices)
-        return {theme: choice}
+        return { theme: choice }
       }
 
-      fsExtraMock.readdir = () => Promise.resolve(choices)
-      fsExtraMock.lstat = (dir) => ({
-        isDirectory: () => (true)
-      })
+      utils.findThemes = () => Promise.resolve(choices)
+
       subjectUnderTest.requestThemeOption().then((result) => {
         assert.equal(choice, result)
         done()
@@ -144,7 +142,7 @@ describe('FrontendAction', () => {
         done()
         return Promise.resolve()
       }
-      subjectUnderTest.run('setup', {theme: 'theme-gmd'})
+      subjectUnderTest.run('setup', { theme: 'theme-gmd' })
     })
   })
 })
