@@ -66,6 +66,26 @@ describe('Storage', () => {
         })
       })
     })
+
+    it('should return Promise<undefined> if path was not set', async () => {
+      const storage = new Storage(appSettings, log)
+      const value = await storage.get('baz')
+      assert.equal(value, undefined)
+    })
+
+    it('should return Promise<value> if path was set', async () => {
+      const expected = { foo: 'bar' }
+      const key = 'foo/bar/bar'
+      fsEx.ensureDirSync(path.join(appSettings.settingsFolder))
+      const content = {}
+      content[key] = expected
+      fsEx.writeJsonSync(path.join(appSettings.settingsFolder, 'storage.json'), content)
+
+      const storage = new Storage(appSettings, log)
+      const value = await storage.get(key)
+
+      assert.deepEqual(value, expected)
+    })
   })
 
   describe('set', () => {
@@ -88,6 +108,15 @@ describe('Storage', () => {
           resolve()
         })
       })
+    })
+
+    it('should set value and return promise', async() => {
+      const value = { foo: 'bar' }
+      const key = 'foo/bar/foobar'
+      const storage = new Storage(appSettings, log)
+      await storage.set(key, value)
+      const actual = fsEx.readJsonSync(path.join(appSettings.settingsFolder, 'storage.json'))
+      assert.deepEqual(actual[key], value)
     })
   })
 
@@ -117,6 +146,19 @@ describe('Storage', () => {
           resolve()
         })
       })
+    })
+    it('should delete value and return a promise', async () => {
+      const value = { foo: 'bar' }
+      const content = {
+        'foo/bar/foobar': value
+      }
+      fsEx.writeJsonSync(path.join(appSettings.settingsFolder, 'storage.json'), content)
+      const confirmWrite = fsEx.readJsonSync(path.join(appSettings.settingsFolder, 'storage.json'))
+      assert.deepEqual(confirmWrite, content)
+      const storage = new Storage(appSettings, log)
+      await storage.del('foo/bar/foobar')
+      const actual = fsEx.readJsonSync(path.join(appSettings.settingsFolder, 'storage.json'))
+      assert.deepEqual(actual, {})
     })
   })
 })
