@@ -1,46 +1,51 @@
-interface Context {
-    meta: Meta
-    config: any
-    storage: ContextStorage
-    settings: ExtensionSettings
-    app: AppContext
-    device: DeviceContext
-    log: Logger
-}
+declare namespace Shopgate.PlatformSdk {
+    interface Context {
+        meta: Meta
+        config: any
+        storage: ContextStorage
+        settings: ExtensionSettings
+        app: AppContext
+        device: DeviceContext
+        log: Logger
+    }
 
-interface AppContext {
-    getInfo: AppInfo | Object
-}
+    interface AppContext {
+        getInfo: AppInfo | Object
+    }
 
-interface DeviceContext {
-    getInfo: DeviceInfo | Object
-}
+    interface DeviceContext {
+        getInfo: DeviceInfo | Object
+    }
 
-interface AppInfo {
+    interface AppInfo {
 
-}
+    }
 
-interface DeviceInfo {
+    interface DeviceInfo {
 
-}
+    }
 
-interface ExtensionSettings {
-    get(key: string, cb: Function)
-}
-interface Meta {
-    userId?: string
-    appId: string,
-    deviceId: string
-}
+    interface ExtensionSettings {
+        get(key: string, cb: Function)
+    }
 
-interface ContextStorage {
-    extension: Storage
-    device: Storage
-    user: Storage
-}
+    interface Meta {
+        userId?: string
+        appId: string,
+        deviceId: string
+    }
 
-interface Storage {
-    get(key: string, cb: Function),
-    set(key: string, value: any, cb: Function),
-    del(key: string, cb: Function)
+    interface ContextStorage {
+        extension: Storage
+        device: Storage
+        user: Storage
+    }
+
+    interface Storage {
+        get(key: string, cb: Function),
+
+        set(key: string, value: any, cb: Function),
+
+        del(key: string, cb: Function)
+    }
 }
