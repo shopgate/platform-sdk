@@ -97,7 +97,7 @@ declare namespace Internal {
 
         detachAllExtensions(): Promise<AppSettings>,
 
-        loadAttachedExtensions(): Promise<string, AttachedExtension>,
+        loadAttachedExtensions(): Promise<{string, AttachedExtension}>,
 
         getFrontendSettings(): FrontendSettings
     }
