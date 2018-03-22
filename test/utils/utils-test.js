@@ -177,4 +177,37 @@ describe('utils', () => {
       assert.deepEqual(t2, expectedResult)
     })
   })
+
+  describe('findThemes', () => {
+    const testFolder = path.join('build', 'findThemesTest')
+
+    const appSettings = {
+      getApplicationFolder: () => testFolder
+    }
+
+    const validThemes = ['ios', 'gmd']
+    const dirs = validThemes.concat(['.git', '.idea'])
+
+    beforeEach(async () => {
+      for (let i in dirs) {
+        await fsEx.ensureDir(path.join(testFolder, THEMES_FOLDER, dirs[i]))
+      }
+
+      for (let i in validThemes) {
+        await fsEx.writeJSON(path.join(testFolder, THEMES_FOLDER, validThemes[i], 'extension-config.json'), {})
+      }
+    })
+
+    afterEach(async () => {
+      await fsEx.remove(testFolder)
+    })
+
+    it('should find all valid themes', async () => {
+      const themes = await utils.findThemes(appSettings)
+
+      for (let i in validThemes) {
+        assert.ok(themes.includes(validThemes[i]))
+      }
+    })
+  })
 })
