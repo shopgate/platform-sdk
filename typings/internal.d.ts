@@ -133,9 +133,9 @@ declare namespace Internal {
     }
 
     interface DcRequester {
-        requestAppInfo(appId: string, devideId: string, cb: Function): void,
+        requestAppInfo(appId: string, deviceId: string, cb: Function): void,
 
-        requestDeviceInfo(appId: string, devideId: string, cb: Function): void,
+        requestDeviceInfo(appId: string, deviceId: string, cb: Function): void,
 
         request(resourceName: string, appId: string, deviceId: string, cb: Function): void,
 
