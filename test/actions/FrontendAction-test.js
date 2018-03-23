@@ -53,7 +53,7 @@ describe('FrontendAction', () => {
     fsExtraMock.lstat = () => Promise.resolve()
 
     appSettings = await new AppSettings(appPath).setId('foobarTest')
-    appSettings.loadAttachedExtensions = async() => ({})
+    appSettings.loadAttachedExtensions = async () => ({})
     subjectUnderTest = new FrontendAction(appSettings, userSettings, dcHttpClient)
 
     subjectUnderTest.extensionConfigWatcher = {
