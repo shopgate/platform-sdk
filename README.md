@@ -24,3 +24,4 @@ apps and mobile websites for the iPhone, iPad, Android smartphones and tablets.
 Shopgate's Platform SDK is available under the Apache License, Version 2.0.
 
 See the [LICENSE](./LICENSE.md) file for more information.
+
