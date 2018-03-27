@@ -89,6 +89,7 @@ describe('FrontendAction', () => {
       fsExtraMock.lstat = () => Promise.resolve({ isDirectory: () => true })
       fsExtraMock.exists = () => Promise.resolve(false)
       subjectUnderTest.dcHttpClient.generateExtensionConfig = (configFile, id, cb) => { cb(null, {}) }
+      subjectUnderTest.setStartPage = () => Promise.resolve()
 
       try {
         await subjectUnderTest.run('start', null, options)
@@ -105,6 +106,7 @@ describe('FrontendAction', () => {
       fsExtraMock.exists = () => Promise.resolve(true)
       fsExtraMock.lstat = () => Promise.resolve({ isDirectory: () => true })
       subjectUnderTest.dcHttpClient.generateExtensionConfig = () => Promise.resolve({})
+      subjectUnderTest.setStartPage = () => Promise.resolve()
 
       let gotCalled = false
       utils.generateComponentsJson = () => { gotCalled = true }
