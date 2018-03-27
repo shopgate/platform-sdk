@@ -275,11 +275,7 @@ describe('BackendAction', () => {
       let generated = { id: 'myIgnoredExtension', backend: { id: 'myIgnoredExtension' } }
 
       let called = 0
-      subjectUnderTest.dcHttpClient.generateExtensionConfig = () => {
-        called++
-        return Promise.resolve(generated)
-      }
-
+      subjectUnderTest.dcHttpClient.generateExtensionConfig = () => Promise.resolve()
       utils.getBlacklistedExtensions = () => { return ['myIgnoredExtension'] }
 
       logger.info = (msg) => {
