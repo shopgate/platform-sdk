@@ -210,4 +210,23 @@ describe('utils', () => {
       }
     })
   })
+
+  describe('getBlacklistedExtensions', () => {
+    afterEach(() => {
+      delete process.env.IGNORE_EXT_CONFIG_FOR
+    })
+
+    it('should return the blacklisted extensions', () => {
+      const extensions = ['extension1', '@super-coolio2', 'hans.234']
+
+      process.env.IGNORE_EXT_CONFIG_FOR = extensions.join(',')
+      const list = utils.getBlacklistedExtensions()
+      assert.deepEqual(list, extensions)
+    })
+
+    it('should return an empty string if there are no blacklisted extensions', () => {
+      const list = utils.getBlacklistedExtensions()
+      assert.deepEqual(list, [])
+    })
+  })
 })

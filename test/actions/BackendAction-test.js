@@ -142,6 +142,12 @@ describe('BackendAction', () => {
   })
 
   describe('watching', () => {
+    const originalGetBlacklistedExtensions = utils.getBlacklistedExtensions
+
+    after(() => {
+      utils.getBlacklistedExtensions = originalGetBlacklistedExtensions
+    })
+
     it('should update pipelines', (done) => {
       subjectUnderTest.backendProcess = {
         connect: sinon.stub().resolves(),
@@ -260,6 +266,27 @@ describe('BackendAction', () => {
         const content = await fsEx.readJson(path.join(cfgPath, 'extension', 'config.json'))
         assert.deepEqual(content, { id: 'myGeneratedExtension' })
         assert.equal(called, 1)
+      } catch (err) {
+        assert.ifError(err)
+      }
+    })
+
+    it('should not write generated extension-config if backend-extension was updated but extension is on blacklist', async () => {
+      let generated = { id: 'myIgnoredExtension', backend: { id: 'myIgnoredExtension' } }
+
+      let called = 0
+      subjectUnderTest.dcHttpClient.generateExtensionConfig = () => Promise.resolve()
+      utils.getBlacklistedExtensions = () => { return ['myIgnoredExtension'] }
+
+      logger.info = (msg) => {
+        assert.equal('Ignoring extension-config.json of myIgnoredExtension (blacklisted)', msg)
+      }
+
+      const cfgPath = path.join(appPath, 'extensions', 'testExt')
+
+      try {
+        await subjectUnderTest._updateExtensionConfig({ file: generated, path: cfgPath })
+        assert.equal(called, 0)
       } catch (err) {
         assert.ifError(err)
       }
