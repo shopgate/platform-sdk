@@ -1,6 +1,7 @@
 ## v1.4.0
 * Added `logout` command
 * Fixed concurrent read/write operations when accessing context.storage objects
+* Added setting the theme URL to local theme when `frontend start` is run and resetting it upon `CTRL + C`
 
 ## v1.3.0
 * Add promise support for steps
