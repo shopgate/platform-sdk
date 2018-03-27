@@ -1,7 +1,6 @@
 const assert = require('assert')
 const path = require('path')
 const fsEx = require('fs-extra')
-require('longjohn')
 const ExtensionConfigWatcher = require('../../lib/app/ExtensionConfigWatcher')
 const mockFs = require('mock-fs')
 const appPath = path.join('build', 'appsettings')
