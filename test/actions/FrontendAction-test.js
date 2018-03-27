@@ -118,6 +118,29 @@ describe('FrontendAction', () => {
         assert.ifError(err)
       }
     })
+
+    it('should set the local theme URL', async () => {
+      const options = { theme: 'theme-gmd' }
+      fsExtraMock.readJSON = () => Promise.resolve({})
+      fsExtraMock.readdir = () => Promise.resolve(['theme-gmd'])
+      fsExtraMock.exists = () => Promise.resolve(true)
+      fsExtraMock.lstat = () => Promise.resolve({ isDirectory: () => true })
+      subjectUnderTest.dcHttpClient.generateExtensionConfig = () => Promise.resolve({})
+
+      appSettings.getFrontendSettings = () => { return { getIpAddress: () => '1.2.3.4', getPort: () => 8080 } }
+
+      subjectUnderTest.setStartPage = (appId, address, port) => {
+        assert.equal(appId, 'foobarTest')
+        assert.equal(address, '1.2.3.4')
+        assert.equal(port, 8080)
+      }
+
+      try {
+        await subjectUnderTest.run('start', null, options)
+      } catch (err) {
+        throw err
+      }
+    })
   })
 
   describe('requestThemeOption', () => {
@@ -145,6 +168,36 @@ describe('FrontendAction', () => {
         return Promise.resolve()
       }
       subjectUnderTest.run('setup', { theme: 'theme-gmd' })
+    })
+  })
+
+  describe('setStartPage', () => {
+    it('should call DC to set the start page', async () => {
+      subjectUnderTest.dcHttpClient.setStartPageUrl = (appId, url) => {
+        assert.equal(appId, 'foobarTest')
+        assert.equal(url, 'http://1.2.3.4:8080')
+      }
+
+      try {
+        await subjectUnderTest.setStartPage('foobarTest', '1.2.3.4', '8080')
+      } catch (err) {
+        assert.ifError(err)
+      }
+    })
+  })
+
+  describe('resetStartPage', () => {
+    it('should call DC to set the start page to a blank string', async () => {
+      subjectUnderTest.dcHttpClient.setStartPageUrl = (appId, url) => {
+        assert.equal(appId, 'foobarTest')
+        assert.strictEqual(url, '')
+      }
+
+      try {
+        await subjectUnderTest.resetStartPage('foobarTest')
+      } catch (err) {
+        assert.ifError(err)
+      }
     })
   })
 })
