@@ -49,7 +49,7 @@ describe('utils', () => {
 
     const appFile = path.join(settingsDir, 'app.json')
     const storageFile = path.join(settingsDir, 'storage.json')
-    const extensionsFile = path.join(settingsDir, 'attachedExtension.json')
+    const extensionsFile = path.join(settingsDir, 'attachedExtensions.json')
     const ext1ConfFile = path.join(ext1Dir, 'config.json')
     const ext2ConfFile = path.join(ext2Dir, 'config.json')
     const theme1AppFile = path.join(theme1Dir, 'app.json')
@@ -82,12 +82,18 @@ describe('utils', () => {
       done()
     })
 
-    it('should reset the project', (done) => {
-      utils.resetProject()
-      setTimeout(() => {
-        files.forEach(file => assert.ok(!fsEx.pathExistsSync(file), `${file} should not exists`))
-        done()
-      }, 1000)
+    it('should reset the project', async () => {
+      await utils.resetProject()
+      return new Promise((resolve, reject) => {
+        setTimeout(async () => {
+          const promises = files.map(file => { return fsEx.pathExists(file) })
+          const results = await Promise.all(promises)
+          for (let i in results) {
+            if (results[i]) return reject(new Error(`${files[i]} still exists`))
+          }
+          resolve()
+        }, 1000)
+      })
     })
   })
 
@@ -156,13 +162,10 @@ describe('utils', () => {
       }
     })
 
-    afterEach(async () => {
-      await fsEx.remove(projectDir)
-    })
+    afterEach(async () => { await fsEx.remove(projectDir) })
 
     it('should create components json', async () => {
       await utils.generateComponentsJson(appSettings)
-
       const t1 = await fsEx.readJson(path.join(projectDir, THEMES_FOLDER, 'gmd', 'config', 'components.json'))
       const t2 = await fsEx.readJson(path.join(projectDir, THEMES_FOLDER, 'ios', 'config', 'components.json'))
 

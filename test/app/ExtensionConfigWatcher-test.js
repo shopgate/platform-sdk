@@ -10,9 +10,11 @@ describe('ExtensionConfigWatcher', () => {
 
   beforeEach((done) => {
     mockFs()
+
     process.env.APP_PATH = appPath
-    const appSettingsMock = {getApplicationFolder: () => appPath}
+    const appSettingsMock = { getApplicationFolder: () => appPath, settingsFolder: 'build/appsettings' }
     extensionConfigWatcher = new ExtensionConfigWatcher(appSettingsMock)
+
     fsEx.emptyDir(path.join(appPath, 'extensions'), done)
   })
 
@@ -39,6 +41,7 @@ describe('ExtensionConfigWatcher', () => {
     }
 
     extensionConfigWatcher.chokidar = {
+      removeAllListeners: async () => (true),
       closed: false,
       watch: (givenPath, options) => {
         assert.equal(givenPath, path.join('build/appsettings/extensions/*', 'extension-config.json'))
@@ -58,7 +61,7 @@ describe('ExtensionConfigWatcher', () => {
     }
 
     const extensionConfigPath = path.join(extensionConfigWatcher.watchFolder, 'testExt', 'extension-config.json')
-    extensionConfigWatcher.start().then(() => {
+    extensionConfigWatcher.start('backend').then(() => {
       fsEx.ensureDirSync(path.join(extensionConfigWatcher.watchFolder, 'testExt'))
       fsEx.writeJsonSync(extensionConfigPath, writtenConfig)
 
