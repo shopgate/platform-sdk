@@ -127,7 +127,7 @@ declare namespace Internal {
 
         removePipeline(pipelineId: string, applicationId: string, trusted): Promise<void>,
 
-        generateExtensionConfig (config: ExtensionConfigJson, applicationId: string, cb: Function),
+        generateExtensionConfig (config: ExtensionConfigJson, applicationId: string),
 
         getApplicationData(applicationId: string, cb: Function)
     }
