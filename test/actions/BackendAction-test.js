@@ -264,7 +264,7 @@ describe('BackendAction', () => {
       fsEx.ensureDirSync(path.join(cfgPath, 'extension'))
 
       try {
-        await subjectUnderTest._updateExtensionConfig({ file: generated, path: cfgPath })
+        await utils.updateExtensionConfig({ file: generated, path: cfgPath }, await subjectUnderTest.appSettings.getId(), subjectUnderTest.dcHttpClient)
         const content = await fsEx.readJson(path.join(cfgPath, 'extension', 'config.json'))
         assert.deepEqual(content, { id: 'myGeneratedExtension' })
         assert.equal(called, 1)
@@ -287,7 +287,7 @@ describe('BackendAction', () => {
       const cfgPath = path.join(appPath, 'extensions', 'testExt')
 
       try {
-        await subjectUnderTest._updateExtensionConfig({ file: generated, path: cfgPath })
+        await utils.updateExtensionConfig({ file: generated, path: cfgPath }, await subjectUnderTest.appSettings.getId(), subjectUnderTest.dcHttpClient)
         assert.equal(called, 0)
       } catch (err) {
         assert.ifError(err)
@@ -307,7 +307,7 @@ describe('BackendAction', () => {
       fsEx.ensureDirSync(path.join(cfgPath, 'frontend'))
 
       try {
-        await subjectUnderTest._updateExtensionConfig({ file: generated, path: cfgPath })
+        await utils.updateExtensionConfig({ file: generated, path: cfgPath }, await subjectUnderTest.appSettings.getId(), subjectUnderTest.dcHttpClient)
         const content = await fsEx.readJson(path.join(cfgPath, 'frontend', 'config.json'))
         assert.deepEqual(content, { id: 'myGeneratedExtension' })
         assert.equal(called, 1)
