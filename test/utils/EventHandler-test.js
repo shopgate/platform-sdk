@@ -30,11 +30,18 @@ describe('EventHandler', () => {
   })
   it('should write config.json and components.json on change', (done) => {
     const config = {
-      file: 'foo',
+      file: {
+        id: 'foo'
+      },
       path: 'bar'
     }
-    const expectedConfig = {
+    fsEx.ensureDirSync(path.join(config.path, 'extension'))
+    fsEx.ensureDirSync(path.join(config.path, 'frontend'))
+    const expectedBackendConfig = {
       something: 'something'
+    }
+    const expectedFrontendConfig = {
+      somethingElse: 'somethingElse'
     }
     const settings = {
       getId: async () => (1)
@@ -42,13 +49,15 @@ describe('EventHandler', () => {
     const dcClient = {
       generateExtensionConfig: async (file, appId) => {
         return {
-          backend: expectedConfig
+          backend: expectedBackendConfig,
+          frontend: expectedFrontendConfig
         }
       }
     }
     EventHandler.extensionConfigChanged(config, settings, dcClient).then(async () => {
       assert.equal(called, true)
-      assert.deepEqual(await fsEx.readJson(path.join(config.path, 'extension', 'config.json')), expectedConfig)
+      assert.deepEqual(await fsEx.readJson(path.join(config.path, 'extension', 'config.json')), expectedBackendConfig)
+      assert.deepEqual(await fsEx.readJson(path.join(config.path, 'frontend', 'config.json')), expectedFrontendConfig)
       done()
     })
   })

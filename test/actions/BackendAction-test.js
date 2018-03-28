@@ -261,6 +261,8 @@ describe('BackendAction', () => {
 
       const cfgPath = path.join(appPath, 'extensions', 'testExt')
 
+      fsEx.ensureDirSync(path.join(cfgPath, 'extension'))
+
       try {
         await subjectUnderTest._updateExtensionConfig({ file: generated, path: cfgPath })
         const content = await fsEx.readJson(path.join(cfgPath, 'extension', 'config.json'))
@@ -302,6 +304,7 @@ describe('BackendAction', () => {
       }
 
       const cfgPath = path.join(appPath, 'extension', 'testExt')
+      fsEx.ensureDirSync(path.join(cfgPath, 'frontend'))
 
       try {
         await subjectUnderTest._updateExtensionConfig({ file: generated, path: cfgPath })
