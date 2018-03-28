@@ -49,7 +49,7 @@ describe('utils', () => {
 
     const appFile = path.join(settingsDir, 'app.json')
     const storageFile = path.join(settingsDir, 'storage.json')
-    const extensionsFile = path.join(settingsDir, 'attachedExtension.json')
+    const extensionsFile = path.join(settingsDir, 'attachedExtensions.json')
     const ext1ConfFile = path.join(ext1Dir, 'config.json')
     const ext2ConfFile = path.join(ext2Dir, 'config.json')
     const theme1AppFile = path.join(theme1Dir, 'app.json')
@@ -85,10 +85,12 @@ describe('utils', () => {
     it('should reset the project', async () => {
       await utils.resetProject()
       return new Promise((resolve, reject) => {
-        setTimeout(() => {
+        setTimeout(async () => {
           const promises = files.map(file => { return fsEx.pathExists(file) })
-          const results = Promise.all(promises)
-          for (let i in results) if (!results[i]) return reject(new Error(`${files[i]} still exists`))
+          const results = await Promise.all(promises)
+          for (let i in results) {
+            if (results[i]) return reject(new Error(`${files[i]} still exists`))
+          }
           resolve()
         }, 1000)
       })
