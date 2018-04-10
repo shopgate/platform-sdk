@@ -8,30 +8,35 @@ const defaultMeta = { appId: 'shop_1337', deviceId: '1234567890' }
 
 describe('Context', () => {
   it('should have meta', () => {
-    const context = new Context(null, null, null, '', defaultMeta, null)
+    const context = new Context(null, null, null, null, '', defaultMeta, null)
     assert.deepEqual(context.meta, defaultMeta)
   })
 
   it('should have config', () => {
     const config = { foo: { bar: {} } }
-    const context = new Context(null, config, null, '', defaultMeta, null)
+    const context = new Context(null, null, config, null, '', defaultMeta, null)
     assert.deepEqual(context.config, config)
   })
 
   it('should have log', () => {
     const log = {}
-    const context = new Context(null, null, null, '', defaultMeta, log)
+    const context = new Context(null, null, null, null, '', defaultMeta, log)
     assert.equal(context.log, log)
   })
 
   describe('storageInterfaces', () => {
     it('should have storageInterfaces', () => {
-      const context = new Context(null, null, null, '', defaultMeta, null)
+      const context = new Context(null, null, null, null, '', defaultMeta, null)
       const storageInterfaceNames = ['extension', 'device', 'user']
       const storageInterfaceFunctionNames = ['get', 'set', 'del']
-      assert.deepEqual(Object.keys(context.storage), storageInterfaceNames)
+      const mapStorageInterfaceFunctionNames = ['get', 'set', 'del', 'getItem', 'setItem', 'delItem']
+
       storageInterfaceNames.forEach((storageInterfaceName) => {
+        assert.ok(context.storage[storageInterfaceName])
         assert.deepEqual(Object.keys(context.storage[storageInterfaceName]), storageInterfaceFunctionNames)
+
+        assert.ok(context.storage.map[storageInterfaceName])
+        assert.deepEqual(Object.keys(context.storage.map[storageInterfaceName]), mapStorageInterfaceFunctionNames)
       })
     })
 
@@ -51,7 +56,7 @@ describe('Context', () => {
           }
         }
 
-        const context = new Context(storage, null, null, test.extensionId, test.meta || defaultMeta, null)
+        const context = new Context(storage, null, null, null, test.extensionId, test.meta || defaultMeta, null)
 
         function doneCb (err, value) {
           if (!test.err) {
@@ -80,7 +85,7 @@ describe('Context', () => {
       }
     }
 
-    const context = new Context(storage, null, null, extensionId, defaultMeta, null)
+    const context = new Context(storage, null, null, null, extensionId, defaultMeta, null)
     assert.deepEqual(Object.keys(context.settings), ['get'])
 
     context.settings.get(settingsKey, (err, value) => {
@@ -103,7 +108,7 @@ describe('Context', () => {
       }
     }
 
-    const context = new Context(null, null, dcRequesterMock, '', defaultMeta, null)
+    const context = new Context(null, null, null, dcRequesterMock, '', defaultMeta, null)
     assert.equal(Object.keys(context.app), 'getInfo')
     context.app.getInfo((err, actual) => {
       assert.ifError(err)
@@ -126,7 +131,7 @@ describe('Context', () => {
       }
     }
 
-    const context = new Context(null, null, dcRequesterMock, '', defaultMeta, null)
+    const context = new Context(null, null, null, dcRequesterMock, '', defaultMeta, null)
     assert.equal(Object.keys(context.device), 'getInfo')
     context.device.getInfo((err, actual) => {
       assert.ifError(err)
@@ -137,7 +142,7 @@ describe('Context', () => {
   })
 
   it('should have tracedRequest', () => {
-    const context = new Context(null, null, null, '', defaultMeta, null)
+    const context = new Context(null, null, null, null, '', defaultMeta, null)
     assert.equal(typeof context.tracedRequest, 'function')
     assert.equal(context.tracedRequest(), request)
   })
