@@ -4,7 +4,7 @@ const fsEx = require('fs-extra')
 const mockFs = require('mock-fs')
 const MapStorage = require('../../../../../lib/app/backend/extensionRuntime/context/MapStorage')
 
-describe('Storage', () => {
+describe('MapStorage', () => {
   let settingsFolderPath
   let storageFilePath
   let log
@@ -84,6 +84,146 @@ describe('Storage', () => {
       const value = await storage.get(key)
 
       assert.deepEqual(value, expected)
+    })
+  })
+
+  describe('set', () => {
+    it('should set value and call save', () => {
+      const value = { foo: 'bar' }
+      const key = 'foo/bar/foobar'
+
+      const storage = new MapStorage(storageFilePath, log)
+
+      return new Promise((resolve, reject) => {
+        storage.set(key, value, err => {
+          try {
+            assert.ifError(err)
+            const actual = fsEx.readJsonSync(storageFilePath)
+            assert.deepEqual(actual[key], value)
+          } catch (err) {
+            reject(err)
+          }
+
+          resolve()
+        })
+      })
+    })
+
+    it('should cb with an error if value is not an object', (done) => {
+      const storage = new MapStorage(storageFilePath, log)
+
+      storage.set('foo', 'bar', err => {
+        assert.ok(err)
+        assert.equal(err.message, 'Cannot save non-object as a map: "bar".')
+        done()
+      })
+    })
+
+    it('should cb with an error if writing fails', () => {
+      const storage = new MapStorage('non-existent-folder/storage.json', log)
+
+      return new Promise(resolve => {
+        storage.set('key', 'value', err => {
+          assert.ok(err)
+          resolve()
+        })
+      })
+    })
+
+    it('should set value and return promise', async () => {
+      const value = { foo: 'bar' }
+      const key = 'foo/bar/foobar'
+      const storage = new MapStorage(storageFilePath, log)
+      await storage.set(key, value)
+      const actual = fsEx.readJsonSync(storageFilePath)
+      assert.deepEqual(actual[key], value)
+    })
+
+    it('should throw an error if value is not an object', async () => {
+      const storage = new MapStorage(storageFilePath, log)
+
+      try {
+        await storage.set('foo', 'bar')
+        assert.fail('Expected error to be thrown.')
+      } catch (err) {
+        assert.equal(err.message, 'Cannot save non-object as a map: "bar".')
+      }
+    })
+
+    it('should throw an error if writing fails', async () => {
+      const storage = new MapStorage('non-existent-folder/storage.json', log)
+
+      try {
+        await storage.set('key', 'value')
+        assert.fail('Expected error to be thrown.')
+      } catch (err) {
+        assert.ok(err)
+      }
+    })
+  })
+
+  describe('del', () => {
+    it('should delete value and call save', () => {
+      const value = { foo: 'bar' }
+      const content = {
+        'foo/bar/foobar': value
+      }
+      fsEx.writeJsonSync(storageFilePath, content)
+
+      const confirmWrite = fsEx.readJsonSync(storageFilePath)
+      assert.deepEqual(confirmWrite, content)
+
+      const storage = new MapStorage(storageFilePath, log)
+
+      return new Promise((resolve, reject) => {
+        storage.del('foo/bar/foobar', err => {
+          try {
+            assert.ifError(err)
+            const actual = fsEx.readJsonSync(storageFilePath)
+            assert.deepEqual(actual, {})
+          } catch (err) {
+            reject(err)
+          }
+
+          resolve()
+        })
+      })
+    })
+
+    it('should cb with an error if writing fails', () => {
+      const storage = new MapStorage('non-existent-folder/storage.json', log)
+
+      return new Promise(resolve => {
+        storage.del('key', err => {
+          assert.ok(err)
+          resolve()
+        })
+      })
+    })
+
+    it('should delete value and return a promise', async () => {
+      const value = { foo: 'bar' }
+      const content = {
+        'foo/bar/foobar': value
+      }
+      fsEx.writeJsonSync(storageFilePath, content)
+      const confirmWrite = fsEx.readJsonSync(storageFilePath)
+      assert.deepEqual(confirmWrite, content)
+      const storage = new MapStorage(storageFilePath, log)
+      await storage.del('foo/bar/foobar')
+      const actual = fsEx.readJsonSync(storageFilePath)
+      assert.deepEqual(actual, {})
+    })
+
+    it('should throw an error if writing fails', async () => {
+      const storage = new MapStorage('non-existent-folder/storage.json', log)
+
+      try {
+        await storage.del('key')
+        assert.fail('Expected error to be thrown.')
+      } catch (err) {
+        assert.ok(err)
+      }
     })
   })
 })
