@@ -6,6 +6,7 @@
 * Added setting the theme URL to local theme when `frontend start` is run and resetting it upon `CTRL + C`
 * Added generation of config.json on `frontend start`
 * Added a "map" storage type (access via `context.storage.map.<deviceType>`)
+* Added promise support for all storage operations
 
 ## v1.3.0
 * Add promise support for steps
