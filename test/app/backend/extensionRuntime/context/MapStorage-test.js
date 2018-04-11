@@ -134,9 +134,9 @@ describe('MapStorage', () => {
       const storage = new MapStorage(storageFilePathNonExisting, log)
 
       return new Promise((resolve, reject) => {
-        storage.set('key', 'value', err => {
+        storage.set('key', {key: 'value'}, err => {
           try {
-            assert.equal(err.message, 'Cannot save non-object as a map: "value".')
+            assert.ok(err)
           } catch (err) {
             reject(err)
           }
