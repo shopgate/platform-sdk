@@ -5,6 +5,7 @@
 * Added option to ignore the extension-config.json file of an extension so the config.json won't get updated on start (backend) or on change of extension-config.json; use env `IGNORE_EXT_CONFIG_FOR` with a comma separated list like this: `IGNORE_EXT_CONFIG_FOR="extId1(,extId2,extId3,...)"`
 * Added setting the theme URL to local theme when `frontend start` is run and resetting it upon `CTRL + C`
 * Added generation of config.json on `frontend start`
+* Added a "map" storage type (access via `context.storage.map.<deviceType>`)
 
 ## v1.3.0
 * Add promise support for steps
