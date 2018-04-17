@@ -38,7 +38,7 @@ describe('MapStorage', () => {
         storage.get('baz', (err, actual) => {
           try {
             assert.ifError(err)
-            assert.deepEqual(actual, undefined)
+            assert.equal(actual, undefined)
           } catch (err) {
             reject(err)
           }
@@ -134,7 +134,7 @@ describe('MapStorage', () => {
       const storage = new MapStorage(storageFilePathNonExisting, log)
 
       return new Promise((resolve, reject) => {
-        storage.set('key', {key: 'value'}, err => {
+        storage.set('key', { key: 'value' }, err => {
           try {
             assert.ok(err)
           } catch (err) {
