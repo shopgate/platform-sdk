@@ -50,7 +50,8 @@ const FrontendSetup = proxyquire('../../../lib/app/frontend/FrontendSetup', {
     getPrefix: () => { }
   },
   '../../logger': {
-    plain: loggerSpy
+    plain: loggerSpy,
+    debug: () => (null)
   },
   inquirer,
   './setupQuestions': questionSpy
@@ -249,7 +250,6 @@ describe('FrontendSetup', () => {
     beforeEach(() => {
       saveSpy = sinon.spy()
       loggerSpy.resetHistory()
-
       frontendSettings.setIpAddress = (ip) => {
         assert.equal(ip, defaultConfig.ip)
         return Promise.resolve()
