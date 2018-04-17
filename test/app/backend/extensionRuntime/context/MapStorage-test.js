@@ -31,14 +31,14 @@ describe('MapStorage', () => {
   })
 
   describe('get cb', () => {
-    it('should cb {} if storage not available/empty', () => {
+    it('should cb undefined if storage not available/empty', () => {
       const storage = new MapStorage(storageFilePath, log)
 
       return new Promise((resolve, reject) => {
         storage.get('baz', (err, actual) => {
           try {
             assert.ifError(err)
-            assert.deepEqual(actual, {})
+            assert.equal(actual, undefined)
           } catch (err) {
             reject(err)
           }
@@ -71,10 +71,10 @@ describe('MapStorage', () => {
   })
 
   describe('get Promise', () => {
-    it('should return Promise<{}> if storage not available/empty', async () => {
+    it('should return Promise<undefined> if storage not available/empty', async () => {
       const storage = new MapStorage(storageFilePath, log)
       const value = await storage.get('baz')
-      assert.deepEqual(value, {})
+      assert.equal(value, undefined)
     })
 
     it('should return Promise<value>', async () => {
@@ -134,7 +134,7 @@ describe('MapStorage', () => {
       const storage = new MapStorage(storageFilePathNonExisting, log)
 
       return new Promise((resolve, reject) => {
-        storage.set('key', {key: 'value'}, err => {
+        storage.set('key', { key: 'value' }, err => {
           try {
             assert.ok(err)
           } catch (err) {
