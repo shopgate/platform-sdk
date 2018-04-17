@@ -361,5 +361,45 @@ describe('StepExecutor', () => {
       assert.ok(listeningToEvents.includes('exit'))
       assert.ok(listeningToEvents.includes('disconnect'))
     })
+
+    it('should stop the connected child process if stop() is called', () => {
+      return new Promise((resolve, reject) => {
+        const executor = new StepExecutor(log, appSettings, dcHttpClient, false)
+        let onCalled = false
+        let disconnectCalled = false
+        let killCalled = false
+
+        executor.childProcess = {
+          connected: true,
+          on: event => {
+            try {
+              assert.equal(event, 'exit')
+            } catch (err) {
+              reject(err)
+            }
+
+            if (disconnectCalled && killCalled) resolve()
+            onCalled = true
+          },
+          disconnect: () => {
+            if (onCalled && killCalled) resolve()
+
+            disconnectCalled = true
+          },
+          kill: (signal) => {
+            try {
+              assert.equal(signal, 'SIGINT')
+            } catch (err) {
+              reject(err)
+            }
+
+            if (onCalled && disconnectCalled) resolve()
+            killCalled = true
+          }
+        }
+
+        executor.stop()
+      })
+    })
   })
 })
