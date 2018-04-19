@@ -7,6 +7,7 @@
 * Added generation of config.json on `frontend start`
 * Added a "map" storage type (access via `context.storage.map.<deviceType>`)
 * Added promise support for all storage operations
+* Updated @shopgate/cloud-sdk-webpack to v1.11.0
 
 ## v1.3.0
 * Add promise support for steps
