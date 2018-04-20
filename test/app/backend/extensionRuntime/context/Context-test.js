@@ -26,17 +26,17 @@ describe('Context', () => {
 
   describe('storageInterfaces', () => {
     it('should have storageInterfaces', () => {
-      const context = new Context(null, null, null, null, '', defaultMeta, null)
+      const context = new Context({}, {}, null, null, '', defaultMeta, null)
       const storageInterfaceNames = ['extension', 'device', 'user']
-      const storageInterfaceFunctionNames = ['get', 'set', 'del']
+      const storageInterfaceFunctionNames = ['get', 'set', 'del', 'map']
       const mapStorageInterfaceFunctionNames = ['get', 'set', 'del', 'getItem', 'setItem', 'delItem']
 
       storageInterfaceNames.forEach((storageInterfaceName) => {
         assert.ok(context.storage[storageInterfaceName])
         assert.deepEqual(Object.keys(context.storage[storageInterfaceName]), storageInterfaceFunctionNames)
 
-        assert.ok(context.storage.map[storageInterfaceName])
-        assert.deepEqual(Object.keys(context.storage.map[storageInterfaceName]), mapStorageInterfaceFunctionNames)
+        assert.ok(context.storage[storageInterfaceName].map)
+        assert.deepEqual(Object.keys(context.storage[storageInterfaceName].map), mapStorageInterfaceFunctionNames)
       })
     })
 
