@@ -1,6 +1,6 @@
 {
   "name": "@shopgate/platform-sdk",
-  "version": "1.4.0-beta.2",
+  "version": "1.4.0-beta.3",
   "description": "Shopgate's Platform SDK",
   "main": "index.js",
   "scripts": {
