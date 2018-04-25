@@ -101,6 +101,14 @@ describe('Context', () => {
 
     const dcRequesterMock = {
       requestAppInfo: (appId, deviceId, cb) => {
+        if (!cb) {
+          return new Promise((resolve, reject) => {
+            dcRequesterMock.requestAppInfo(appId, deviceId, (err, data) => {
+              if (err) return reject(err)
+              return resolve(data)
+            })
+          })
+        }
         assert.equal(appId, defaultMeta.appId)
         assert.equal(deviceId, defaultMeta.deviceId)
         requestAppInfoCallCounter++
@@ -114,7 +122,14 @@ describe('Context', () => {
       assert.ifError(err)
       assert.equal(requestAppInfoCallCounter, 1)
       assert.equal(actual, expected)
-      done()
+      context.app.getInfo().then(actual => {
+        assert.equal(requestAppInfoCallCounter, 2)
+        assert.equal(actual, expected)
+        done()
+      }).catch(err => {
+        assert.ifError(err)
+        done()
+      })
     })
   })
 
@@ -124,6 +139,14 @@ describe('Context', () => {
 
     const dcRequesterMock = {
       requestDeviceInfo: (appId, deviceId, cb) => {
+        if (!cb) {
+          return new Promise((resolve, reject) => {
+            dcRequesterMock.requestDeviceInfo(appId, deviceId, (err, data) => {
+              if (err) return reject(err)
+              return resolve(data)
+            })
+          })
+        }
         assert.equal(appId, defaultMeta.appId)
         assert.equal(deviceId, defaultMeta.deviceId)
         requestDeviceInfoCallCounter++
@@ -137,7 +160,14 @@ describe('Context', () => {
       assert.ifError(err)
       assert.equal(requestDeviceInfoCallCounter, 1)
       assert.equal(actual, expected)
-      done()
+      context.device.getInfo().then(actual => {
+        assert.equal(requestDeviceInfoCallCounter, 2)
+        assert.equal(actual, expected)
+        done()
+      }).catch(err => {
+        assert.ifError(err)
+        done()
+      })
     })
   })
 
