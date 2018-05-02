@@ -9,6 +9,7 @@
 * Added promise support for all storage operations
 * Updated to use `@shopgate/cloud-sdk-webpack@^1.11.5`
 * Fixed `extension attach/detach` running forever on Windows
+* Fixed watching for file changes in node_modules and **/node_modules
 
 ## v1.3.0
 * Add promise support for steps
