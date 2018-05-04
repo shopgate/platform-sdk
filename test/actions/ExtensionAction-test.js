@@ -68,7 +68,7 @@ describe('ExtensionAction', () => {
         assert(caporal.argument.calledWith('[extensions...]', 'Folder name of the extensions to detach'))
         assert(caporal.description.calledWith('Detaches one or more extensions'))
 
-        assert(caporal.action.callCount === 3)
+        assert(caporal.action.callCount === 4)
       })
 
       it('should throw if user not logged in', () => {
