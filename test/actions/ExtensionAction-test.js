@@ -4,6 +4,7 @@ const fsEx = require('fs-extra')
 const sinon = require('sinon')
 const async = require('neo-async')
 const nock = require('nock')
+const inquirer = require('inquirer')
 
 const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
@@ -64,9 +65,13 @@ describe('ExtensionAction', () => {
         assert(caporal.command.calledWith('extension attach'))
         assert(caporal.argument.calledWith('[extensions...]', 'Folder name of the extensions to attach'))
         assert(caporal.description.calledWith('Attaches one or more extensions'))
+
         assert(caporal.command.calledWith('extension detach'))
         assert(caporal.argument.calledWith('[extensions...]', 'Folder name of the extensions to detach'))
         assert(caporal.description.calledWith('Detaches one or more extensions'))
+
+        assert(caporal.command.calledWith('extension manage'))
+        assert(caporal.description.calledWith('Attaches and detaches extensions via a select picker'))
 
         assert(caporal.action.callCount === 4)
       })
@@ -203,6 +208,137 @@ describe('ExtensionAction', () => {
         const config = fsEx.readJsonSync(appSettings.attachedExtensionsFile)
         assert.deepEqual(config.attachedExtensions, {})
       })
+    })
+  })
+
+  describe('.manageExtensions()', () => {
+    let instance
+    let loggerWarnStub
+    let inquirerPromptStub
+    let getExtensionsSummaryStub
+    let detachExtensionsStub
+    let attachExtensionsStub
+
+    before(() => {
+      loggerWarnStub = sinon.stub(logger, 'warn')
+      inquirerPromptStub = sinon.stub(inquirer, 'prompt').resolves({extensions: []})
+    })
+
+    after(() => {
+      loggerWarnStub.restore()
+      inquirerPromptStub.restore()
+    })
+
+    beforeEach(() => {
+      instance = new ExtensionAction()
+
+      getExtensionsSummaryStub = sinon.stub(instance, '_getExtensionsSummary').returns([
+        {id: '@acme/one', dir: 'acme-one', attached: false},
+        {id: '@acme/two', dir: 'acme-two', attached: true},
+        {id: '@acme/three', dir: 'acme-three', attached: false}
+      ])
+
+      detachExtensionsStub = sinon.stub(instance, 'detachExtensions')
+      attachExtensionsStub = sinon.stub(instance, 'attachExtensions')
+    })
+
+    afterEach(() => {
+      loggerWarnStub.reset()
+      inquirerPromptStub.reset()
+    })
+
+    it('should detach an attached extension if nothing was selected within the picker', async () => {
+      await instance.manageExtensions()
+
+      sinon.assert.callCount(inquirerPromptStub, 1)
+      sinon.assert.callCount(detachExtensionsStub, 1)
+      sinon.assert.calledWithExactly(detachExtensionsStub, {extensions: ['acme-two']})
+      sinon.assert.callCount(attachExtensionsStub, 0)
+    })
+
+    it('should do nothing if the picker selection was not changed', async () => {
+      inquirerPromptStub.resolves({extensions: ['@acme/two']})
+      await instance.manageExtensions()
+
+      sinon.assert.callCount(inquirerPromptStub, 1)
+      sinon.assert.callCount(detachExtensionsStub, 0)
+      sinon.assert.callCount(attachExtensionsStub, 0)
+    })
+
+    it('should attach and detach extionsions according to the picker selection', async () => {
+      inquirerPromptStub.resolves({extensions: ['@acme/one']})
+      await instance.manageExtensions()
+
+      sinon.assert.callCount(inquirerPromptStub, 1)
+      sinon.assert.callCount(detachExtensionsStub, 1)
+      sinon.assert.calledWithExactly(detachExtensionsStub, {extensions: ['acme-two']})
+      sinon.assert.callCount(attachExtensionsStub, 1)
+      sinon.assert.calledWithExactly(attachExtensionsStub, {extensions: ['acme-one']})
+    })
+
+    it('should log a warning when no extensions are available to pick', async () => {
+      getExtensionsSummaryStub.returns([])
+      await instance.manageExtensions()
+
+      sinon.assert.callCount(loggerWarnStub, 1)
+      sinon.assert.callCount(inquirerPromptStub, 0)
+      sinon.assert.callCount(detachExtensionsStub, 0)
+      sinon.assert.callCount(attachExtensionsStub, 0)
+    })
+  })
+
+  describe('._getExtensionsSummary()', () => {
+    let instance
+    let loadAttachedExtensionsStub
+    let getAllExtensionsStub
+
+    beforeEach(() => {
+      instance = new ExtensionAction()
+      // Add settings to the instance
+      instance.settings = appSettings
+
+      // Simulate extension info - the first extension is treated as invalid
+      sinon.stub(instance, '_getExtensionInfo')
+        .onFirstCall().returns(undefined)
+        .callsFake((dir) => ({
+          id: `@${dir.replace('-', '/')}`
+        }))
+
+      // Simulate an attached extension
+      loadAttachedExtensionsStub = sinon.stub(instance.settings, 'loadAttachedExtensions').returns({
+        '@acme/two': {path: 'acme-two'}
+      })
+
+      // Simulate some checked out extensions
+      getAllExtensionsStub = sinon.stub(instance, '_getAllExtensions').returns(['acme-one', 'acme-two', 'acme-three'])
+    })
+
+    it('should return the summary with one attached extension', () => {
+      const expected = [
+        {id: '@acme/two', dir: 'acme-two', attached: true},
+        {id: '@acme/three', dir: 'acme-three', attached: false}
+      ]
+
+      const result = instance._getExtensionsSummary()
+      assert.deepEqual(result, expected)
+    })
+
+    it('should return the summery with no attached extension', () => {
+      loadAttachedExtensionsStub.returns({})
+
+      const expected = [
+        {id: '@acme/two', dir: 'acme-two', attached: false},
+        {id: '@acme/three', dir: 'acme-three', attached: false}
+      ]
+
+      const result = instance._getExtensionsSummary()
+      assert.deepEqual(result, expected)
+    })
+
+    it('should return an empty array if no extensions are available', () => {
+      getAllExtensionsStub.returns([])
+      const result = instance._getExtensionsSummary()
+      assert.deepEqual(result, [])
     })
   })
 
