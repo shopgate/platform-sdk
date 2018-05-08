@@ -1,34 +1,44 @@
 const assert = require('assert')
 const path = require('path')
+const fsEx = require('fs-extra')
 const nock = require('nock')
 const sinon = require('sinon')
-const LoginAction = require('../../lib/actions/LoginAction')
+const mockFs = require('mock-fs')
+const mockStdin = require('mock-stdin').stdin
+
 const UserSettings = require('../../lib/user/UserSettings')
-const settingsFolder = path.join('build', 'user')
-const fsEx = require('fs-extra')
+const LoginAction = require('../../lib/actions/LoginAction')
+const DcHttpClient = require('../../lib/DcHttpClient')
 
 describe('LoginAction', () => {
+  const settingsFolder = path.join('build', 'user')
   let stdin
   let userSettings
+  let dcHttpClient
+  let subjectUnderTest
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    stdin = mockStdin()
+    mockFs()
     process.env.USER_PATH = settingsFolder
     process.env.SGCLOUD_DC_ADDRESS = 'http://dc.shopgate.cloud'
     nock.disableNetConnect()
     process.env.SGCLOUD_USER = ''
     process.env.SGCLOUD_PASS = ''
-    stdin = require('mock-stdin').stdin()
-    fsEx.emptyDirSync(settingsFolder)
+    await fsEx.emptyDir(settingsFolder)
     userSettings = new UserSettings()
+    dcHttpClient = new DcHttpClient(userSettings, null)
+    subjectUnderTest = new LoginAction(userSettings, dcHttpClient)
   })
 
-  afterEach((done) => {
+  afterEach(async () => {
     delete process.env.USER_PATH
     delete process.env.SGCLOUD_DC_ADDRESS
     delete process.env.SGCLOUD_USER
     delete process.env.SGCLOUD_PASS
     nock.enableNetConnect()
-    fsEx.remove(settingsFolder, done)
+    await fsEx.emptyDir(settingsFolder)
+    mockFs.restore()
   })
 
   it('should register', () => {
@@ -38,7 +48,7 @@ describe('LoginAction', () => {
     commander.option = sinon.stub().returns(commander)
     commander.action = sinon.stub().returns(commander)
 
-    LoginAction.register(commander)
+    LoginAction.register(commander, null, userSettings)
 
     assert(commander.command.calledWith('login'))
     assert(commander.option.calledWith('--username [email]'))
@@ -47,86 +57,135 @@ describe('LoginAction', () => {
     assert(commander.action.calledOnce)
   })
 
-  it('should login using command line params', (done) => {
+  it('should login using command line params', async () => {
     const api = nock('http://dc.shopgate.cloud')
-      .post('/login', {username: 'foo', password: 'bar'})
-      .reply(200, {accessToken: 'token'})
+      .post('/login', { username: 'foo', password: 'bar' })
+      .reply(200, { accessToken: 'token' })
 
-    const options = {username: 'foo', password: 'bar'}
-    const login = new LoginAction()
-    login.run(options, err => {
-      assert.ifError(err)
+    const options = { username: 'foo', password: 'bar' }
+    try {
+      await subjectUnderTest.run(options)
       api.done()
-      assert.equal(userSettings.getToken(), 'token')
-      done()
-    })
+      const sessionToken = await userSettings.getToken()
+      assert.equal(sessionToken, 'token')
+      const sessionUser = await userSettings.getUsername()
+      assert.equal(sessionUser, 'foo')
+    } catch (err) {
+      assert.ifError(err)
+    }
   })
 
-  it('should login asking for username and password', (done) => {
+  it('should login asking for username and password', async () => {
     const api = nock('http://dc.shopgate.cloud')
-      .post('/login', {username: 'foo', password: 'bar'})
-      .reply(200, {accessToken: 'token2'})
+      .post('/login', { username: 'foo', password: 'bar' })
+      .reply(200, { accessToken: 'token2' })
 
-    const login = new LoginAction()
-    login.run({}, err => {
-      assert.ifError(err)
+    try {
+      setTimeout(() => {
+        stdin.send('foo\n')
+        setTimeout(() => {
+          stdin.send('bar\n')
+        }, 50)
+      }, 50)
+      await subjectUnderTest.run({})
       api.done()
-      assert.equal(userSettings.getToken(), 'token2')
-      done()
-    })
-
-    setTimeout(() => {
-      stdin.send('foo\n')
-      setTimeout(() => stdin.send('bar\n'), 10)
-    }, 10)
+      assert.equal(await userSettings.getToken(), 'token2')
+      assert.equal(await userSettings.getUsername(), 'foo')
+    } catch (err) {
+      assert.ifError(err)
+    }
   })
 
-  it('should login using password from commandline and user from env', (done) => {
+  it('should login using password from commandline and user from env', async () => {
     process.env.SGCLOUD_USER = 'foo'
     const api = nock('http://dc.shopgate.cloud')
-      .post('/login', {username: 'foo', password: 'bar'})
-      .reply(200, {accessToken: 'token3'})
+      .post('/login', { username: 'foo', password: 'bar' })
+      .reply(200, { accessToken: 'token3' })
 
-    const login = new LoginAction()
-    login.run({}, err => {
-      assert.ifError(err)
+    try {
+      setTimeout(() => stdin.send('bar\n'), 10)
+
+      await subjectUnderTest.run({})
       api.done()
-      assert.equal(userSettings.getToken(), 'token3')
-      done()
-    })
-
-    setTimeout(() => stdin.send('bar\n'), 10)
+      assert.equal(await userSettings.getToken(), 'token3')
+      assert.equal(await userSettings.getUsername(), 'foo')
+    } catch (err) {
+      assert.ifError(err)
+    }
   })
 
-  it('should login using user from commandline and password from parameter', (done) => {
+  it('should login using user from commandline and password from parameter', async () => {
     const api = nock('http://dc.shopgate.cloud')
-      .post('/login', {username: 'foo', password: 'bar'})
-      .reply(200, {accessToken: 'token4'})
+      .post('/login', { username: 'foo', password: 'bar' })
+      .reply(200, { accessToken: 'token4' })
 
-    const options = {password: 'bar'}
-    const login = new LoginAction()
-    login.run(options, err => {
-      assert.ifError(err)
+    const options = { password: 'bar' }
+    try {
+      setTimeout(() => stdin.send('foo\n'), 50)
+      await subjectUnderTest.run(options)
       api.done()
-      assert.equal(userSettings.getToken(), 'token4')
-      done()
-    })
-
-    setTimeout(() => stdin.send('foo\n'), 10)
+      assert.equal(await userSettings.getToken(), 'token4')
+      assert.equal(await userSettings.getUsername(), 'foo')
+    } catch (err) {
+      assert.ifError(err)
+    }
   })
 
-  it('should fail login in with invalid credentials', (done) => {
+  it('should fail login in with invalid credentials', async () => {
     const api = nock('http://dc.shopgate.cloud')
-      .post('/login', {username: 'foo', password: 'bar'})
+      .post('/login', { username: 'foo', password: 'bar' })
       .reply(400)
 
-    const options = {username: 'foo', password: 'bar'}
-    const login = new LoginAction()
-    login.run(options, err => {
+    const options = { username: 'foo', password: 'bar' }
+
+    try {
+      await subjectUnderTest.run(options)
+    } catch (err) {
       assert.ok(err)
+      assert.equal(await userSettings.getUsername(), undefined)
       assert.equal(err.message, 'Login failed')
       api.done()
-      done()
-    })
+    }
+  })
+
+  it(`should not write username to session on invalid login`, async () => {
+    const api = nock('http://dc.shopgate.cloud')
+      .post('/login', { username: 'foo', password: 'bar' })
+      .reply(400)
+
+    const options = { username: 'foo', password: 'bar' }
+    try {
+      await subjectUnderTest.run(options)
+    } catch (err) {
+      assert.ok(err)
+      assert.equal(await userSettings.getUsername(), undefined)
+      assert.equal(err.message, 'Login failed')
+      api.done()
+    }
+  })
+  it('should repopulate the username if possible', async () => {
+    const wait = async (ms) => (new Promise(resolve => setTimeout(resolve, ms)))
+
+    let api = nock('http://dc.shopgate.cloud')
+      .post('/login', { username: 'foo', password: 'bar' })
+      .reply(200, { accessToken: 'token4' })
+
+    const options = { username: 'foo', password: 'bar' }
+    await subjectUnderTest.run(options)
+    await wait(50)
+    api.done()
+    subjectUnderTest.options = {}
+    delete process.env.SGCLOUD_USER
+    let retry = nock('http://dc.shopgate.cloud')
+      .post('/login', { username: 'foo', password: 'bar' })
+      .reply(200, { accessToken: 'token4' })
+
+    const promise = subjectUnderTest.run({})
+    await wait(50)
+    stdin.send('\n')
+    await wait(50)
+    stdin.send('bar\n')
+    await wait(50)
+    return promise.then(() => (retry.done()))
   })
 })

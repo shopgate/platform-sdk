@@ -18,6 +18,8 @@ const logSetupNeededSpy = sinon.spy()
 const userSettingsPath = join('build', 'usersettings')
 const appSettingsPath = join('build', 'appsettings')
 
+const mockFs = require('mock-fs')
+
 describe('FrontendProcess', () => {
   let frontendProcess
 
@@ -28,13 +30,23 @@ describe('FrontendProcess', () => {
     loadAttachedExtensions: () => {}
   }
 
+  before(done => {
+    mockFs()
+    done()
+  })
+
+  after(done => {
+    mockFs.restore()
+    done()
+  })
+
   beforeEach(() => {
     process.env.USER_PATH = userSettingsPath
     process.env.APP_PATH = appSettingsPath
 
     appSettings.getId = () => {}
     frontendSettings = {}
-
+    mockFs.restore()
     const FrontendProcess = proxyquire('../../../lib/app/frontend/FrontendProcess', {
       child_process: {
         fork: forkSpy = sinon.spy(() => {
@@ -45,6 +57,7 @@ describe('FrontendProcess', () => {
         logSetupNeeded: logSetupNeededSpy
       }
     })
+    mockFs()
 
     const frontendSetup = {
       run: () => Promise.resolve()

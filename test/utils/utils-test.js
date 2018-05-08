@@ -1,5 +1,6 @@
 const assert = require('assert')
 const path = require('path')
+const mockFs = require('mock-fs')
 const fsEx = require('fs-extra')
 const proxyquire = require('proxyquire')
 const { EXTENSIONS_FOLDER, THEMES_FOLDER } = require('../../lib/app/Constants')
@@ -15,6 +16,16 @@ const utils = proxyquire('../../lib/utils/utils', {
 })
 
 describe('utils', () => {
+  before(done => {
+    mockFs()
+    done()
+  })
+
+  after(done => {
+    mockFs.restore()
+    done()
+  })
+
   describe('resetProject', () => {
     const testProjectDir = path.join('build', 'testProject')
 
@@ -38,7 +49,7 @@ describe('utils', () => {
 
     const appFile = path.join(settingsDir, 'app.json')
     const storageFile = path.join(settingsDir, 'storage.json')
-    const extensionsFile = path.join(settingsDir, 'attachedExtension.json')
+    const extensionsFile = path.join(settingsDir, 'attachedExtensions.json')
     const ext1ConfFile = path.join(ext1Dir, 'config.json')
     const ext2ConfFile = path.join(ext2Dir, 'config.json')
     const theme1AppFile = path.join(theme1Dir, 'app.json')
@@ -71,12 +82,18 @@ describe('utils', () => {
       done()
     })
 
-    it('should reset the project', (done) => {
-      utils.resetProject()
-      setTimeout(() => {
-        files.forEach(file => assert.ok(!fsEx.pathExistsSync(file), `${file} should not exists`))
-        done()
-      }, 1000)
+    it('should reset the project', async () => {
+      await utils.resetProject()
+      return new Promise((resolve, reject) => {
+        setTimeout(async () => {
+          const promises = files.map(file => { return fsEx.pathExists(file) })
+          const results = await Promise.all(promises)
+          for (let i in results) {
+            if (results[i]) return reject(new Error(`${files[i]} still exists`))
+          }
+          resolve()
+        }, 1000)
+      })
     })
   })
 
@@ -145,13 +162,10 @@ describe('utils', () => {
       }
     })
 
-    afterEach(async () => {
-      await fsEx.remove(projectDir)
-    })
+    afterEach(async () => { await fsEx.remove(projectDir) })
 
     it('should create components json', async () => {
-      utils.generateComponentsJson(appSettings)
-
+      await utils.generateComponentsJson(appSettings)
       const t1 = await fsEx.readJson(path.join(projectDir, THEMES_FOLDER, 'gmd', 'config', 'components.json'))
       const t2 = await fsEx.readJson(path.join(projectDir, THEMES_FOLDER, 'ios', 'config', 'components.json'))
 
@@ -164,6 +178,58 @@ describe('utils', () => {
 
       assert.deepEqual(t1, expectedResult)
       assert.deepEqual(t2, expectedResult)
+    })
+  })
+
+  describe('findThemes', () => {
+    const testFolder = path.join('build', 'findThemesTest')
+
+    const appSettings = {
+      getApplicationFolder: () => testFolder
+    }
+
+    const validThemes = ['ios', 'gmd']
+    const dirs = validThemes.concat(['.git', '.idea'])
+
+    beforeEach(async () => {
+      for (let i in dirs) {
+        await fsEx.ensureDir(path.join(testFolder, THEMES_FOLDER, dirs[i]))
+      }
+
+      for (let i in validThemes) {
+        await fsEx.writeJSON(path.join(testFolder, THEMES_FOLDER, validThemes[i], 'extension-config.json'), {})
+      }
+    })
+
+    afterEach(async () => {
+      await fsEx.remove(testFolder)
+    })
+
+    it('should find all valid themes', async () => {
+      const themes = await utils.findThemes(appSettings)
+
+      for (let i in validThemes) {
+        assert.ok(themes.includes(validThemes[i]))
+      }
+    })
+  })
+
+  describe('getBlacklistedExtensions', () => {
+    afterEach(() => {
+      delete process.env.IGNORE_EXT_CONFIG_FOR
+    })
+
+    it('should return the blacklisted extensions', () => {
+      const extensions = ['extension1', '@super-coolio2', 'hans.234']
+
+      process.env.IGNORE_EXT_CONFIG_FOR = extensions.join(',')
+      const list = utils.getBlacklistedExtensions()
+      assert.deepEqual(list, extensions)
+    })
+
+    it('should return an empty string if there are no blacklisted extensions', () => {
+      const list = utils.getBlacklistedExtensions()
+      assert.deepEqual(list, [])
     })
   })
 })

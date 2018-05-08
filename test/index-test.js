@@ -11,7 +11,6 @@ describe('index', () => {
     actionFiles.forEach((actionFile) => {
       actions[path.basename(actionFile).split('.')[0].split('Action')[0]] = require(actionFile)
     })
-
     assert.deepEqual(Object.keys(index), Object.keys(actions))
   })
 })

@@ -2,17 +2,19 @@ const assert = require('assert')
 const path = require('path')
 const fsEx = require('fs-extra')
 const ExtensionConfigWatcher = require('../../lib/app/ExtensionConfigWatcher')
-const utils = require('../../lib/utils/utils')
-
+const mockFs = require('mock-fs')
 const appPath = path.join('build', 'appsettings')
 
 describe('ExtensionConfigWatcher', () => {
   let extensionConfigWatcher
 
   beforeEach((done) => {
+    mockFs()
+
     process.env.APP_PATH = appPath
-    const appSettingsMock = {getApplicationFolder: utils.getApplicationFolder}
+    const appSettingsMock = { getApplicationFolder: () => appPath, settingsFolder: 'build/appsettings' }
     extensionConfigWatcher = new ExtensionConfigWatcher(appSettingsMock)
+
     fsEx.emptyDir(path.join(appPath, 'extensions'), done)
   })
 
@@ -21,41 +23,51 @@ describe('ExtensionConfigWatcher', () => {
 
     await extensionConfigWatcher.stop()
     await fsEx.remove(appPath)
+    mockFs.restore()
   })
 
   it('should emit changed config', (done) => {
     let writtenConfig = {
       someAttribtue: '2'
     }
+    const callbacks = []
 
-    extensionConfigWatcher.on('configChange', (config) => {
+    extensionConfigWatcher.emit = (event, config) => {
+      assert.equal(event, 'configChange')
       assert.deepEqual(config.file, writtenConfig)
       extensionConfigWatcher.stop().then(() => {
         done()
       })
-    })
+    }
 
-    const extensionFolder = path.join(extensionConfigWatcher.watchFolder, 'testExt')
-
-    extensionConfigWatcher.start()
-    .then(() => fsEx.ensureDir(extensionFolder))
-    .then(() => {
-      return new Promise((resolve, reject) => {
+    extensionConfigWatcher.chokidar = {
+      removeAllListeners: async () => (true),
+      closed: false,
+      watch: (givenPath, options) => {
+        assert.equal(givenPath, path.join('build/appsettings/extensions/*', 'extension-config.json'))
+        return extensionConfigWatcher.chokidar
+      },
+      on: (event, cb) => {
+        if (event === 'ready') cb()
+        if (!callbacks[event]) callbacks[event] = []
+        callbacks[event].push(cb)
+        return extensionConfigWatcher.chokidar
+      },
+      close: () => {
         setTimeout(() => {
-          const configPath = path.join(extensionFolder, 'extension-config.json')
-          fsEx.writeJson(configPath, writtenConfig, () => {})
-          resolve()
-        }, 20)
-      })
-    })
-    .catch((err) => {
-      assert.ifError(err)
-    })
-  })
+          extensionConfigWatcher.chokidar.closed = true
+        }, 30)
+      }
+    }
 
-  it('should stop watching', () => {
-    return extensionConfigWatcher.start()
-      .then(() => extensionConfigWatcher.stop())
-      .then(() => assert.ok(extensionConfigWatcher.watcher.closed))
+    const extensionConfigPath = path.join(extensionConfigWatcher.watchFolder, 'testExt', 'extension-config.json')
+    extensionConfigWatcher.start('backend').then(() => {
+      fsEx.ensureDirSync(path.join(extensionConfigWatcher.watchFolder, 'testExt'))
+      fsEx.writeJsonSync(extensionConfigPath, writtenConfig)
+
+      setTimeout(() => {
+        callbacks['all'][0]('add', extensionConfigPath)
+      }, 100)
+    })
   })
 })

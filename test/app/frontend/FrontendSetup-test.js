@@ -10,6 +10,7 @@ const sinon = require('sinon')
 const assert = require('assert')
 const proxyquire = require('proxyquire')
 const fsEx = require('fs-extra')
+const mockFs = require('mock-fs')
 
 let requestSpyFail = false
 let requestStatusCode = 201
@@ -45,11 +46,12 @@ const questionSpy = sinon.spy(() => {
 const FrontendSetup = proxyquire('../../../lib/app/frontend/FrontendSetup', {
   request,
   './LogHelper': {
-    logSetupLogo: () => {},
-    getPrefix: () => {}
+    logSetupLogo: () => { },
+    getPrefix: () => { }
   },
   '../../logger': {
-    plain: loggerSpy
+    plain: loggerSpy,
+    debug: () => (null)
   },
   inquirer,
   './setupQuestions': questionSpy
@@ -77,11 +79,21 @@ let appSettings = {
 let frontendSetup
 
 describe('FrontendSetup', () => {
+  before(done => {
+    mockFs()
+    done()
+  })
+
+  after(done => {
+    mockFs.restore()
+    done()
+  })
+
   beforeEach(() => {
     process.env.USER_PATH = userSettingsPath
     process.env.APP_PATH = appSettingsPath
 
-    appSettings.getId = () => {}
+    appSettings.getId = () => { }
     frontendSettings = {}
 
     frontendSettings.getIpAddress = () => Promise.resolve(defaultConfig.ip)
@@ -102,7 +114,7 @@ describe('FrontendSetup', () => {
 
     inquirer.prompt = setPromptBody()
 
-    questionSpy.reset()
+    questionSpy.resetHistory()
     questionSpyFail = false
   })
 
@@ -118,8 +130,8 @@ describe('FrontendSetup', () => {
     beforeEach(() => {
       appSettings.getId = () => 'shop_10006'
 
-      frontendSetup.registerSettings = () => {}
-      frontendSetup.save = () => {}
+      frontendSetup.registerSettings = () => { }
+      frontendSetup.save = () => { }
     })
 
     it('should throw an error if something goes wrong', (done) => {
@@ -127,13 +139,13 @@ describe('FrontendSetup', () => {
       questionSpyFail = true
       frontendSetup.run()
         .then(() => {
-          spy.reset()
+          spy.resetHistory()
           done('Did not throw!')
         })
         .catch((error) => {
           assert.ok(typeof error === 'string')
           sinon.assert.calledOnce(spy)
-          spy.reset()
+          spy.resetHistory()
           done()
         })
     })
@@ -153,7 +165,7 @@ describe('FrontendSetup', () => {
       frontendSetup.run()
         .then(() => {
           assert.ok(spy.calledOnce)
-          spy.reset()
+          spy.resetHistory()
           done()
         })
         .catch(error => done(error))
@@ -164,7 +176,7 @@ describe('FrontendSetup', () => {
       frontendSetup.run()
         .then(() => {
           assert.ok(spy.calledOnce)
-          spy.reset()
+          spy.resetHistory()
           done()
         })
         .catch(error => done(error))
@@ -175,7 +187,7 @@ describe('FrontendSetup', () => {
       frontendSetup.run()
         .then(() => {
           assert.ok(spy.calledOnce)
-          spy.reset()
+          spy.resetHistory()
           done()
         })
         .catch(error => done(error))
@@ -185,15 +197,14 @@ describe('FrontendSetup', () => {
   describe('registerSettings()', () => {
     beforeEach(() => {
       appSettings.getId = () => appId
-      frontendSetup.save = () => {}
+      frontendSetup.save = () => { }
     })
 
     it('should set the startPageUrl at the developer connector', () => {
       frontendSetup.dcClient = {
-        setStartPageUrl: (actualAppId, startPageUrl, cb) => {
+        setStartPageUrl: (actualAppId, startPageUrl) => {
           assert.equal(actualAppId, appId)
           assert.equal(startPageUrl, `http://${defaultConfig.ip}:${defaultConfig.port}/`)
-          cb()
         }
       }
       return frontendSetup.run()
@@ -202,10 +213,10 @@ describe('FrontendSetup', () => {
 
     it('should throw an error if startPageUrl cant be set at the developer connector', (done) => {
       frontendSetup.dcClient = {
-        setStartPageUrl: (actualAppId, startPageUrl, cb) => {
+        setStartPageUrl: (actualAppId, startPageUrl) => {
           assert.equal(actualAppId, appId)
           assert.equal(startPageUrl, `http://${defaultConfig.ip}:${defaultConfig.port}/`)
-          cb(new Error('Something'))
+          throw new Error('Something')
         }
       }
       frontendSetup.run()
@@ -227,7 +238,7 @@ describe('FrontendSetup', () => {
         .catch((error) => {
           sinon.assert.notCalled(request)
           assert.equal(error.message, 'Sorry, you canceled the setup! Please try again.')
-          request.reset()
+          request.resetHistory()
           done()
         })
     })
@@ -238,8 +249,7 @@ describe('FrontendSetup', () => {
 
     beforeEach(() => {
       saveSpy = sinon.spy()
-      loggerSpy.reset()
-
+      loggerSpy.resetHistory()
       frontendSettings.setIpAddress = (ip) => {
         assert.equal(ip, defaultConfig.ip)
         return Promise.resolve()
@@ -272,8 +282,8 @@ describe('FrontendSetup', () => {
     })
 
     afterEach(() => {
-      saveSpy.reset()
-      loggerSpy.reset()
+      saveSpy.resetHistory()
+      loggerSpy.resetHistory()
     })
 
     it('should save the settings', () => {
@@ -288,7 +298,7 @@ describe('FrontendSetup', () => {
     })
 
     it('should throw if something went wrong', (done) => {
-      frontendSetup.settings.getFrontendSettings = () => {
+      frontendSetup.appSettings.getFrontendSettings = () => {
         throw new Error('error')
       }
 

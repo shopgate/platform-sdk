@@ -1,6 +1,23 @@
+## v1.4.1
+* Fix filename of pipeline in boilerplate
+
+## v1.4.0
+* Added `logout` command
+* Added proper message when one developer runs `backend start` for the same shop while another is still connected
+* Fixed concurrent read/write operations when accessing context.storage objects
+* Added option to ignore the extension-config.json file of an extension so the config.json won't get updated on start (backend) or on change of extension-config.json; use env `IGNORE_EXT_CONFIG_FOR` with a comma separated list like this: `IGNORE_EXT_CONFIG_FOR="extId1(,extId2,extId3,...)"`
+* Added setting the theme URL to local theme when `frontend start` is run and resetting it upon `CTRL + C`
+* Added generation of config.json on `frontend start`
+* Added a "map" storage type (access via `context.storage.<deviceType>.map`)
+* Added promise support for all storage operations
+* Updated to use `@shopgate/cloud-sdk-webpack@^1.11.5`
+* Fixed `extension attach/detach` running forever on Windows
+* Fixed watching for file changes in node_modules and **/node_modules
+
 ## v1.3.0
 * Add promise support for steps
 * Added option `--inspect` to `backend start` to allow for inspection/debugging of extensions (props @Menes1337)
+* Added generation of config.json for attached extensions on `backend start`
 * Creation of (theme)/config/components.json on `frontend start` and extension-config.json change
 * Extension pipelines folder can now be empty or missing
 * Returning an non error as error in step will show a useful error message
@@ -11,14 +28,14 @@
 * Updated to use `@shopgate/cloud-sdk-webpack@^1.10.2`.
 
 ## v1.2.4
-* Updated to use `@shopgate/cloud-sdk-webpack@^1.10.0`.
+* Updated to use `@shopgate/cloud-sdk-webpack@^1.10.0`
 
 ## v1.2.3
-* Updated to use `@shopgate/cloud-sdk-webpack@^1.9.0`.
+* Updated to use `@shopgate/cloud-sdk-webpack@^1.9.0`
 
 ## v1.2.2
 * Fix issue of starting the frontend processes twice when using the option '-t' on 'frontend start' command
-* Updated to use `@shopgate/cloud-sdk-webpack@^1.8.0`.
+* Updated to use `@shopgate/cloud-sdk-webpack@^1.8.0`
 
 ## v1.2.1
 * Only pipeline files with the ending: `.json` will be uploaded on `backend start`

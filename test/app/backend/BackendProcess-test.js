@@ -3,11 +3,10 @@ const assert = require('assert')
 const sinon = require('sinon')
 const path = require('path')
 const fsEx = require('fs-extra')
-const AppSettings = require('../../../lib/app/AppSettings')
 const UserSettings = require('../../../lib/user/UserSettings')
 const portfinder = require('portfinder')
-
 const proxyquire = require('proxyquire')
+const mockFs = require('mock-fs')
 
 class SocketIOMock extends EventEmitter {
   connect () { this.emit('connect') }
@@ -23,7 +22,6 @@ describe('BackendProcess', () => {
   let userTestFolder
   let appTestFolder
   let userSettings
-  let appSettings
   let logger
 
   const socketIOMock = new SocketIOMock()
@@ -32,14 +30,12 @@ describe('BackendProcess', () => {
     'socket.io-client': () => socketIOMock
   })
 
-  beforeEach((done) => {
+  beforeEach(async () => {
+    mockFs()
     appTestFolder = path.join('build', 'appsettings')
-    process.env.APP_PATH = appTestFolder
-    appSettings = new AppSettings().setId('shop_10006')
-
     userTestFolder = path.join('build', 'usersettings')
     process.env.USER_PATH = userTestFolder
-    userSettings = new UserSettings().setToken({})
+    userSettings = await new UserSettings().setToken({})
 
     stepExecutor = {
       start: () => sinon.stub().resolves(),
@@ -53,10 +49,9 @@ describe('BackendProcess', () => {
       assert.ifError(err)
 
       process.env.SGCLOUD_DC_ADDRESS = `http://localhost:${port}`
-      logger = {info: () => {}, error: () => {}, debug: () => {}}
-      backendProcess = new BackendProcess(userSettings, appSettings, logger)
+      logger = { info: () => {}, error: () => {}, debug: () => {} }
+      backendProcess = new BackendProcess(userSettings, logger)
       backendProcess.executor = stepExecutor
-      done()
     })
   })
 
@@ -67,11 +62,12 @@ describe('BackendProcess', () => {
 
     socketIOMock.removeAllListeners()
 
-    return Promise.all([
+    await Promise.all([
       fsEx.remove(appTestFolder),
       fsEx.remove(userTestFolder),
       backendProcess.disconnect()
     ])
+    mockFs.restore()
   })
 
   describe('connect', () => {
@@ -91,21 +87,21 @@ describe('BackendProcess', () => {
         errorWasCalled = true
       }
 
-      backendProcess.stepCall = (data, cb) => {
-        assert.deepEqual(data, {foo: 'bar'})
+      backendProcess.stepCall = (data) => {
+        assert.deepEqual(data, { foo: 'bar' })
         stepCallWasCalled = true
       }
 
-      backendProcess.updateToken = (data) => {
-        assert.deepEqual(data, {foo: 'bar'})
+      backendProcess.updateToken = async (data) => {
+        assert.deepEqual(data, { foo: 'bar' })
         updateTokenWasCalled = true
       }
 
       backendProcess.connect().then(() => {
         socketIOMock.emit('connect_error')
         socketIOMock.emit('error', new Error('error'))
-        socketIOMock.emit('stepCall', {foo: 'bar'})
-        socketIOMock.emit('updateToken', {foo: 'bar'})
+        socketIOMock.emit('stepCall', { foo: 'bar' })
+        socketIOMock.emit('updateToken', { foo: 'bar' })
         assert.ok(warnWasCalled)
         assert.ok(errorWasCalled)
         assert.ok(stepCallWasCalled)
@@ -119,13 +115,13 @@ describe('BackendProcess', () => {
     it('should forward on extensions attach', () => {
       let wasCalled = 0
       socketIOMock.on('registerExtension', (data, cb) => {
-        assert.deepEqual(data, {extensionId: 'testExt', trusted: false})
+        assert.deepEqual(data, { extensionId: 'testExt', trusted: false })
         cb()
         wasCalled++
       })
 
       return backendProcess.connect()
-        .then(() => backendProcess.attachExtension({id: 'testExt', trusted: false}))
+        .then(() => backendProcess.attachExtension({ id: 'testExt', trusted: false }))
         .then(() => {
           assert.equal(wasCalled, 1)
         })
@@ -139,7 +135,7 @@ describe('BackendProcess', () => {
 
       backendProcess._emitToSocket = () => new Promise((resolve, reject) => reject(new Error('error')))
 
-      backendProcess.attachExtension({id: 'null', trusted: false})
+      backendProcess.attachExtension({ id: 'null', trusted: false })
     })
   })
 
@@ -147,13 +143,13 @@ describe('BackendProcess', () => {
     it('should forward on extensions detach', () => {
       let wasCalled = 0
       socketIOMock.on('deregisterExtension', (data, cb) => {
-        assert.deepEqual(data, {extensionId: 'testExt', trusted: false})
+        assert.deepEqual(data, { extensionId: 'testExt', trusted: false })
         cb()
         wasCalled++
       })
 
       return backendProcess.connect()
-        .then(() => backendProcess.detachExtension({id: 'testExt', trusted: false}))
+        .then(() => backendProcess.detachExtension({ id: 'testExt', trusted: false }))
         .then(() => {
           assert.equal(wasCalled, 1)
         })
@@ -167,7 +163,7 @@ describe('BackendProcess', () => {
 
       backendProcess._emitToSocket = () => new Promise((resolve, reject) => reject(new Error('error')))
 
-      backendProcess.detachExtension({id: 'null', trusted: false})
+      backendProcess.detachExtension({ id: 'null', trusted: false })
     })
   })
 
@@ -175,7 +171,7 @@ describe('BackendProcess', () => {
     it('should select an application', async () => {
       let wasCalled = 0
       socketIOMock.on('selectApplication', (data, cb) => {
-        assert.deepEqual(data, {applicationId: 'shop_10006'})
+        assert.deepEqual(data, { applicationId: 'shop_10006' })
         cb()
         wasCalled++
       })
@@ -216,7 +212,7 @@ describe('BackendProcess', () => {
       socketIOMock.on('resetPipelines', (cb) => cb(null))
 
       backendProcess.connect()
-      .then(() => backendProcess.resetPipelines())
+        .then(() => backendProcess.resetPipelines())
     })
 
     it('should fail if socket sends error (resetPipelines)', (done) => {
@@ -244,7 +240,7 @@ describe('BackendProcess', () => {
       socketIOMock.on('reloadPipelines', (cb) => cb(null))
 
       backendProcess.connect()
-      .then(() => backendProcess.reloadPipelineController())
+        .then(() => backendProcess.reloadPipelineController())
     })
 
     it('should fail if socket sends error (reload)', (done) => {
@@ -261,14 +257,21 @@ describe('BackendProcess', () => {
   })
 
   describe('startStepExecutor', () => {
-    it('should start the step executor', () => {
+    it('should start the step executor', async () => {
+      let startCalled = false
+      backendProcess.start = () => {
+        startCalled = true
+      }
+      backendProcess.start = () => {
+        assert.ok(startCalled)
+      }
       return backendProcess.startStepExecutor()
     })
   })
 
   describe('stepCall', () => {
     it('should call a step', (done) => {
-      stepExecutor.execute = (input, stepMetaData, cb) => cb(null, {input, stepMetaData})
+      stepExecutor.execute = (input, stepMetaData, cb) => cb(null, { input, stepMetaData })
 
       const data = { input: 'i', stepMetaData: 's' }
 
@@ -281,15 +284,15 @@ describe('BackendProcess', () => {
   })
 
   describe('update token', () => {
-    const token = {foo: 'bar'}
+    const token = { foo: 'bar' }
 
-    it('should update the token', () => {
-      backendProcess.updateToken(token)
-      assert.deepEqual(userSettings.getToken(), token)
+    it('should update the token', async () => {
+      await backendProcess.updateToken(token)
+      assert.deepEqual(await userSettings.getToken(), token)
     })
   })
 
-  describe('disconnect', (done) => {
+  describe('disconnect', () => {
     it('should fail because executor.stop() fails', () => {
       logger.debug = (message) => {
         assert.equal(message, 'Error: error')
@@ -299,6 +302,102 @@ describe('BackendProcess', () => {
 
       return backendProcess.connect()
         .then(() => backendProcess.disconnect())
+    })
+  })
+
+  describe('disconnectedByOtherUser', () => {
+    it('should be called upon incoming "disconnectedByOtherUser" from socket', () => {
+      return new Promise((resolve, reject) => {
+        backendProcess.disconnectedByOtherUser = reason => {
+          try {
+            assert.equal(reason, 'reason')
+          } catch (err) {
+            reject(err)
+          }
+          resolve()
+        }
+
+        backendProcess.connect().then(() => {
+          socketIOMock.emit('disconnectedByOtherUser', 'reason')
+        })
+      })
+    })
+
+    it('should call "disconnect(false)" and send SIGINT upon incoming "disconnectedByOtherUser" from socket', () => {
+      return new Promise((resolve, reject) => {
+        let sigintSent = false
+        let disconnectCalled = false
+
+        process.removeAllListeners('SIGINT')
+
+        process.on('SIGINT', () => {
+          if (disconnectCalled) resolve()
+          sigintSent = true
+        })
+
+        backendProcess.disconnect = reconnect => {
+          try {
+            assert.ok(!reconnect)
+          } catch (err) {
+            reject(err)
+          }
+
+          if (sigintSent) resolve()
+          disconnectCalled = !reconnect
+        }
+
+        backendProcess.connect().then(() => {
+          socketIOMock.emit('disconnectedByOtherUser', 'reason')
+        })
+      })
+    })
+  })
+
+  describe('connectionInProgress', () => {
+    it('should be called upon incoming "connectionInProgress" from socket', () => {
+      return new Promise((resolve, reject) => {
+        backendProcess.connectionInProgress = reason => {
+          try {
+            assert.equal(reason, 'reason')
+          } catch (err) {
+            reject(err)
+          }
+          resolve()
+        }
+
+        backendProcess.connect().then(() => {
+          socketIOMock.emit('connectionInProgress', 'reason')
+        })
+      })
+    })
+
+    it('should call "disconnect(false)" and send SIGINT upon incoming "connectionInProgress" from socket', () => {
+      return new Promise((resolve, reject) => {
+        let sigintSent = false
+        let disconnectCalled = false
+
+        process.removeAllListeners('SIGINT')
+
+        process.on('SIGINT', () => {
+          if (disconnectCalled) resolve()
+          sigintSent = true
+        })
+
+        backendProcess.disconnect = reconnect => {
+          try {
+            assert.ok(!reconnect)
+          } catch (err) {
+            reject(err)
+          }
+
+          if (sigintSent) resolve()
+          disconnectCalled = !reconnect
+        }
+
+        backendProcess.connect().then(() => {
+          socketIOMock.emit('connectionInProgress', 'reason')
+        })
+      })
     })
   })
 })

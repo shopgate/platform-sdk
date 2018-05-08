@@ -1,221 +1,250 @@
 const assert = require('assert')
 const path = require('path')
 const fsEx = require('fs-extra')
+const EventStream = require('stream').Writable
 const sinon = require('sinon')
-const async = require('neo-async')
 const nock = require('nock')
+const mockFs = require('mock-fs')
+const proxyquire = require('proxyquire')
 const inquirer = require('inquirer')
-
 const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
-const ExtensionAction = require('../../lib/actions/ExtensionAction')
+const { EXTENSIONS_FOLDER } = require('../../lib/app/Constants')
 const logger = require('../../lib/logger')
-const { SETTINGS_FOLDER, EXTENSIONS_FOLDER } = require('../../lib/app/Constants')
+
+let callbacks = {}
+
+class Extract extends EventStream {
+  constructor () {
+    super()
+    return () => {
+      callbacks = {}
+      return {
+        on: this.on,
+        error: this.error,
+        _write: this._write,
+        end: this.end,
+        removeListener: () => (true),
+        emit: (what) => (this.emit(what))
+      }
+    }
+  }
+  _write () {}
+  on (event, callback) {
+    if (!callbacks[event]) callbacks[event] = []
+    callbacks[event].push(callback)
+  }
+  _transform () { }
+  error () {}
+  end () {}
+}
+
+const extract = new Extract()
+const unzip = {
+  Extract: extract
+}
+const ExtensionAction = proxyquire('../../lib/actions/ExtensionAction', {
+  'unzip': unzip,
+  'child_process': {
+    spawn: () => (mockProcess)
+  }
+})
+let spawnEventCallback = { code: 0, signal: 'none' }
+const mockProcess = {
+  on: (event, callback) => {
+    callback(spawnEventCallback.code, spawnEventCallback.signal)
+  }
+}
 
 const userSettingsFolder = path.join('build', 'usersettings')
 const appPath = path.join('build', 'appsettings')
 
 describe('ExtensionAction', () => {
-  let action
+  let subjectUnderTest
   let userSettings
   let appSettings
 
-  beforeEach(() => {
+  beforeEach(async () => {
     process.env.USER_PATH = userSettingsFolder
-    process.env.APP_PATH = appPath
-    const appId = 'foobarTest'
-
-    appSettings = new AppSettings()
-    fsEx.emptyDirSync(path.join(appPath, SETTINGS_FOLDER))
-    appSettings.setId(appId)
-
-    fsEx.emptyDirSync(userSettingsFolder)
-    userSettings = new UserSettings().setToken({})
-
-    action = new ExtensionAction()
+    mockFs()
+    appSettings = new AppSettings(appPath)
+    appSettings.getId = async () => ('shop_123')
+    userSettings = await new UserSettings().setToken({})
+    subjectUnderTest = new ExtensionAction(appSettings, userSettings)
   })
 
-  afterEach((done) => {
+  afterEach(async () => {
     delete process.env.USER_PATH
     delete process.env.APP_PATH
-    async.parallel([
-      (cb) => fsEx.remove(userSettingsFolder, cb),
-      (cb) => fsEx.remove(appPath, cb)
-    ], done)
+  })
+
+  describe('general', () => {
+    it('should register', () => {
+      const caporal = {}
+      caporal.command = sinon.stub().returns(caporal)
+      caporal.description = sinon.stub().returns(caporal)
+      caporal.argument = sinon.stub().returns(caporal)
+      caporal.action = async (cb) => {
+        await cb()
+        return caporal
+      }
+      caporal.option = sinon.stub().returns(caporal)
+
+      subjectUnderTest.run = async () => (true)
+
+      ExtensionAction.build = () => ({
+        attachExtensions: async () => (true),
+        createExtension: async () => (true),
+        detachExtensions: async () => (true),
+        manageExtensions: async () => (true)
+      })
+      ExtensionAction.register(caporal)
+
+      assert(caporal.command.calledWith('extension create'))
+      assert(caporal.command.calledWith('extension attach'))
+      assert(caporal.command.calledWith('extension detach'))
+      assert(caporal.command.calledWith('extension manage'))
+    })
+    it('should throw if user not logged in', async () => {
+      await userSettings.setToken(null)
+      try {
+        await subjectUnderTest.attachExtensions({ extensions: [] })
+        assert.fail('Expected error to be thrown.')
+      } catch (err) {
+        assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
+      }
+    })
   })
 
   describe('attaching and detaching', () => {
-    describe('general', () => {
-      it('should register', () => {
-        const caporal = {}
-        caporal.command = sinon.stub().returns(caporal)
-        caporal.description = sinon.stub().returns(caporal)
-        caporal.action = sinon.stub().returns(caporal)
-        caporal.option = sinon.stub().returns(caporal)
-        caporal.argument = sinon.stub().returns(caporal)
+    it('should attach if extension exists locally', async () => {
+      const name = 'existentExtension'
+      const id = 'extId'
 
-        ExtensionAction.register(caporal)
+      const extPath = path.join(appPath, 'extensions', name)
+      await fsEx.ensureDir(extPath)
+      await fsEx.writeJSON(path.join(extPath, 'extension-config.json'), { id, trusted: false })
 
-        assert(caporal.command.calledWith('extension create'))
-        assert(caporal.description.calledWith('Creates a new extension'))
-        assert(caporal.argument.calledWith('[types...]', 'Types of the extension. Possible types are: frontend, backend'))
-        assert(caporal.option.calledWith('--extension [extensionName]', 'Name of the new extension (e.g: @myAwesomeOrg/awesomeExtension)'))
-        assert(caporal.option.calledWith('--trusted [type]', 'only valid if you\'re about to create a backend extension'))
+      await subjectUnderTest.attachExtensions({ extensions: [name] })
 
-        assert(caporal.command.calledWith('extension attach'))
-        assert(caporal.argument.calledWith('[extensions...]', 'Folder name of the extensions to attach'))
-        assert(caporal.description.calledWith('Attaches one or more extensions'))
+      const config = await fsEx.readJson(appSettings.attachedExtensionsFile)
+      assert.deepEqual(config.attachedExtensions[id], { path: name, trusted: false })
+    })
 
-        assert(caporal.command.calledWith('extension detach'))
-        assert(caporal.argument.calledWith('[extensions...]', 'Folder name of the extensions to detach'))
-        assert(caporal.description.calledWith('Detaches one or more extensions'))
+    it('should attach all local extensions if no one is given', async () => {
+      const name1 = 'existentExtension1'
+      const name2 = 'existentExtension2'
 
-        assert(caporal.command.calledWith('extension manage'))
-        assert(caporal.description.calledWith('Attaches and detaches extensions via a select picker'))
+      const extPath1 = path.join(appPath, 'extensions', name1)
+      const extPath2 = path.join(appPath, 'extensions', name2)
+      await fsEx.ensureDir(extPath1)
+      await fsEx.ensureDir(extPath2)
+      await fsEx.writeJSON(path.join(extPath1, 'extension-config.json'), { id: 'existentExtension1', trusted: false })
+      await fsEx.writeJSON(path.join(extPath2, 'extension-config.json'), { id: 'existentExtension2', trusted: false })
 
-        assert(caporal.action.callCount === 4)
-      })
-
-      it('should throw if user not logged in', () => {
-        userSettings.setToken(null)
-        try {
-          action.attachExtensions({extensions: []})
-        } catch (err) {
-          assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
-        }
+      await subjectUnderTest.attachExtensions({ extensions: [name1] })
+      await subjectUnderTest.attachExtensions({})
+      const config = await fsEx.readJson(appSettings.attachedExtensionsFile)
+      assert.deepEqual(config.attachedExtensions, {
+        existentExtension1: { path: 'existentExtension1', trusted: false },
+        existentExtension2: { path: 'existentExtension2', trusted: false }
       })
     })
 
-    describe('attaching', () => {
-      it('should attach if extension exists locally', () => {
-        const name = 'existentExtension'
-        const id = 'extId'
+    it('should throw an error if extension does not exist locally', async () => {
+      const name = 'notExitstentExtension'
 
-        const extPath = path.join(appPath, 'extensions', name)
-        fsEx.ensureDirSync(extPath)
-        fsEx.writeJSONSync(path.join(extPath, 'extension-config.json'), {id, trusted: false})
-
-        action.attachExtensions({extensions: [name]})
-
-        const config = fsEx.readJsonSync(appSettings.attachedExtensionsFile)
-        assert.deepEqual(config.attachedExtensions[id], {path: name, trusted: false})
-      })
-
-      it('should attach all local extensions if no one is given', () => {
-        const name1 = 'existentExtension1'
-        const name2 = 'existentExtension2'
-
-        const extPath1 = path.join(appPath, 'extensions', name1)
-        const extPath2 = path.join(appPath, 'extensions', name2)
-        fsEx.ensureDirSync(extPath1)
-        fsEx.ensureDirSync(extPath2)
-        fsEx.writeJSONSync(path.join(extPath1, 'extension-config.json'), {id: 'existentExtension1', trusted: false})
-        fsEx.writeJSONSync(path.join(extPath2, 'extension-config.json'), {id: 'existentExtension2', trusted: false})
-
-        action.attachExtensions({extensions: [name1]})
-        action.attachExtensions({})
-        const config = fsEx.readJsonSync(appSettings.attachedExtensionsFile)
-        assert.deepEqual(config.attachedExtensions, {
-          existentExtension1: { path: 'existentExtension1', trusted: false },
-          existentExtension2: { path: 'existentExtension2', trusted: false }
-        })
-      })
-
-      it('should throw an error if extension does not exist locally', () => {
-        const name = 'notExitstentExtension'
-
-        try {
-          action.attachExtensions({extensions: [name]})
-        } catch (e) {
-          assert.equal(e.message, `Config file of 'notExitstentExtension' is invalid or not existent`)
-        }
-      })
-
-      it('should throw an error if extension-config is invalid', () => {
-        const name = 'existentExtension'
-
-        const extPath = path.join(appPath, 'extensions', name)
-        fsEx.ensureDirSync(extPath)
-        fsEx.writeJSONSync(path.join(extPath, 'extension-config.json'), {})
-
-        try {
-          action.attachExtensions({extensions: [name]})
-        } catch (e) {
-          assert.equal(e.message, `Config file of '${name}' is invalid or not existent`)
-        }
-      })
-
-      it('should throw an error if extension is already attached', () => {
-        const name = 'existentExtension'
-
-        const extPath = path.join(appPath, 'extensions', name)
-        fsEx.ensureDirSync(extPath)
-        fsEx.writeJSONSync(path.join(extPath, 'extension-config.json'), {id: name})
-
-        action.attachExtensions({extensions: [name]})
-        try {
-          action.attachExtensions({extensions: [name]})
-        } catch (e) {
-          assert.equal(e.message, `Extension 'existentExtension (existentExtension) is already attached`)
-        }
-      })
-
-      it('should throw if user not logged in', () => {
-        userSettings.setToken(null)
-        try {
-          action.attachExtensions({})
-        } catch (err) {
-          assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
-        }
-      })
+      try {
+        await subjectUnderTest.attachExtensions({ extensions: [name] })
+      } catch (e) {
+        assert.equal(e.message, `Config file of 'notExitstentExtension' is invalid or not existent`)
+      }
     })
 
-    describe('detaching', () => {
-      it('should detach a extension', () => {
-        const name = 'existentExtension'
+    it('should throw an error if extension-config is invalid', async () => {
+      const name = 'existentExtension'
 
-        const extPath = path.join(appPath, 'extensions', name)
-        fsEx.ensureDirSync(extPath)
-        fsEx.writeJSONSync(path.join(extPath, 'extension-config.json'), {id: name})
+      const extPath = path.join(appPath, 'extensions', name)
+      await fsEx.ensureDir(extPath)
+      await fsEx.writeJSON(path.join(extPath, 'extension-config.json'), {})
 
-        appSettings.attachExtension(name, {id: name, trusted: false})
-        action.detachExtensions({extensions: [name]})
+      try {
+        await subjectUnderTest.attachExtensions({ extensions: [name] })
+      } catch (e) {
+        assert.equal(e.message, `Config file of '${name}' is invalid or not existent`)
+      }
+    })
 
-        const config = fsEx.readJsonSync(appSettings.attachedExtensionsFile)
-        assert.deepEqual(config.attachedExtensions, {})
-      })
+    it('should throw an error if extension is already attached', async () => {
+      const name = 'existentExtension'
 
-      it('should skip if extension was not attached', (done) => {
-        const name = 'notExitstentExtension'
+      const extPath = path.join(appPath, 'extensions', name)
+      await fsEx.ensureDir(extPath)
+      await fsEx.writeJSON(path.join(extPath, 'extension-config.json'), { id: name })
 
-        const extPath = path.join(appPath, 'extensions', name)
-        fsEx.ensureDirSync(extPath)
-        fsEx.writeJSONSync(path.join(extPath, 'extension-config.json'), {id: name})
+      await subjectUnderTest.attachExtensions({ extensions: [name] })
+      try {
+        await subjectUnderTest.attachExtensions({ extensions: [name] })
+      } catch (e) {
+        assert.equal(e.message, `Extension 'existentExtension (existentExtension) is already attached`)
+      }
+    })
 
-        logger.warn = (text) => {
-          assert.equal(text, `The extension '${name}' is not attached`)
-          done()
-        }
+    it('should throw if user not logged in', async () => {
+      await userSettings.setToken(null)
+      try {
+        await subjectUnderTest.attachExtensions({})
+      } catch (err) {
+        assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
+      }
+    })
 
-        action.detachExtensions({extensions: [name]})
-      })
+    it('should detach a extension', async () => {
+      const name = 'existentExtension'
 
-      it('should detach all extensions if none was specified', () => {
-        appSettings.attachExtension('ext2', {id: 'ext2'})
-        appSettings.attachExtension('ext1', {id: 'ext1'})
+      const extPath = path.join(appPath, 'extensions', name)
+      await fsEx.ensureDir(extPath)
+      await fsEx.writeJSON(path.join(extPath, 'extension-config.json'), { id: name })
 
-        action.detachExtensions({})
-        const config = fsEx.readJsonSync(appSettings.attachedExtensionsFile)
-        assert.deepEqual(config.attachedExtensions, {})
-      })
+      await appSettings.attachExtension(name, { id: name, trusted: false })
+      await subjectUnderTest.detachExtensions({ extensions: [name] })
+
+      const config = await fsEx.readJson(appSettings.attachedExtensionsFile)
+      assert.deepEqual(config.attachedExtensions, {})
+    })
+
+    it('should skip if extension was not attached', async () => {
+      const name = 'notExistentExtension'
+
+      const extPath = path.join(appPath, 'extensions', name)
+      await fsEx.ensureDir(extPath)
+      await fsEx.writeJSON(path.join(extPath, 'extension-config.json'), { id: name })
+
+      let warning
+      logger.warn = (text) => {
+        warning = text
+      }
+
+      await subjectUnderTest.detachExtensions({ extensions: [name] })
+
+      assert.ok(warning)
+      assert.equal(warning, `The extension '${name}' is not attached`)
+    })
+
+    it('should detach all extensions if none was specified', async () => {
+      await appSettings.attachExtension('ext2', { id: 'ext2' })
+      await appSettings.attachExtension('ext1', { id: 'ext1' })
+
+      await subjectUnderTest.detachExtensions({})
+      const config = await fsEx.readJson(appSettings.attachedExtensionsFile)
+      assert.deepEqual(config.attachedExtensions, {})
     })
   })
 
-  describe('.manageExtensions()', () => {
-    let instance
+  describe('manage extensions', () => {
     let loggerWarnStub
     let inquirerPromptStub
-    let getExtensionsSummaryStub
+    let getAllExtensionPropertiesStub
     let detachExtensionsStub
     let attachExtensionsStub
 
@@ -230,16 +259,14 @@ describe('ExtensionAction', () => {
     })
 
     beforeEach(() => {
-      instance = new ExtensionAction()
-
-      getExtensionsSummaryStub = sinon.stub(instance, '_getExtensionsSummary').returns([
+      getAllExtensionPropertiesStub = sinon.stub(subjectUnderTest, '_getAllExtensionProperties').resolves([
         {id: '@acme/one', dir: 'acme-one', attached: false},
         {id: '@acme/two', dir: 'acme-two', attached: true},
         {id: '@acme/three', dir: 'acme-three', attached: false}
       ])
 
-      detachExtensionsStub = sinon.stub(instance, 'detachExtensions')
-      attachExtensionsStub = sinon.stub(instance, 'attachExtensions')
+      detachExtensionsStub = sinon.stub(subjectUnderTest, 'detachExtensions')
+      attachExtensionsStub = sinon.stub(subjectUnderTest, 'attachExtensions')
     })
 
     afterEach(() => {
@@ -248,7 +275,7 @@ describe('ExtensionAction', () => {
     })
 
     it('should detach an attached extension if nothing was selected within the picker', async () => {
-      await instance.manageExtensions()
+      await subjectUnderTest.manageExtensions()
 
       sinon.assert.callCount(inquirerPromptStub, 1)
       sinon.assert.callCount(detachExtensionsStub, 1)
@@ -258,7 +285,7 @@ describe('ExtensionAction', () => {
 
     it('should do nothing if the picker selection was not changed', async () => {
       inquirerPromptStub.resolves({extensions: ['@acme/two']})
-      await instance.manageExtensions()
+      await subjectUnderTest.manageExtensions()
 
       sinon.assert.callCount(inquirerPromptStub, 1)
       sinon.assert.callCount(detachExtensionsStub, 0)
@@ -267,7 +294,7 @@ describe('ExtensionAction', () => {
 
     it('should attach and detach extionsions according to the picker selection', async () => {
       inquirerPromptStub.resolves({extensions: ['@acme/one']})
-      await instance.manageExtensions()
+      await subjectUnderTest.manageExtensions()
 
       sinon.assert.callCount(inquirerPromptStub, 1)
       sinon.assert.callCount(detachExtensionsStub, 1)
@@ -277,8 +304,8 @@ describe('ExtensionAction', () => {
     })
 
     it('should log a warning when no extensions are available to pick', async () => {
-      getExtensionsSummaryStub.returns([])
-      await instance.manageExtensions()
+      getAllExtensionPropertiesStub.returns([])
+      await subjectUnderTest.manageExtensions()
 
       sinon.assert.callCount(loggerWarnStub, 1)
       sinon.assert.callCount(inquirerPromptStub, 0)
@@ -287,57 +314,55 @@ describe('ExtensionAction', () => {
     })
   })
 
-  describe('._getExtensionsSummary()', () => {
-    let instance
+  describe('._getAllExtensionProperties()', () => {
+    let extensionsFolder
     let loadAttachedExtensionsStub
-    let getAllExtensionsStub
+
+    after(() => {
+      mockFs.restore()
+    })
 
     beforeEach(() => {
-      instance = new ExtensionAction()
-      // Add settings to the instance
-      instance.settings = appSettings
-
-      // Simulate extension info - the first extension is treated as invalid
-      sinon.stub(instance, '_getExtensionInfo')
-        .onFirstCall().returns(undefined)
-        .callsFake((dir) => ({
-          id: `@${dir.replace('-', '/')}`
-        }))
-
-      // Simulate an attached extension
-      loadAttachedExtensionsStub = sinon.stub(instance.settings, 'loadAttachedExtensions').returns({
-        '@acme/two': {path: 'acme-two'}
+      extensionsFolder = path.join(subjectUnderTest.appSettings.getApplicationFolder(), EXTENSIONS_FOLDER)
+      mockFs({
+        [path.join(extensionsFolder, 'acme-one')]: {'extension-config.json': '{"id": "@acme/one"}'},
+        [path.join(extensionsFolder, 'emtpy')]: {},
+        [path.join(extensionsFolder, 'acme-two')]: {'extension-config.json': '{"id": "@acme/two"}'}
       })
 
-      // Simulate some checked out extensions
-      getAllExtensionsStub = sinon.stub(instance, '_getAllExtensions').returns(['acme-one', 'acme-two', 'acme-three'])
+      loadAttachedExtensionsStub = sinon.stub(subjectUnderTest.appSettings, 'loadAttachedExtensions').resolves({
+        '@acme/two': {path: 'acme-two'}
+      })
     })
 
-    it('should return the summary with one attached extension', () => {
+    it('should return the summary with one attached extension', async () => {
       const expected = [
-        {id: '@acme/two', dir: 'acme-two', attached: true},
-        {id: '@acme/three', dir: 'acme-three', attached: false}
+        {id: '@acme/one', dir: 'acme-one', attached: false},
+        {id: '@acme/two', dir: 'acme-two', attached: true}
       ]
 
-      const result = instance._getExtensionsSummary()
+      const result = await subjectUnderTest._getAllExtensionProperties()
       assert.deepEqual(result, expected)
     })
 
-    it('should return the summery with no attached extension', () => {
-      loadAttachedExtensionsStub.returns({})
+    it('should return the summery with no attached extension', async () => {
+      loadAttachedExtensionsStub.resolves({})
 
       const expected = [
-        {id: '@acme/two', dir: 'acme-two', attached: false},
-        {id: '@acme/three', dir: 'acme-three', attached: false}
+        {id: '@acme/one', dir: 'acme-one', attached: false},
+        {id: '@acme/two', dir: 'acme-two', attached: false}
       ]
 
-      const result = instance._getExtensionsSummary()
+      const result = await subjectUnderTest._getAllExtensionProperties()
       assert.deepEqual(result, expected)
     })
 
-    it('should return an empty array if no extensions are available', () => {
-      getAllExtensionsStub.returns([])
-      const result = instance._getExtensionsSummary()
+    it('should return an empty array if no extensions are available', async () => {
+      mockFs({
+        [extensionsFolder]: null
+      })
+
+      const result = await subjectUnderTest._getAllExtensionProperties()
       assert.deepEqual(result, [])
     })
   })
@@ -347,58 +372,50 @@ describe('ExtensionAction', () => {
 
     beforeEach((done) => {
       nock.disableNetConnect()
-      fsEx.ensureDirSync(extensionFolder)
       done()
     })
 
     afterEach((done) => {
       nock.enableNetConnect()
-      /* fsEx.removeSync(extensionFolder) */
       done()
     })
 
     describe('general', () => {
-      it('should create an extension', (done) => {
-        const action = new ExtensionAction()
+      it('should create an extension', async () => {
+        subjectUnderTest._getUserInput = () => { return new Promise((resolve, reject) => { resolve({}) }) }
+        subjectUnderTest._checkIfExtensionExists = () => { return new Promise((resolve, reject) => { resolve({}) }) }
+        subjectUnderTest._downloadBoilerplate = () => { return new Promise((resolve, reject) => { resolve({}) }) }
+        subjectUnderTest._renameBoilerplate = () => { return new Promise((resolve, reject) => { resolve({}) }) }
+        subjectUnderTest._removeUnusedDirs = () => { return new Promise((resolve, reject) => { resolve({}) }) }
+        subjectUnderTest._removePlaceholders = () => { return new Promise((resolve, reject) => { resolve({}) }) }
+        subjectUnderTest._updateBackendFiles = () => { return new Promise((resolve, reject) => { resolve({}) }) }
+        subjectUnderTest._installFrontendDependencies = () => { return new Promise((resolve, reject) => { resolve({}) }) }
 
-        action._getUserInput = () => { return new Promise((resolve, reject) => { resolve({}) }) }
-        action._checkIfExtensionExists = () => { return new Promise((resolve, reject) => { resolve({}) }) }
-        action._downloadBoilerplate = () => { return new Promise((resolve, reject) => { resolve({}) }) }
-        action._renameBoilerplate = () => { return new Promise((resolve, reject) => { resolve({}) }) }
-        action._removeUnusedDirs = () => { return new Promise((resolve, reject) => { resolve({}) }) }
-        action._removePlaceholders = () => { return new Promise((resolve, reject) => { resolve({}) }) }
-        action._updateBackendFiles = () => { return new Promise((resolve, reject) => { resolve({}) }) }
-        action._installFrontendDependencies = () => { return new Promise((resolve, reject) => { resolve({}) }) }
-
-        action.createExtension({}, null).then(() => {
-          done()
-        })
+        await subjectUnderTest.createExtension({ types: [] }, null)
       })
 
-      it('should catch an error because of sth.', () => {
-        const action = new ExtensionAction()
-
-        action._getUserInput = () => { return new Promise((resolve, reject) => { resolve() }) }
-        action._checkIfExtensionExists = () => { return new Promise((resolve, reject) => { resolve({}) }) }
-        action._downloadBoilerplate = (extensionsFolder, state) => {
+      it('should catch an error because of sth.', async () => {
+        subjectUnderTest._getUserInput = () => { return new Promise((resolve, reject) => { resolve() }) }
+        subjectUnderTest._checkIfExtensionExists = () => { return new Promise((resolve, reject) => { resolve({}) }) }
+        subjectUnderTest._downloadBoilerplate = (extensionsFolder, state) => {
           state.cloned = true
           return new Promise((resolve, reject) => {
             reject(new Error('error'))
           })
         }
-        action._cleanUp = (state) => assert.ok(state.cloned)
+        subjectUnderTest._cleanUp = (state) => assert.ok(state.cloned)
 
-        return action.createExtension({}, null)
+        await subjectUnderTest.createExtension({}, null)
       })
 
-      it('should throw error "not logged in"', (done) => {
-        userSettings.setToken(null)
+      it('should throw error "not logged in"', async () => {
+        await userSettings.setToken(null)
 
         try {
-          new ExtensionAction().createExtension({}, null)
+          await subjectUnderTest.createExtension({}, null)
+          assert.fail('Expected error to be thrown.')
         } catch (err) {
           assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
-          done()
         }
       })
     })
@@ -419,7 +436,7 @@ describe('ExtensionAction', () => {
           toBeCreated: { frontend: true, backend: true }
         }
 
-        return new ExtensionAction()
+        subjectUnderTest
           ._getUserInput(options, types, externalUserInput)
           .then(() => {
             assert.deepEqual(externalUserInput, expected)
@@ -441,10 +458,9 @@ describe('ExtensionAction', () => {
       })
 
       it('should get the user input by command', () => {
-        const extensionAction = new ExtensionAction()
-        extensionAction.settings = {getApplicationFolder: () => tempFolder}
+        subjectUnderTest.appSettings = { getApplicationFolder: () => tempFolder }
 
-        return extensionAction._checkIfExtensionExists('testExtension')
+        return subjectUnderTest._checkIfExtensionExists('testExtension')
           .then(() => {
             assert.fail('Should not be called')
           })
@@ -455,34 +471,46 @@ describe('ExtensionAction', () => {
     })
 
     describe('_downloadBoilerplate', () => {
-      it('should download and unzip the boilerplate', () => {
+      it('should download and unzip the boilerplate', (done) => {
         const state = {}
-
+        mockFs.restore()
         const n = nock('https://github.com')
           .get('/shopgate/cloud-sdk-boilerplate-extension/archive/master.zip')
-          .replyWithFile(200, path.join('test', 'testfiles', 'cloud-sdk-boilerplate-extension.zip'), {'Content-Type': 'application/zip'})
+          .replyWithFile(200, path.join('test', 'testfiles', 'cloud-sdk-boilerplate-extension.zip'), { 'Content-Type': 'application/zip' })
 
-        return new ExtensionAction()
+        setTimeout(() => {
+          callbacks['close'][0]()
+        }, 500)
+
+        subjectUnderTest
           ._downloadBoilerplate(extensionFolder, state)
           .then(() => {
-            assert.ok(fsEx.existsSync(path.join(extensionFolder, 'cloud-sdk-boilerplate-extension-master')))
+            mockFs()
             assert.ok(state.cloned)
             n.done()
+            done()
           })
       })
 
-      it('should fail because of error while loading or unzipping', () => {
+      it('should fail because of error while loading or unzipping', (done) => {
         const state = {}
-
         const n = nock('https://github.com')
-        .get('/shopgate/cloud-sdk-boilerplate-extension/archive/master.zip')
-        .reply(404, {error: 'error'})
+          .get('/shopgate/cloud-sdk-boilerplate-extension/archive/master.zip')
+          .reply(404, { error: 'error' })
 
-        return new ExtensionAction()
+        setTimeout(() => {
+          callbacks['error'][0]({ message: '' })
+        }, 500)
+
+        subjectUnderTest
           ._downloadBoilerplate(extensionFolder, state)
+          .then(data => {
+            done()
+          })
           .catch((err) => {
             assert.ok(err.message.startsWith('Error while downloading boilerplate'))
             n.done()
+            done()
           })
       })
     })
@@ -498,7 +526,7 @@ describe('ExtensionAction', () => {
       it('should rename the boilerplate dir', () => {
         fsEx.ensureDirSync(path.join(extensionFolder, oldName))
 
-        return new ExtensionAction()
+        return subjectUnderTest
           ._renameBoilerplate(userInput, defaultPath, extensionFolder, state)
           .then(() => {
             const newPath = path.join(extensionFolder, 'bar')
@@ -512,14 +540,11 @@ describe('ExtensionAction', () => {
         fsEx.ensureDirSync(path.join(extensionFolder, oldName))
         fsEx.ensureDirSync(path.join(extensionFolder, newName, 'test'))
 
-        return new ExtensionAction()
+        return subjectUnderTest
           ._renameBoilerplate(userInput, defaultPath, extensionFolder, state)
           .then(() => {
-            if (/^win/.test(process.platform)) return
             assert.fail('It should fail')
           }).catch((err) => {
-            if (/^win/.test(process.platform)) return assert.ok(err.message.indexOf('EPERM') !== -1)
-            if (/^darwin/.test(process.platform)) return assert.ok(err.message.indexOf('ENOTEMPTY') !== -1)
             assert.ok(
               (err.message.indexOf('EEXIST') !== -1) ||
               (err.message.indexOf('ENOTEMPTY') !== -1)
@@ -549,7 +574,7 @@ describe('ExtensionAction', () => {
 
         dirs.forEach((dir) => fsEx.ensureDirSync(dir))
 
-        return new ExtensionAction()
+        return subjectUnderTest
           ._removeUnusedDirs(userInput, state)
           .then(() => {
             dirs.forEach((dir) => assert.ok(!fsEx.existsSync(dir)))
@@ -582,13 +607,16 @@ describe('ExtensionAction', () => {
           path.join(extensionPath, 'sth.json')
         ]
 
-        const currentFileContent = {extensionId: '@awesomeOrganization/awesomeExtension', pipelineId: 'awesomeOrganization.somePipeline'}
+        const currentFileContent = {
+          extensionId: '@awesomeOrganization/awesomeExtension',
+          pipelineId: 'awesomeOrganization.somePipeline'
+        }
         files.forEach((file) => fsEx.writeJsonSync(file, currentFileContent))
 
-        return new ExtensionAction()
+        return subjectUnderTest
           ._removePlaceholders(userInput, state)
           .then(() => {
-            const expectedFileContent = {extensionId: '@o1/e1', pipelineId: 'o1.somePipeline'}
+            const expectedFileContent = { extensionId: '@o1/e1', pipelineId: 'o1.somePipeline' }
             files.forEach((file) => assert.deepEqual(fsEx.readJsonSync(file), expectedFileContent))
           })
       })
@@ -601,12 +629,12 @@ describe('ExtensionAction', () => {
         const state = { extensionPath }
 
         const file = path.join(extensionPath, 'sth.jsx')
-        fsEx.writeJsonSync(file, {awesomeExtension: 'awesomeOrganization'})
+        fsEx.writeJsonSync(file, { awesomeExtension: 'awesomeOrganization' })
 
-        return new ExtensionAction()
+        return subjectUnderTest
           ._removePlaceholders(userInput, state)
           .then(() => {
-            assert.deepEqual(fsEx.readJsonSync(file), {awesomeExtension: 'awesomeOrganization'})
+            assert.deepEqual(fsEx.readJsonSync(file), { awesomeExtension: 'awesomeOrganization' })
           })
       })
     })
@@ -636,21 +664,21 @@ describe('ExtensionAction', () => {
 
         const pipelineDir = path.join(extensionPath, 'pipelines')
         fsEx.ensureDirSync(pipelineDir)
-        fsEx.writeJSON(path.join(pipelineDir, 'awesomeOrganization.awesomePipeline.json'), {})
+        fsEx.writeJSON(path.join(pipelineDir, 'awesomeOrganization.awesomePipeline.v1.json'), {})
 
         const exConfFile = path.join(extensionPath, 'extension-config.json')
         fsEx.writeJSON(exConfFile, {})
 
-        return new ExtensionAction()
+        return subjectUnderTest
           ._updateBackendFiles(userInput, state)
           .then(() => {
             assert.ok(fsEx.exists(path.join(extensionPath, 'pipelines', 'o1.awesomePipeline.json')))
-            assert.deepEqual(fsEx.readJsonSync(exConfFile), {trusted: true})
+            assert.deepEqual(fsEx.readJsonSync(exConfFile), { trusted: true })
           })
       })
 
       it('should return early because the function has nothing to do', () => {
-        assert.doesNotThrow(() => new ExtensionAction()._updateBackendFiles({toBeCreated: {}}, {}))
+        assert.doesNotThrow(() => subjectUnderTest._updateBackendFiles({ toBeCreated: {} }, {}))
       })
     })
 
@@ -684,15 +712,15 @@ describe('ExtensionAction', () => {
           params: ['-v']
         }
 
-        return new ExtensionAction()
+        return subjectUnderTest
           ._installFrontendDependencies(userInput, state, c)
       })
 
       it('should return early because the function has nothing to do', () => {
-        assert.doesNotThrow(() => new ExtensionAction()._installFrontendDependencies({toBeCreated: {}}, {}, {}))
+        assert.doesNotThrow(() => subjectUnderTest._installFrontendDependencies({ toBeCreated: {} }, {}, {}))
       })
 
-      it('should fail because the command failed', () => {
+      it('should fail because the command failed', (done) => {
         const state = { extensionPath }
         const userInput = {
           toBeCreated: {
@@ -707,10 +735,16 @@ describe('ExtensionAction', () => {
           params: ['i', 'nonExistentPackage']
         }
 
-        return new ExtensionAction()
+        spawnEventCallback.code = 1
+
+        subjectUnderTest
           ._installFrontendDependencies(userInput, state, c)
+          .then(() => {
+            assert.fail('Expected an exception to be thrown.')
+          })
           .catch((err) => {
             assert.ok(err.message.startsWith('Install process exited with code'))
+            done()
           })
       }).timeout(10000)
     })
@@ -718,28 +752,26 @@ describe('ExtensionAction', () => {
     describe('cleanUp', () => {
       const extensionPath = path.join(extensionFolder, 'ex1')
 
-      beforeEach((done) => {
-        fsEx.ensureDirSync(extensionPath)
-        done()
+      beforeEach(async () => {
+        await fsEx.ensureDir(extensionPath)
       })
 
-      afterEach((done) => {
-        fsEx.removeSync(extensionFolder)
-        done()
+      afterEach(async () => {
+        await fsEx.remove(extensionFolder)
       })
 
-      it('should delete the extension directory', () => {
+      it('should delete the extension directory', async () => {
         const state = {
           cloned: true,
           moved: true,
           extensionPath
         }
 
-        assert.ok(fsEx.existsSync(extensionPath))
+        assert.ok(await fsEx.exists(extensionPath))
 
-        new ExtensionAction()._cleanUp(state, 'doesNotExist')
+        await subjectUnderTest._cleanUp(state, 'doesNotExist')
 
-        assert.ok(!fsEx.existsSync(extensionPath))
+        assert.ok(!await fsEx.exists(extensionPath))
       })
     })
   })
