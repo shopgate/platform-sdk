@@ -1,6 +1,6 @@
 # Platform SDK
-[![npm](https://img.shields.io/npm/v/@shopgate/cloud-sdk.svg?maxAge=300)](https://www.npmjs.com/package/@shopgate/cloud-sdk)
-[![Travis CI](https://img.shields.io/travis/shopgate/cloud-sdk/master.svg?maxAge=300)](https://travis-ci.org/shopgate/cloud-sdk)
+[![npm](https://img.shields.io/npm/v/@shopgate/platform-sdk.svg?maxAge=300)](https://www.npmjs.com/package/@shopgate/platform-sdk)
+[![Travis CI](https://img.shields.io/travis/shopgate/platform-sdk/master.svg?maxAge=300)](https://travis-ci.org/shopgate/platform-sdk)
 [![AppVeyor](https://img.shields.io/appveyor/ci/pvomhoff/cloud-sdk/master.svg?maxAge=300)](https://ci.appveyor.com/project/pvomhoff/cloud-sdk/branch/master)
 [![Coveralls](https://img.shields.io/coveralls/github/shopgate/cloud-sdk/master.svg?maxAge=300)](https://coveralls.io/github/shopgate/cloud-sdk?branch=master)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
