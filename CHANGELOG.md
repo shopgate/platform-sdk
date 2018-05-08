@@ -1,3 +1,6 @@
+## v1.4.1
+* Fix filename of pipeline in boilerplate
+
 ## v1.4.0
 * Added `logout` command
 * Added proper message when one developer runs `backend start` for the same shop while another is still connected
