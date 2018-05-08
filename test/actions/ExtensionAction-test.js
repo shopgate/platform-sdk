@@ -535,7 +535,7 @@ describe('ExtensionAction', () => {
 
         const pipelineDir = path.join(extensionPath, 'pipelines')
         fsEx.ensureDirSync(pipelineDir)
-        fsEx.writeJSON(path.join(pipelineDir, 'awesomeOrganization.awesomePipeline.json'), {})
+        fsEx.writeJSON(path.join(pipelineDir, 'awesomeOrganization.awesomePipeline.v1.json'), {})
 
         const exConfFile = path.join(extensionPath, 'extension-config.json')
         fsEx.writeJSON(exConfFile, {})
