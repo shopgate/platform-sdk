@@ -315,24 +315,28 @@ describe('ExtensionAction', () => {
   })
 
   describe('._getAllExtensionProperties()', () => {
+    let attachedExtensionsFile
     let extensionsFolder
-    let loadAttachedExtensionsStub
+    let mockedFs
 
     after(() => {
       mockFs.restore()
     })
 
     beforeEach(() => {
+      attachedExtensionsFile = subjectUnderTest.appSettings.attachedExtensionsFile
       extensionsFolder = path.join(subjectUnderTest.appSettings.getApplicationFolder(), EXTENSIONS_FOLDER)
-      mockFs({
-        [path.join(extensionsFolder, 'acme-one')]: {'extension-config.json': '{"id": "@acme/one"}'},
-        [path.join(extensionsFolder, 'emtpy')]: {},
-        [path.join(extensionsFolder, 'acme-two')]: {'extension-config.json': '{"id": "@acme/two"}'}
-      })
+      // Populate the mocked fs structure to enable updates of single properties during tests
+      mockedFs = {
+        [extensionsFolder]: {
+          'acme-one': {'extension-config.json': '{"id": "@acme/one"}'},
+          'acme-two': {'extension-config.json': '{"id": "@acme/two"}'},
+          'empty': {}
+        },
+        [attachedExtensionsFile]: '{"attachedExtensions":{"@acme/two":{"path":"acme-two"}}}'
+      }
 
-      loadAttachedExtensionsStub = sinon.stub(subjectUnderTest.appSettings, 'loadAttachedExtensions').resolves({
-        '@acme/two': {path: 'acme-two'}
-      })
+      mockFs(mockedFs)
     })
 
     it('should return the summary with one attached extension', async () => {
@@ -346,7 +350,9 @@ describe('ExtensionAction', () => {
     })
 
     it('should return the summery with no attached extension', async () => {
-      loadAttachedExtensionsStub.resolves({})
+      // Clear the attached extensions
+      mockedFs[attachedExtensionsFile] = '{"attachedExtensions":{}}'
+      mockFs(mockedFs)
 
       const expected = [
         {id: '@acme/one', dir: 'acme-one', attached: false},
@@ -358,9 +364,8 @@ describe('ExtensionAction', () => {
     })
 
     it('should return an empty array if no extensions are available', async () => {
-      mockFs({
-        [extensionsFolder]: null
-      })
+      mockedFs[extensionsFolder] = null
+      mockFs(mockedFs)
 
       const result = await subjectUnderTest._getAllExtensionProperties()
       assert.deepEqual(result, [])
