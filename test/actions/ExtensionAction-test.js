@@ -350,7 +350,7 @@ describe('ExtensionAction', () => {
     })
 
     it('should return the summery with no attached extension', async () => {
-      // Clear the attached extensions
+      // Clear the attached extensions for this test
       mockedFs[attachedExtensionsFile] = '{"attachedExtensions":{}}'
       mockFs(mockedFs)
 
@@ -364,6 +364,7 @@ describe('ExtensionAction', () => {
     })
 
     it('should return an empty array if no extensions are available', async () => {
+      // Clear the extensions for this test
       mockedFs[extensionsFolder] = null
       mockFs(mockedFs)
 
