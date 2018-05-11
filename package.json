@@ -62,7 +62,6 @@
     "inquirer": "^4.0.2",
     "jsonlint": "^1.6.2",
     "longjohn": "^0.2.12",
-    "mock-fs": "^4.4.2",
     "morgan": "^1.9.0",
     "neo-async": "^2.5.0",
     "os": "^0.1.1",
@@ -93,7 +92,8 @@
     "proxyquire": "^1.8.0",
     "sinon": "^4.2.2",
     "socket.io": "^2.0.4",
-    "standard": "^10.0.3"
+    "standard": "^10.0.3",
+    "mock-fs": "^4.5.0"
   },
   "engines": {
     "node": ">= 8.4.0"
