@@ -250,7 +250,7 @@ describe('ExtensionAction', () => {
 
     before(() => {
       loggerWarnStub = sinon.stub(logger, 'warn')
-      inquirerPromptStub = sinon.stub(inquirer, 'prompt').resolves({extensions: []})
+      inquirerPromptStub = sinon.stub(inquirer, 'prompt').resolves({ extensions: [] })
     })
 
     after(() => {
@@ -260,9 +260,9 @@ describe('ExtensionAction', () => {
 
     beforeEach(() => {
       getAllExtensionPropertiesStub = sinon.stub(subjectUnderTest, '_getAllExtensionProperties').resolves([
-        {id: '@acme/one', dir: 'acme-one', attached: false},
-        {id: '@acme/two', dir: 'acme-two', attached: true},
-        {id: '@acme/three', dir: 'acme-three', attached: false}
+        { id: '@acme/one', dir: 'acme-one', attached: false },
+        { id: '@acme/two', dir: 'acme-two', attached: true },
+        { id: '@acme/three', dir: 'acme-three', attached: false }
       ])
 
       detachExtensionsStub = sinon.stub(subjectUnderTest, 'detachExtensions')
@@ -279,12 +279,12 @@ describe('ExtensionAction', () => {
 
       sinon.assert.callCount(inquirerPromptStub, 1)
       sinon.assert.callCount(detachExtensionsStub, 1)
-      sinon.assert.calledWithExactly(detachExtensionsStub, {extensions: ['acme-two']})
+      sinon.assert.calledWithExactly(detachExtensionsStub, { extensions: ['acme-two'] })
       sinon.assert.callCount(attachExtensionsStub, 0)
     })
 
     it('should do nothing if the picker selection was not changed', async () => {
-      inquirerPromptStub.resolves({extensions: ['@acme/two']})
+      inquirerPromptStub.resolves({ extensions: ['@acme/two'] })
       await subjectUnderTest.manageExtensions()
 
       sinon.assert.callCount(inquirerPromptStub, 1)
@@ -293,14 +293,14 @@ describe('ExtensionAction', () => {
     })
 
     it('should attach and detach extionsions according to the picker selection', async () => {
-      inquirerPromptStub.resolves({extensions: ['@acme/one']})
+      inquirerPromptStub.resolves({ extensions: ['@acme/one'] })
       await subjectUnderTest.manageExtensions()
 
       sinon.assert.callCount(inquirerPromptStub, 1)
       sinon.assert.callCount(detachExtensionsStub, 1)
-      sinon.assert.calledWithExactly(detachExtensionsStub, {extensions: ['acme-two']})
+      sinon.assert.calledWithExactly(detachExtensionsStub, { extensions: ['acme-two'] })
       sinon.assert.callCount(attachExtensionsStub, 1)
-      sinon.assert.calledWithExactly(attachExtensionsStub, {extensions: ['acme-one']})
+      sinon.assert.calledWithExactly(attachExtensionsStub, { extensions: ['acme-one'] })
     })
 
     it('should log a warning when no extensions are available to pick', async () => {
@@ -329,8 +329,8 @@ describe('ExtensionAction', () => {
       // Populate the mocked fs structure to enable updates of single properties during tests
       mockedFs = {
         [extensionsFolder]: {
-          'acme-one': {'extension-config.json': '{"id": "@acme/one"}'},
-          'acme-two': {'extension-config.json': '{"id": "@acme/two"}'},
+          'acme-one': { 'extension-config.json': '{"id": "@acme/one"}' },
+          'acme-two': { 'extension-config.json': '{"id": "@acme/two"}' },
           'empty': {}
         },
         [attachedExtensionsFile]: '{"attachedExtensions":{"@acme/two":{"path":"acme-two"}}}'
@@ -341,8 +341,8 @@ describe('ExtensionAction', () => {
 
     it('should return the summary with one attached extension', async () => {
       const expected = [
-        {id: '@acme/one', dir: 'acme-one', attached: false},
-        {id: '@acme/two', dir: 'acme-two', attached: true}
+        { id: '@acme/one', dir: 'acme-one', attached: false },
+        { id: '@acme/two', dir: 'acme-two', attached: true }
       ]
 
       const result = await subjectUnderTest._getAllExtensionProperties()
@@ -355,8 +355,8 @@ describe('ExtensionAction', () => {
       mockFs(mockedFs)
 
       const expected = [
-        {id: '@acme/one', dir: 'acme-one', attached: false},
-        {id: '@acme/two', dir: 'acme-two', attached: false}
+        { id: '@acme/one', dir: 'acme-one', attached: false },
+        { id: '@acme/two', dir: 'acme-two', attached: false }
       ]
 
       const result = await subjectUnderTest._getAllExtensionProperties()
