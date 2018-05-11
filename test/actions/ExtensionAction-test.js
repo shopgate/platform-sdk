@@ -6,6 +6,7 @@ const sinon = require('sinon')
 const nock = require('nock')
 const mockFs = require('mock-fs')
 const proxyquire = require('proxyquire')
+const inquirer = require('inquirer')
 const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
 const { EXTENSIONS_FOLDER } = require('../../lib/app/Constants')
@@ -94,13 +95,15 @@ describe('ExtensionAction', () => {
       ExtensionAction.build = () => ({
         attachExtensions: async () => (true),
         createExtension: async () => (true),
-        detachExtensions: async () => (true)
+        detachExtensions: async () => (true),
+        manageExtensions: async () => (true)
       })
       ExtensionAction.register(caporal)
 
       assert(caporal.command.calledWith('extension create'))
       assert(caporal.command.calledWith('extension attach'))
       assert(caporal.command.calledWith('extension detach'))
+      assert(caporal.command.calledWith('extension manage'))
     })
     it('should throw if user not logged in', async () => {
       await userSettings.setToken(null)
@@ -235,6 +238,138 @@ describe('ExtensionAction', () => {
       await subjectUnderTest.detachExtensions({})
       const config = await fsEx.readJson(appSettings.attachedExtensionsFile)
       assert.deepEqual(config.attachedExtensions, {})
+    })
+  })
+
+  describe('manage extensions', () => {
+    let loggerWarnStub
+    let inquirerPromptStub
+    let getAllExtensionPropertiesStub
+    let detachExtensionsStub
+    let attachExtensionsStub
+
+    before(() => {
+      loggerWarnStub = sinon.stub(logger, 'warn')
+      inquirerPromptStub = sinon.stub(inquirer, 'prompt').resolves({ extensions: [] })
+    })
+
+    after(() => {
+      loggerWarnStub.restore()
+      inquirerPromptStub.restore()
+    })
+
+    beforeEach(() => {
+      getAllExtensionPropertiesStub = sinon.stub(subjectUnderTest, '_getAllExtensionProperties').resolves([
+        { id: '@acme/one', dir: 'acme-one', attached: false },
+        { id: '@acme/two', dir: 'acme-two', attached: true },
+        { id: '@acme/three', dir: 'acme-three', attached: false }
+      ])
+
+      detachExtensionsStub = sinon.stub(subjectUnderTest, 'detachExtensions')
+      attachExtensionsStub = sinon.stub(subjectUnderTest, 'attachExtensions')
+    })
+
+    afterEach(() => {
+      loggerWarnStub.reset()
+      inquirerPromptStub.reset()
+    })
+
+    it('should detach an attached extension if nothing was selected within the picker', async () => {
+      await subjectUnderTest.manageExtensions()
+
+      sinon.assert.callCount(inquirerPromptStub, 1)
+      sinon.assert.callCount(detachExtensionsStub, 1)
+      sinon.assert.calledWithExactly(detachExtensionsStub, { extensions: ['acme-two'] })
+      sinon.assert.callCount(attachExtensionsStub, 0)
+    })
+
+    it('should do nothing if the picker selection was not changed', async () => {
+      inquirerPromptStub.resolves({ extensions: ['@acme/two'] })
+      await subjectUnderTest.manageExtensions()
+
+      sinon.assert.callCount(inquirerPromptStub, 1)
+      sinon.assert.callCount(detachExtensionsStub, 0)
+      sinon.assert.callCount(attachExtensionsStub, 0)
+    })
+
+    it('should attach and detach extionsions according to the picker selection', async () => {
+      inquirerPromptStub.resolves({ extensions: ['@acme/one'] })
+      await subjectUnderTest.manageExtensions()
+
+      sinon.assert.callCount(inquirerPromptStub, 1)
+      sinon.assert.callCount(detachExtensionsStub, 1)
+      sinon.assert.calledWithExactly(detachExtensionsStub, { extensions: ['acme-two'] })
+      sinon.assert.callCount(attachExtensionsStub, 1)
+      sinon.assert.calledWithExactly(attachExtensionsStub, { extensions: ['acme-one'] })
+    })
+
+    it('should log a warning when no extensions are available to pick', async () => {
+      getAllExtensionPropertiesStub.returns([])
+      await subjectUnderTest.manageExtensions()
+
+      sinon.assert.callCount(loggerWarnStub, 1)
+      sinon.assert.callCount(inquirerPromptStub, 0)
+      sinon.assert.callCount(detachExtensionsStub, 0)
+      sinon.assert.callCount(attachExtensionsStub, 0)
+    })
+  })
+
+  describe('._getAllExtensionProperties()', () => {
+    let attachedExtensionsFile
+    let extensionsFolder
+    let mockedFs
+
+    after(() => {
+      mockFs.restore()
+    })
+
+    beforeEach(() => {
+      attachedExtensionsFile = subjectUnderTest.appSettings.attachedExtensionsFile
+      extensionsFolder = path.join(subjectUnderTest.appSettings.getApplicationFolder(), EXTENSIONS_FOLDER)
+      // Populate the mocked fs structure to enable updates of single properties during tests
+      mockedFs = {
+        [extensionsFolder]: {
+          'acme-one': { 'extension-config.json': '{"id": "@acme/one"}' },
+          'acme-two': { 'extension-config.json': '{"id": "@acme/two"}' },
+          'empty': {}
+        },
+        [attachedExtensionsFile]: '{"attachedExtensions":{"@acme/two":{"path":"acme-two"}}}'
+      }
+
+      mockFs(mockedFs)
+    })
+
+    it('should return the summary with one attached extension', async () => {
+      const expected = [
+        { id: '@acme/one', dir: 'acme-one', attached: false },
+        { id: '@acme/two', dir: 'acme-two', attached: true }
+      ]
+
+      const result = await subjectUnderTest._getAllExtensionProperties()
+      assert.deepEqual(result, expected)
+    })
+
+    it('should return the summery with no attached extension', async () => {
+      // Clear the attached extensions for this test
+      mockedFs[attachedExtensionsFile] = '{"attachedExtensions":{}}'
+      mockFs(mockedFs)
+
+      const expected = [
+        { id: '@acme/one', dir: 'acme-one', attached: false },
+        { id: '@acme/two', dir: 'acme-two', attached: false }
+      ]
+
+      const result = await subjectUnderTest._getAllExtensionProperties()
+      assert.deepEqual(result, expected)
+    })
+
+    it('should return an empty array if no extensions are available', async () => {
+      // Clear the extensions for this test
+      mockedFs[extensionsFolder] = null
+      mockFs(mockedFs)
+
+      const result = await subjectUnderTest._getAllExtensionProperties()
+      assert.deepEqual(result, [])
     })
   })
 

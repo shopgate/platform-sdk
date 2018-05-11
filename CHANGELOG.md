@@ -1,3 +1,6 @@
+## v1.5.0
+* Added `extension manage` command to attach/detache multiple extensions at once
+
 ## v1.4.1
 * Fix filename of pipeline in boilerplate
 
