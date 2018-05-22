@@ -1,5 +1,6 @@
 ## v1.5.0
 * Added `extension manage` command to attach/detache multiple extensions at once
+* Added ability to log request and response to console when using context.tracedRequest()
 
 ## v1.4.1
 * Fix filename of pipeline in boilerplate
