@@ -3,10 +3,29 @@ const Context = require('../../../../../lib/app/backend/extensionRuntime/context
 const fsExtra = require('fs-extra')
 const path = require('path')
 const request = require('request')
+const nock = require('nock')
 
 const defaultMeta = { appId: 'shop_1337', deviceId: '1234567890' }
+let loggerStub
 
 describe('Context', () => {
+  beforeEach(() => {
+    loggerStub = {
+      traceCallCount: 0,
+      debugCallCount: 0,
+      infoCallCount: 0,
+      warnCallCount: 0,
+      errorCallCount: 0,
+      fatalCallCount: 0,
+      trace: function () { this.traceCallCount++ },
+      debug: function () { this.debugCallCount++ },
+      info: function () { this.infoCallCount++ },
+      warn: function () { this.warnCallCount++ },
+      error: function () { this.errorCallCount++ },
+      fatal: function () { this.fatalCallCount++ }
+    }
+  })
+
   it('should have meta', () => {
     const context = new Context(null, null, null, null, '', defaultMeta, null)
     assert.deepEqual(context.meta, defaultMeta)
@@ -19,9 +38,8 @@ describe('Context', () => {
   })
 
   it('should have log', () => {
-    const log = {}
-    const context = new Context(null, null, null, null, '', defaultMeta, log)
-    assert.equal(context.log, log)
+    const context = new Context(null, null, null, null, '', defaultMeta, loggerStub)
+    assert.equal(context.log, loggerStub)
   })
 
   describe('storageInterfaces', () => {
@@ -175,5 +193,84 @@ describe('Context', () => {
     const context = new Context(null, null, null, null, '', defaultMeta, null)
     assert.equal(typeof context.tracedRequest, 'function')
     assert.equal(context.tracedRequest(), request)
+  })
+
+  it('should not log a tracedRequest when logging not requested', (done) => {
+    const testRequestUrl = 'https://google.com'
+    const testResponseBody = 'I\'m Feeling Lucky'
+    const nockMock = nock(testRequestUrl).get('/').reply(200, testResponseBody)
+    const context = new Context(null, null, null, null, '', defaultMeta, loggerStub)
+    context.tracedRequest('span name').get('https://google.com', (err, data) => {
+      assert.ifError(err)
+      assert.equal(data.body, testResponseBody)
+      assert.strictEqual(loggerStub.traceCallCount, 0)
+      assert.strictEqual(loggerStub.debugCallCount, 0)
+      assert.strictEqual(loggerStub.infoCallCount, 0)
+      assert.strictEqual(loggerStub.warnCallCount, 0)
+      assert.strictEqual(loggerStub.errorCallCount, 0)
+      assert.strictEqual(loggerStub.fatalCallCount, 0)
+
+      nockMock.done()
+      done()
+    })
+  })
+
+  it('should log tracedRequest to info when logging requested without log level', (done) => {
+    const testRequestUrl = 'https://google.com'
+    const testResponseBody = 'I\'m Feeling Lucky'
+    const nockMock = nock(testRequestUrl).get('/').reply(200, testResponseBody)
+    const context = new Context(null, null, null, null, '', defaultMeta, loggerStub)
+    context.tracedRequest('span name', { log: true }).get('https://google.com', (err, data) => {
+      assert.ifError(err)
+      assert.equal(data.body, testResponseBody)
+      assert.strictEqual(loggerStub.traceCallCount, 0)
+      assert.strictEqual(loggerStub.debugCallCount, 0)
+      assert.strictEqual(loggerStub.infoCallCount, 2)
+      assert.strictEqual(loggerStub.warnCallCount, 0)
+      assert.strictEqual(loggerStub.errorCallCount, 0)
+      assert.strictEqual(loggerStub.fatalCallCount, 0)
+
+      nockMock.done()
+      done()
+    })
+  })
+
+  it('should log tracedRequest to requested log level when logging requested', (done) => {
+    const logLevels = ['trace', 'debug', 'info', 'warn', 'error', 'fatal']
+    const testRequestUrl = 'https://google.com'
+    const testResponseBody = 'I\'m Feeling Lucky'
+    const nockMock = nock(testRequestUrl).get('/').times(logLevels.length).reply(200, testResponseBody)
+    const context = new Context(null, null, null, null, '', defaultMeta, loggerStub)
+
+    Promise.all(logLevels.map(logLevel => {
+      return new Promise(resolve => {
+        context.tracedRequest('span name', { log: true, logLevel }).get('https://google.com', (err, data) => {
+          assert.ifError(err)
+          assert.equal(data.body, testResponseBody)
+          assert.strictEqual(loggerStub[`${logLevel}CallCount`], 2)
+
+          resolve()
+        })
+      })
+    })).then(() => {
+      nockMock.done()
+      done()
+    })
+  })
+
+  it('should log tracedRequest to info when logging requested with unknown log level', (done) => {
+    const testRequestUrl = 'https://google.com'
+    const testResponseBody = 'I\'m Feeling Lucky'
+    const nockMock = nock(testRequestUrl).get('/').reply(200, testResponseBody)
+    const context = new Context(null, null, null, null, '', defaultMeta, loggerStub)
+
+    context.tracedRequest('span name', { log: true, logLevel: 'lol' }).get('https://google.com', (err, data) => {
+      assert.ifError(err)
+      assert.equal(data.body, testResponseBody)
+      assert.strictEqual(loggerStub.infoCallCount, 2)
+
+      nockMock.done()
+      done()
+    })
   })
 })
