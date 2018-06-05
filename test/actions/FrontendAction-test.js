@@ -77,7 +77,7 @@ describe('FrontendAction', () => {
         subjectUnderTest = new FrontendAction(appSettings, userSettings)
       } catch (err) {
         assert.ok(err)
-        assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
+        assert.equal(err.message, 'You\'re not logged in! Please run `sgconnect login` again.')
       }
     })
   })

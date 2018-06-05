@@ -71,7 +71,7 @@ describe('InitAction', () => {
       await subjectUnderTest.run(null)
       assert.fail('Expected an error to be thrown.')
     } catch (err) {
-      assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
+      assert.equal(err.message, 'You\'re not logged in! Please run `sgconnect login` again.')
     }
   })
 

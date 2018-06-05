@@ -34,7 +34,7 @@ describe('AppSettings', () => {
       await appSettings.validate()
       assert.fail('Expected error to be thrown.')
     } catch (err) {
-      assert.equal(err.message, 'The current folder seems not to be a sgcloud project. Please run sgcloud init first.')
+      assert.equal(err.message, 'The current folder seems not to be an sgconnect project. Please run sgconnect init first.')
     }
   })
 
@@ -47,7 +47,7 @@ describe('AppSettings', () => {
       await appSettings.validate()
       assert.fail('Expected error to be thrown.')
     } catch (err) {
-      assert.equal(err.message, 'The current folder seems not to be a sgcloud project. Please run sgcloud init first.')
+      assert.equal(err.message, 'The current folder seems not to be an sgconnect project. Please run sgconnect init first.')
     }
   })
 })

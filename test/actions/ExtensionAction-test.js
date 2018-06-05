@@ -111,7 +111,7 @@ describe('ExtensionAction', () => {
         await subjectUnderTest.attachExtensions({ extensions: [] })
         assert.fail('Expected error to be thrown.')
       } catch (err) {
-        assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
+        assert.equal(err.message, 'You\'re not logged in! Please run `sgconnect login` again.')
       }
     })
   })
@@ -195,7 +195,7 @@ describe('ExtensionAction', () => {
       try {
         await subjectUnderTest.attachExtensions({})
       } catch (err) {
-        assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
+        assert.equal(err.message, 'You\'re not logged in! Please run `sgconnect login` again.')
       }
     })
 
@@ -421,7 +421,7 @@ describe('ExtensionAction', () => {
           await subjectUnderTest.createExtension({}, null)
           assert.fail('Expected error to be thrown.')
         } catch (err) {
-          assert.equal(err.message, 'You\'re not logged in! Please run `sgcloud login` again.')
+          assert.equal(err.message, 'You\'re not logged in! Please run `sgconnect login` again.')
         }
       })
     })
