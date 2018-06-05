@@ -1,7 +1,7 @@
 ## v1.5.0
 * Added `extension manage` command to attach/detache multiple extensions at once
 * Updated `init` command to not ask for permission if option `--force` is used
-* Updated to use `@shopgate/cloud-sdk-webpack@^1.14.1`
+* Updated to use `@shopgate/cloud-sdk-webpack@^1.14.2`
 
 ## v1.4.1
 * Fix filename of pipeline in boilerplate
