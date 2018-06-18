@@ -7,9 +7,11 @@ const proxyquire = require('proxyquire')
 const logger = {
   debug: (message) => { },
   warn: (message) => { },
-  info: (message) => { }
+  info: (message) => { },
+  error: (message) => { }
 }
 
+let extensionConfigValidated = false
 let called = false
 const EventHandler = proxyquire('../../lib/utils/EventHandler', {
   '../logger': logger,
@@ -17,6 +19,9 @@ const EventHandler = proxyquire('../../lib/utils/EventHandler', {
     generateComponentsJson: () => {
       called = true
       return true
+    },
+    validateExtensionConfig: () => {
+      extensionConfigValidated = true
     }
   }
 })
@@ -56,6 +61,7 @@ describe('EventHandler', () => {
     }
     EventHandler.extensionConfigChanged(config, settings, dcClient).then(async () => {
       assert.equal(called, true)
+      assert.equal(extensionConfigValidated, true)
       assert.deepEqual(await fsEx.readJson(path.join(config.path, 'extension', 'config.json')), expectedBackendConfig)
       assert.deepEqual(await fsEx.readJson(path.join(config.path, 'frontend', 'config.json')), expectedFrontendConfig)
       done()
