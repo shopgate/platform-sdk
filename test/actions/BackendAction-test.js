@@ -181,7 +181,6 @@ describe('BackendAction', () => {
 
     it('should fail when pipeline IDs not matching pipeline file names', (done) => {
       appSettings.loadAttachedExtensions = () => { return { testExtension: { path: '..' } } }
-
       subjectUnderTest.backendProcess = {
         connect: sinon.stub().resolves(),
         selectApplication: sinon.stub().resolves(),
