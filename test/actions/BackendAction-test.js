@@ -160,6 +160,7 @@ describe('BackendAction', () => {
       subjectUnderTest.dcHttpClient = {
         downloadPipelines: sinon.stub().resolves([{ pipeline: { id: 'testPipeline' } }]),
         removePipeline: sinon.stub().resolves(),
+        clearHooks: sinon.stub().resolves(),
         uploadMultiplePipelines: sinon.stub().resolves()
       }
 
@@ -421,6 +422,7 @@ describe('BackendAction', () => {
     })
 
     it('should work', async () => {
+      subjectUnderTest.pushHooks = () => {}
       appSettings.loadAttachedExtensions = () => { return { testExtension: { path: '..' } } }
       subjectUnderTest._startSubProcess = () => {}
       try {
@@ -443,10 +445,22 @@ describe('BackendAction', () => {
       let mockConf = { someKey: 'someVal' }
       await fsEx.writeJson(extensionConfigPath, mockConf)
       let called = 0
+      let hooksPushed = false
+      let hooksCleared = false
       subjectUnderTest.appSettings.getId = () => 1
       subjectUnderTest.dcHttpClient.generateExtensionConfig = (config) => {
         called++
         return Promise.resolve(config)
+      }
+
+      subjectUnderTest.dcHttpClient.pushHooks = (config, appId) => {
+        hooksPushed = true
+        return Promise.resolve()
+      }
+
+      subjectUnderTest.dcHttpClient.clearHooks = (appId) => {
+        hooksCleared = true
+        return Promise.resolve()
       }
 
       appSettings.loadAttachedExtensions = () => { return { testExtension: { path: 'test-extension' } } }
@@ -454,10 +468,13 @@ describe('BackendAction', () => {
 
       await subjectUnderTest.run({})
       assert.ok(called !== 0, 'dcClient generateExtensionConfig should have been called at least once')
+      assert.ok(hooksPushed, 'dcClient pushHooks should have been called at least once')
+      assert.ok(hooksCleared, 'dcClient clearHooks should have been called at least once')
     })
 
     it('should pass true to StepExecutor\'s "inspect" constructor argument when called with --inspect', async () => {
       subjectUnderTest.writeExtensionConfigs = () => {}
+      subjectUnderTest.pushHooks = () => {}
       subjectUnderTest._startSubProcess = async function () {
         if (this.backendProcess.executor.inspect !== true) throw new Error('Expected third constructor argument "inspect" to true.')
       }
@@ -466,6 +483,7 @@ describe('BackendAction', () => {
     })
 
     it('should pass false to StepExecutor\'s "inspect" constructor argument when called without --inspect', async () => {
+      subjectUnderTest.pushHooks = () => {}
       subjectUnderTest._startSubProcess = async function () {
         if (this.backendProcess.executor.inspect !== false) throw new Error('Expected third constructor argument "inspect" to false.')
       }
