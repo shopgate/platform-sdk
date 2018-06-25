@@ -5,7 +5,6 @@ const fsEx = require('fs-extra')
 const proxyquire = require('proxyquire')
 const mockFs = require('mock-fs')
 
-const utils = require('../../lib/utils/utils')
 const { SETTINGS_FOLDER, EXTENSIONS_FOLDER } = require('../../lib/app/Constants')
 const AppSettings = require('../../lib/app/AppSettings')
 const UserSettings = require('../../lib/user/UserSettings')
@@ -18,14 +17,31 @@ describe('BackendAction', () => {
    * @type {BackendAction}
    */
   let subjectUnderTest
-  let logger = {}
+
+  const utils = proxyquire('../../lib/utils/utils', {
+    '../logger': {
+      info: (param) => { info(param) },
+      error: (param) => { error(param) },
+      debug: (param) => { debug(param) }
+    }
+  })
+
   const BackendAction = proxyquire('../../lib/actions/BackendAction', {
-    '../logger': logger
+    '../logger': {
+      info: (param) => { info(param) },
+      error: (param) => { error(param) },
+      debug: (param) => { debug(param) }
+    },
+    '../utils/utils': utils
   })
 
   let appSettings
   let userSettings
   let dcHttpClient
+
+  let info
+  let error
+  let debug
 
   before(async () => {
     process.env.USER_PATH = userSettingsFolder
@@ -54,6 +70,7 @@ describe('BackendAction', () => {
       close: () => {},
       on: (event, fn) => fn(event, path.join(subjectUnderTest.pipelinesFolder, 'testPipeline.json'))
     }
+
     subjectUnderTest.extensionConfigWatcher = {
       start: sinon.stub().resolves(),
       on: sinon.stub().resolves(),
@@ -71,14 +88,15 @@ describe('BackendAction', () => {
 
     subjectUnderTest.dcHttpClient = {}
 
-    logger.info = () => {}
-    logger.error = () => {}
-    logger.debug = () => {}
+    info = (param) => {}
+    error = (param) => {}
+    debug = (param) => {}
   })
 
   afterEach(async () => {
     await subjectUnderTest.pipelineWatcher.close()
     await subjectUnderTest.extensionConfigWatcher.stop()
+    process.env.IGNORE_EXT_CONFIG_FOR = ''
   })
 
   after(async () => {
@@ -131,7 +149,7 @@ describe('BackendAction', () => {
       subjectUnderTest._pipelineRemoved = sinon.stub().resolves()
       subjectUnderTest._pipelineChanged = sinon.stub().resolves()
 
-      logger.debug = (msg) => {
+      debug = (msg) => {
         assert.equal(msg, 'The extension of the pipeline is not attached --> skip')
         assert.ok(!subjectUnderTest._pipelineRemoved.called, '_pipelineRemoved should not be called')
         assert.ok(!subjectUnderTest._pipelineChanged.called, '_pipelineChanged should not be called')
@@ -142,10 +160,13 @@ describe('BackendAction', () => {
   })
 
   describe('watching', () => {
-    const originalGetBlacklistedExtensions = utils.getBlacklistedExtensions
-
-    after(() => {
-      utils.getBlacklistedExtensions = originalGetBlacklistedExtensions
+    beforeEach(() => {
+      subjectUnderTest.dcHttpClient = {
+        downloadPipelines: sinon.stub().resolves([{ pipeline: { id: 'testPipeline' } }]),
+        removePipeline: sinon.stub().resolves(),
+        clearHooks: sinon.stub().resolves(),
+        uploadMultiplePipelines: sinon.stub().resolves()
+      }
     })
 
     it('should update pipelines', (done) => {
@@ -155,13 +176,6 @@ describe('BackendAction', () => {
         resetPipelines: sinon.stub().resolves(),
         startStepExecutor: sinon.stub().resolves(),
         reloadPipelineController: sinon.stub().resolves()
-      }
-
-      subjectUnderTest.dcHttpClient = {
-        downloadPipelines: sinon.stub().resolves([{ pipeline: { id: 'testPipeline' } }]),
-        removePipeline: sinon.stub().resolves(),
-        clearHooks: sinon.stub().resolves(),
-        uploadMultiplePipelines: sinon.stub().resolves()
       }
 
       subjectUnderTest.attachedExtensionsWatcher = {
@@ -240,7 +254,7 @@ describe('BackendAction', () => {
       const file = path.join(subjectUnderTest.pipelinesFolder, 'plFooBarline1.json')
       assert.equal(subjectUnderTest.pipelines[file], undefined)
 
-      subjectUnderTest.dcHttpClient.uploadPipeline = (f, aId) => {
+      subjectUnderTest.dcHttpClient.uploadPipeline = async (f, aId) => {
         assert.deepEqual(subjectUnderTest.pipelines[file].id, pipeline.pipeline.id)
         assert.deepEqual(f, pipeline)
         assert.equal(aId, appId)
@@ -275,20 +289,19 @@ describe('BackendAction', () => {
 
     it('should not write generated extension-config if backend-extension was updated but extension is on blacklist', async () => {
       let generated = { id: 'myIgnoredExtension', backend: { id: 'myIgnoredExtension' } }
+      process.env.IGNORE_EXT_CONFIG_FOR = 'myIgnoredExtension'
 
-      let called = 0
-      subjectUnderTest.dcHttpClient.generateExtensionConfig = () => Promise.resolve()
-      utils.getBlacklistedExtensions = () => { return ['myIgnoredExtension'] }
-
-      logger.info = (msg) => {
+      let calledInfo = false
+      info = (msg) => {
         assert.equal('Ignoring extension-config.json of myIgnoredExtension (blacklisted)', msg)
+        calledInfo = true
       }
 
       const cfgPath = path.join(appPath, 'extensions', 'testExt')
 
       try {
         await utils.updateExtensionConfig({ file: generated, path: cfgPath }, await subjectUnderTest.appSettings.getId(), subjectUnderTest.dcHttpClient)
-        assert.equal(called, 0)
+        assert.ok(calledInfo)
       } catch (err) {
         assert.ifError(err)
       }
@@ -338,7 +351,8 @@ describe('BackendAction', () => {
       const file = path.join(subjectUnderTest.pipelinesFolder, 'dCPlTest3.json')
 
       subjectUnderTest.dcHttpClient = {
-        uploadPipeline: sinon.stub().resolves()
+        uploadPipeline: sinon.stub().resolves(),
+        downloadPipelines: sinon.stub().resolves([{ pipeline: { id: 'testPipeline' } }])
       }
 
       subjectUnderTest.backendProcess = {
