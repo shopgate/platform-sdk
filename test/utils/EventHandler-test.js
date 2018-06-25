@@ -34,7 +34,7 @@ describe('EventHandler', () => {
     path: 'bar'
   }
 
-  const settings = { getId: async () => (1) }
+  const settings = { getId: async () => (1), getApplicationFolder: () => './build' }
 
   const expectedBackendConfig = { something: 'something' }
   const expectedFrontendConfig = { somethingElse: 'somethingElse' }
