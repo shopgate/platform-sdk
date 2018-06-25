@@ -403,18 +403,17 @@ describe('BackendAction', () => {
     it('should return if pipeline was removed', (done) => {
       const pipelineId = 'dCPlTest4'
       let called = false
-      subjectUnderTest._writeLocalPipelines = sinon.mock().resolves()
       subjectUnderTest.dcHttpClient.removePipeline = (plId, id, trusted) => {
         assert.equal(plId, pipelineId)
         called = true
       }
+      subjectUnderTest.dcHttpClient.downloadPipelines = sinon.stub().resolves([{ pipeline: { id: 'testPipeline' } }])
 
       const file = path.join(subjectUnderTest.pipelinesFolder, 'dCPlTest4.json')
       subjectUnderTest.pipelines[file] = { id: pipelineId }
 
       subjectUnderTest._pipelineRemoved(file).then(() => {
         assert.ok(called)
-        assert.ok(subjectUnderTest._writeLocalPipelines.called)
         done()
       }).catch(err => {
         assert.ifError(err)
@@ -445,22 +444,10 @@ describe('BackendAction', () => {
       let mockConf = { someKey: 'someVal' }
       await fsEx.writeJson(extensionConfigPath, mockConf)
       let called = 0
-      let hooksPushed = false
-      let hooksCleared = false
       subjectUnderTest.appSettings.getId = () => 1
       subjectUnderTest.dcHttpClient.generateExtensionConfig = (config) => {
         called++
         return Promise.resolve(config)
-      }
-
-      subjectUnderTest.dcHttpClient.pushHooks = (config, appId) => {
-        hooksPushed = true
-        return Promise.resolve()
-      }
-
-      subjectUnderTest.dcHttpClient.clearHooks = (appId) => {
-        hooksCleared = true
-        return Promise.resolve()
       }
 
       appSettings.loadAttachedExtensions = () => { return { testExtension: { path: 'test-extension' } } }
@@ -468,8 +455,6 @@ describe('BackendAction', () => {
 
       await subjectUnderTest.run({})
       assert.ok(called !== 0, 'dcClient generateExtensionConfig should have been called at least once')
-      assert.ok(hooksPushed, 'dcClient pushHooks should have been called at least once')
-      assert.ok(hooksCleared, 'dcClient clearHooks should have been called at least once')
     })
 
     it('should pass true to StepExecutor\'s "inspect" constructor argument when called with --inspect', async () => {

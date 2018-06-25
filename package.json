@@ -49,7 +49,7 @@
   },
   "dependencies": {
     "@shopgate/cloud-sdk-webpack": "^1.14.2",
-    "@shopgate/extension-config-validator": "^1.0.4",
+    "@shopgate/extension-config-validator": "^1.1.0",
     "ansicolors": "^0.3.2",
     "ansistyles": "^0.1.3",
     "async": "^2.6.0",
