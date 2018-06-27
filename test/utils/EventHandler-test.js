@@ -88,9 +88,9 @@ describe('EventHandler', () => {
     const dcClient = {}
 
     let loggedError = false
-    logger.debug = (err) => {
+    logger.error = (err) => {
       loggedError = true
-      assert.equal(err.message, 'error_validateExtensionConfig')
+      assert.equal(err, `Could not validate config for 'foo': error_validateExtensionConfig`)
     }
 
     await EventHandler.extensionConfigChanged(config, settings, dcClient)
