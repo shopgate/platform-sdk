@@ -162,7 +162,7 @@ describe('BackendAction', () => {
   describe('watching', () => {
     beforeEach(() => {
       subjectUnderTest.dcHttpClient = {
-        downloadPipelines: sinon.stub().resolves([{ pipeline: { id: 'testPipeline' } }]),
+        downloadPipelines: sinon.stub().resolves({ pipelines: [{ pipeline: { id: 'testPipeline' } }] }),
         removePipeline: sinon.stub().resolves(),
         clearHooks: sinon.stub().resolves(),
         uploadMultiplePipelines: sinon.stub().resolves()
@@ -205,7 +205,7 @@ describe('BackendAction', () => {
       }
 
       subjectUnderTest.dcHttpClient = {
-        downloadPipelines: sinon.stub().resolves([]),
+        downloadPipelines: sinon.stub().resolves({ pipelines: [] }),
         removePipeline: sinon.stub().resolves(),
         uploadMultiplePipelines: sinon.stub().resolves()
       }
@@ -352,7 +352,7 @@ describe('BackendAction', () => {
 
       subjectUnderTest.dcHttpClient = {
         uploadPipeline: sinon.stub().resolves(),
-        downloadPipelines: sinon.stub().resolves([{ pipeline: { id: 'testPipeline' } }])
+        downloadPipelines: sinon.stub().resolves({ pipelines: [{ pipeline: { id: 'testPipeline' } }] })
       }
 
       subjectUnderTest.backendProcess = {
@@ -421,7 +421,7 @@ describe('BackendAction', () => {
         assert.equal(plId, pipelineId)
         called = true
       }
-      subjectUnderTest.dcHttpClient.downloadPipelines = sinon.stub().resolves([{ pipeline: { id: 'testPipeline' } }])
+      subjectUnderTest.dcHttpClient.downloadPipelines = sinon.stub().resolves({ pipelines: [{ pipeline: { id: 'testPipeline' } }] })
 
       const file = path.join(subjectUnderTest.pipelinesFolder, 'dCPlTest4.json')
       subjectUnderTest.pipelines[file] = { id: pipelineId }

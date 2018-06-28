@@ -81,7 +81,7 @@ describe('DcHttpClient', () => {
         .reply(200, body)
 
       return dcClient.downloadPipelines(appId, false).then(pipelines => {
-        assert.deepEqual(pipelines, body.pipelines)
+        assert.deepEqual(pipelines.pipelines, body.pipelines)
         dcMock.done()
       })
     })
