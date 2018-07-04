@@ -167,6 +167,9 @@ describe('BackendAction', () => {
         clearHooks: sinon.stub().resolves(),
         uploadMultiplePipelines: sinon.stub().resolves()
       }
+
+      subjectUnderTest.writeExtensionConfigs = () => { }
+      subjectUnderTest.appSettings.loadAttachedExtensions = () => { return { } }
     })
 
     it('should update pipelines', (done) => {
@@ -459,9 +462,9 @@ describe('BackendAction', () => {
       await fsEx.writeJson(extensionConfigPath, mockConf)
       let called = 0
       subjectUnderTest.appSettings.getId = () => 1
-      subjectUnderTest.dcHttpClient.generateExtensionConfig = (config) => {
+      subjectUnderTest.writeExtensionConfigs = () => {
         called++
-        return Promise.resolve(config)
+        return Promise.resolve()
       }
 
       appSettings.loadAttachedExtensions = () => { return { testExtension: { path: 'test-extension' } } }

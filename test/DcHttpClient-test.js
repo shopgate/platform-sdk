@@ -77,10 +77,10 @@ describe('DcHttpClient', () => {
     it('should get a pipeline', () => {
       const body = { pipelines: ['foo', 'bar'] }
       const dcMock = nock(dcClient.dcAddress)
-        .get(`/applications/${appId}/pipelines`)
+        .get(`/applications/${appId}/pipelines?resolveHooks=false&attachedExtensions=`)
         .reply(200, body)
 
-      return dcClient.downloadPipelines(appId, false).then(pipelines => {
+      return dcClient.downloadPipelines(appId, false, false, []).then(pipelines => {
         assert.deepEqual(pipelines.pipelines, body.pipelines)
         dcMock.done()
       })
@@ -89,20 +89,20 @@ describe('DcHttpClient', () => {
     it('should update the usertoken on jwt-update', async () => {
       const newToken = 'foobarTokenNew13456'
       const dcMock = nock(dcClient.dcAddress)
-        .get(`/applications/${appId}/pipelines`)
+        .get(`/applications/${appId}/pipelines?resolveHooks=false&attachedExtensions=`)
         .reply(200, {}, { 'x-jwt': newToken })
 
-      await dcClient.downloadPipelines(appId, false)
+      await dcClient.downloadPipelines(appId, false, false, [])
       assert.equal(await dcClient.userSettings.getToken(), newToken)
       dcMock.done()
     })
 
     it('should callback error on dc-error', () => {
       const dcMock = nock(dcClient.dcAddress)
-        .get(`/applications/${appId}/pipelines`)
+        .get(`/applications/${appId}/pipelines?resolveHooks=false&attachedExtensions=`)
         .reply(500)
 
-      return dcClient.downloadPipelines(appId, false).catch(err => {
+      return dcClient.downloadPipelines(appId, false, false, []).catch(err => {
         assert.ok(err)
         dcMock.done()
       })
