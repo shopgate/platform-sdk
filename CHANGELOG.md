@@ -6,6 +6,7 @@
 * Fixed behaviour of --trusted on `extension create` (leaving this flag without trusted|false will create a trusted extension)
 * Added support for hooks in pipelines
 * Fixed crash while activating local pipelines on the remote server
+* Removed resetting the app's start page URL upon `frontend setup`
 
 ## v1.4.1
 * Fix filename of pipeline in boilerplate
