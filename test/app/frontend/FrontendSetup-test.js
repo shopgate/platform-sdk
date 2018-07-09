@@ -51,7 +51,8 @@ const FrontendSetup = proxyquire('../../../lib/app/frontend/FrontendSetup', {
   },
   '../../logger': {
     plain: loggerSpy,
-    debug: () => (null)
+    debug: () => (null),
+    info: loggerSpy
   },
   inquirer,
   './setupQuestions': questionSpy
@@ -59,7 +60,6 @@ const FrontendSetup = proxyquire('../../../lib/app/frontend/FrontendSetup', {
 
 const userSettingsPath = join('build', 'usersettings')
 const appSettingsPath = join('build', 'appsettings')
-const appId = 'foobarTest'
 
 const defaultConfig = {
   ip: '0.0.0.0',
@@ -67,7 +67,8 @@ const defaultConfig = {
   apiPort: 9666,
   hmrPort: 3000,
   remotePort: 8000,
-  sourceMapsType: 'cheap-module-eval-source-map'
+  sourceMapsType: 'cheap-module-eval-source-map',
+  confirmed: true
 }
 const runError = 'Had an error'
 
@@ -171,17 +172,6 @@ describe('FrontendSetup', () => {
         .catch(error => done(error))
     })
 
-    it('should register the settings', (done) => {
-      const spy = sinon.spy(frontendSetup, 'registerSettings')
-      frontendSetup.run()
-        .then(() => {
-          assert.ok(spy.calledOnce)
-          spy.resetHistory()
-          done()
-        })
-        .catch(error => done(error))
-    })
-
     it('should save the settings', (done) => {
       const spy = sinon.spy(frontendSetup, 'save')
       frontendSetup.run()
@@ -191,56 +181,6 @@ describe('FrontendSetup', () => {
           done()
         })
         .catch(error => done(error))
-    })
-  })
-
-  describe('registerSettings()', () => {
-    beforeEach(() => {
-      appSettings.getId = () => appId
-      frontendSetup.save = () => { }
-    })
-
-    it('should set the startPageUrl at the developer connector', () => {
-      frontendSetup.dcClient = {
-        setStartPageUrl: (actualAppId, startPageUrl) => {
-          assert.equal(actualAppId, appId)
-          assert.equal(startPageUrl, `http://${defaultConfig.ip}:${defaultConfig.port}/`)
-        }
-      }
-      return frontendSetup.run()
-        .catch((err) => assert.ifError(err))
-    })
-
-    it('should throw an error if startPageUrl cant be set at the developer connector', (done) => {
-      frontendSetup.dcClient = {
-        setStartPageUrl: (actualAppId, startPageUrl) => {
-          assert.equal(actualAppId, appId)
-          assert.equal(startPageUrl, `http://${defaultConfig.ip}:${defaultConfig.port}/`)
-          throw new Error('Something')
-        }
-      }
-      frontendSetup.run()
-        .then(() => {
-          assert.fail('Should throw an error')
-        })
-        .catch((err) => {
-          assert.equal(err.message, 'Error while setting the start page url in the dev stack: Something')
-        })
-        .then(done, done)
-    })
-
-    it('should throw an error if settings not confirmed', (done) => {
-      inquirer.prompt = setPromptBody(false)
-      frontendSetup.run()
-        .then(() => {
-          done('Did not throw!')
-        })
-        .catch((error) => {
-          sinon.assert.notCalled(request)
-          assert.equal(error.message, 'Sorry, you canceled the setup! Please try again.')
-          request.resetHistory()
-          done()
-        })
     })
   })
 
@@ -284,6 +224,17 @@ describe('FrontendSetup', () => {
     afterEach(() => {
       saveSpy.resetHistory()
       loggerSpy.resetHistory()
+    })
+
+    it('should throw an error if settings not confirmed', (done) => {
+      frontendSetup.save({ ...defaultConfig, confirmed: false })
+        .then(() => {
+          sinon.assert.calledWith(loggerSpy, 'Setup aborted. Re-run in order to finish the process with new settings.')
+          done()
+        })
+        .catch(error => {
+          assert.ifError(error)
+        })
     })
 
     it('should save the settings', () => {
