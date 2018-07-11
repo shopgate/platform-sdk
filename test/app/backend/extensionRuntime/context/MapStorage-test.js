@@ -145,6 +145,23 @@ describe('MapStorage', () => {
         })
       })
     })
+
+    it('should cb with an error if trying to save undefined value', () => {
+      const storage = new MapStorage(storageFilePath, log)
+
+      return new Promise((resolve, reject) => {
+        storage.set('key', undefined, err => {
+          try {
+            assert.ok(err)
+            assert.equal(err.message, 'Cannot save undefined value')
+          } catch (err) {
+            reject(err)
+          }
+
+          resolve()
+        })
+      })
+    })
   })
 
   describe('set Promise', () => {
@@ -181,6 +198,22 @@ describe('MapStorage', () => {
         await storage.set('key', 'value')
       } catch (err) {
         assert.equal(err.message, 'Cannot save non-object as a map: "value".')
+        expectedErrorThrown = true
+      }
+
+      if (!expectedErrorThrown) {
+        assert.fail('Expected error to be thrown.')
+      }
+    })
+
+    it('should throw an error if value is undefined', async () => {
+      const storage = new MapStorage(storageFilePath, log)
+
+      let expectedErrorThrown = false
+      try {
+        await storage.set('foo')
+      } catch (err) {
+        assert.equal(err.message, 'Cannot save undefined value')
         expectedErrorThrown = true
       }
 
