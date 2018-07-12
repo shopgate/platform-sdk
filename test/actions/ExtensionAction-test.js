@@ -294,6 +294,28 @@ describe('ExtensionAction', () => {
 
     it('should attach and detach extionsions according to the picker selection', async () => {
       inquirerPromptStub.resolves({ extensions: ['@acme/one'] })
+
+      detachExtensionsStub.restore()
+      attachExtensionsStub.restore()
+      detachExtensionsStub = sinon.spy(subjectUnderTest, 'detachExtensions')
+      attachExtensionsStub = sinon.spy(subjectUnderTest, 'attachExtensions')
+
+      const name1 = '@acme/one'
+      const name2 = '@acme/two'
+      const name3 = '@acme/three'
+
+      const extPath1 = path.join(appPath, 'extensions', 'acme-one')
+      const extPath2 = path.join(appPath, 'extensions', 'acme-two')
+      const extPath3 = path.join(appPath, 'extensions', 'acme-three')
+
+      await fsEx.ensureDir(extPath1)
+      await fsEx.ensureDir(extPath2)
+      await fsEx.ensureDir(extPath3)
+
+      await fsEx.writeJSON(path.join(extPath1, 'extension-config.json'), { id: name1, trusted: false })
+      await fsEx.writeJSON(path.join(extPath2, 'extension-config.json'), { id: name2, trusted: false })
+      await fsEx.writeJSON(path.join(extPath3, 'extension-config.json'), { id: name3, trusted: false })
+
       await subjectUnderTest.manageExtensions()
 
       sinon.assert.callCount(inquirerPromptStub, 1)
@@ -301,6 +323,11 @@ describe('ExtensionAction', () => {
       sinon.assert.calledWithExactly(detachExtensionsStub, { extensions: ['acme-two'] })
       sinon.assert.callCount(attachExtensionsStub, 1)
       sinon.assert.calledWithExactly(attachExtensionsStub, { extensions: ['acme-one'] })
+
+      const config = await fsEx.readJson(appSettings.attachedExtensionsFile)
+      assert.deepEqual(config.attachedExtensions, {
+        '@acme/one': { path: 'acme-one', trusted: false }
+      })
     })
 
     it('should log a warning when no extensions are available to pick', async () => {
@@ -349,7 +376,7 @@ describe('ExtensionAction', () => {
       assert.deepEqual(result, expected)
     })
 
-    it('should return the summery with no attached extension', async () => {
+    it('should return the summary with no attached extension', async () => {
       // Clear the attached extensions for this test
       mockedFs[attachedExtensionsFile] = '{"attachedExtensions":{}}'
       mockFs(mockedFs)
