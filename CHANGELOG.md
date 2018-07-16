@@ -7,6 +7,7 @@
 * Added support for hooks in pipelines
 * Fixed crash while activating local pipelines on the remote server
 * Removed resetting the app's start page URL upon `frontend setup`
+* Add error on storage set if the value is undefined (adapt to production behaviour)
 
 ## v1.4.1
 * Fix filename of pipeline in boilerplate
