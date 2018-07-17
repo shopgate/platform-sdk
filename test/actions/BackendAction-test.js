@@ -177,6 +177,7 @@ describe('BackendAction', () => {
         connect: sinon.stub().resolves(),
         selectApplication: sinon.stub().resolves(),
         resetPipelines: sinon.stub().resolves(),
+        resetHooks: sinon.stub().resolves(),
         startStepExecutor: sinon.stub().resolves(),
         reloadPipelineController: sinon.stub().resolves()
       }
@@ -203,6 +204,7 @@ describe('BackendAction', () => {
         connect: sinon.stub().resolves(),
         selectApplication: sinon.stub().resolves(),
         resetPipelines: sinon.stub().resolves(),
+        resetHooks: sinon.stub().resolves(),
         startStepExecutor: sinon.stub().resolves(),
         reloadPipelineController: sinon.stub().resolves()
       }
