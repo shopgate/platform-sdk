@@ -26,7 +26,7 @@ describe('DcHttpClient', () => {
   })
 
   beforeEach(async () => {
-    dcClient = new DcHttpClient(await new UserSettings().setToken({}), {debug: () => {}})
+    dcClient = new DcHttpClient(await new UserSettings().setToken({}), { debug: () => {} })
   })
 
   describe('getInfos', () => {
@@ -35,7 +35,7 @@ describe('DcHttpClient', () => {
     const deviceId = 'foobarDeviceId'
 
     it('should get infos', async () => {
-      const data = {foo: {body: {bar: 'foobar'}}}
+      const data = { foo: { body: { bar: 'foobar' } } }
       const dcMock = nock(dcClient.dcAddress)
         .get(`/applications/${appId}/${infoType}/${deviceId}`)
         .reply(200, data)
@@ -48,7 +48,7 @@ describe('DcHttpClient', () => {
       const newToken = 'foobarTokenNew45662'
       const dcMock = nock(dcClient.dcAddress)
         .get(`/applications/${appId}/${infoType}/${deviceId}`)
-        .reply(200, null, {'x-jwt': newToken})
+        .reply(200, null, { 'x-jwt': newToken })
 
       await dcClient.getInfos(infoType, appId, deviceId)
       assert.equal(await dcClient.userSettings.getToken(), newToken)
@@ -75,13 +75,13 @@ describe('DcHttpClient', () => {
     const appId = 'foobarAppId'
 
     it('should get a pipeline', () => {
-      const body = {pipelines: ['foo', 'bar']}
+      const body = { pipelines: ['foo', 'bar'] }
       const dcMock = nock(dcClient.dcAddress)
-        .get(`/applications/${appId}/pipelines`)
+        .get(`/applications/${appId}/pipelines?resolveHooks=false&attachedExtensions=`)
         .reply(200, body)
 
-      return dcClient.downloadPipelines(appId, false).then(pipelines => {
-        assert.deepEqual(pipelines, body.pipelines)
+      return dcClient.downloadPipelines(appId, false, false, []).then(pipelines => {
+        assert.deepEqual(pipelines.pipelines, body.pipelines)
         dcMock.done()
       })
     })
@@ -89,20 +89,20 @@ describe('DcHttpClient', () => {
     it('should update the usertoken on jwt-update', async () => {
       const newToken = 'foobarTokenNew13456'
       const dcMock = nock(dcClient.dcAddress)
-        .get(`/applications/${appId}/pipelines`)
-        .reply(200, {}, {'x-jwt': newToken})
+        .get(`/applications/${appId}/pipelines?resolveHooks=false&attachedExtensions=`)
+        .reply(200, {}, { 'x-jwt': newToken })
 
-      await dcClient.downloadPipelines(appId, false)
+      await dcClient.downloadPipelines(appId, false, false, [])
       assert.equal(await dcClient.userSettings.getToken(), newToken)
       dcMock.done()
     })
 
     it('should callback error on dc-error', () => {
       const dcMock = nock(dcClient.dcAddress)
-        .get(`/applications/${appId}/pipelines`)
+        .get(`/applications/${appId}/pipelines?resolveHooks=false&attachedExtensions=`)
         .reply(500)
 
-      return dcClient.downloadPipelines(appId, false).catch(err => {
+      return dcClient.downloadPipelines(appId, false, false, []).catch(err => {
         assert.ok(err)
         dcMock.done()
       })
@@ -115,7 +115,7 @@ describe('DcHttpClient', () => {
         .put('/applications/shop_10006/pipelines/someId')
         .reply(204)
 
-      return dcClient.uploadPipeline({pipeline: {id: 'someId'}}, 'shop_10006', false).then(() => {
+      return dcClient.uploadPipeline({ pipeline: { id: 'someId' } }, 'shop_10006', false).then(() => {
         dcMock.done()
       })
     })
@@ -124,9 +124,9 @@ describe('DcHttpClient', () => {
       const newToken = 'newToken134'
       const dcMock = nock(dcClient.dcAddress)
         .put('/applications/shop_10006/pipelines/someId')
-        .reply(204, {}, {'x-jwt': newToken})
+        .reply(204, {}, { 'x-jwt': newToken })
 
-      await dcClient.uploadPipeline({pipeline: {id: 'someId'}}, 'shop_10006', false)
+      await dcClient.uploadPipeline({ pipeline: { id: 'someId' } }, 'shop_10006', false)
       assert.equal(await dcClient.userSettings.getToken(), newToken)
       dcMock.done()
     })
@@ -136,7 +136,7 @@ describe('DcHttpClient', () => {
         .put('/applications/shop_10006/pipelines/someId')
         .reply(500)
 
-      return dcClient.uploadPipeline({pipeline: {id: 'someId'}}, 'shop_10006', false).catch(err => {
+      return dcClient.uploadPipeline({ pipeline: { id: 'someId' } }, 'shop_10006', false).catch(err => {
         assert.ok(err)
         dcMock.done()
       })
@@ -158,7 +158,7 @@ describe('DcHttpClient', () => {
       const newToken = 'newToken4123'
       const dcMock = nock(dcClient.dcAddress)
         .delete('/applications/shop_10006/pipelines/someId')
-        .reply(204, {}, {'x-jwt': newToken})
+        .reply(204, {}, { 'x-jwt': newToken })
 
       await dcClient.removePipeline('someId', 'shop_10006', false)
       assert.equal(await dcClient.userSettings.getToken(), newToken)
@@ -181,7 +181,7 @@ describe('DcHttpClient', () => {
     it('should set the start page url', async () => {
       const startPageUrl = 'http://someurl'
       const dcMock = nock(dcClient.dcAddress)
-        .put('/applications/shop_10006/settings/startpage', {startPageUrl})
+        .put('/applications/shop_10006/settings/startpage', { startPageUrl })
         .reply(204)
 
       await dcClient.setStartPageUrl('shop_10006', startPageUrl)
@@ -192,7 +192,7 @@ describe('DcHttpClient', () => {
       const newToken = 'newToken341'
       const dcMock = nock(dcClient.dcAddress)
         .put('/applications/shop_10006/settings/startpage')
-        .reply(204, {}, {'x-jwt': newToken})
+        .reply(204, {}, { 'x-jwt': newToken })
 
       await dcClient.setStartPageUrl('shop_10006', 'http://someurl')
       dcMock.done()
@@ -220,12 +220,12 @@ describe('DcHttpClient', () => {
     const extId = 'testExt'
 
     it('should get a config', () => {
-      const body = {id: extId}
+      const body = { id: extId }
       const dcMock = nock(dcClient.dcAddress)
         .post(`/applications/${appId}/extensions/${extId}/generateConfig`)
         .reply(200, body)
 
-      return dcClient.generateExtensionConfig({id: extId}, appId)
+      return dcClient.generateExtensionConfig({ id: extId }, appId)
         .then((config) => {
           assert.deepEqual(config, body)
           dcMock.done()
@@ -237,9 +237,9 @@ describe('DcHttpClient', () => {
       const newToken = 'foobarTokenNew34'
       const dcMock = nock(dcClient.dcAddress)
         .post(`/applications/${appId}/extensions/${extId}/generateConfig`)
-        .reply(200, {}, {'x-jwt': newToken})
+        .reply(200, {}, { 'x-jwt': newToken })
 
-      return dcClient.generateExtensionConfig({id: extId}, appId)
+      return dcClient.generateExtensionConfig({ id: extId }, appId)
         .then(() => {
           dcClient.userSettings.getToken().then(token => {
             assert.equal(token, newToken)
@@ -254,7 +254,7 @@ describe('DcHttpClient', () => {
         .post(`/applications/${appId}/extensions/${extId}/generateConfig`)
         .reply(500)
 
-      return dcClient.generateExtensionConfig({id: extId}, appId)
+      return dcClient.generateExtensionConfig({ id: extId }, appId)
         .then(() => dcMock.done())
         .catch(err => assert.equal(err.message, 'Could not generate Extension-Config'))
     })
@@ -264,7 +264,7 @@ describe('DcHttpClient', () => {
     const appId = 'foobarAppId'
 
     it('should get application data', async () => {
-      const data = {foo: {body: {bar: 'foobar'}}}
+      const data = { foo: { body: { bar: 'foobar' } } }
       const dcMock = nock(dcClient.dcAddress)
         .get(`/applications/${appId}`)
         .reply(200, data)
@@ -279,7 +279,7 @@ describe('DcHttpClient', () => {
     it('should throw unauthorized error on dc unauthorized error', async () => {
       const dcMock = nock(dcClient.dcAddress)
         .get(`/applications/${appId}`)
-        .reply(401, {message: 'Error!'})
+        .reply(401, { message: 'Error!' })
 
       try {
         await dcClient.getApplicationData(appId)
@@ -301,6 +301,114 @@ describe('DcHttpClient', () => {
         assert.fail('Expected an error to be thrown.')
       } catch (err) {
         assert.ok(err)
+        dcMock.done()
+      }
+    })
+  })
+
+  describe('pushHooks', async () => {
+    it('should push hooks', async () => {
+      const extensionId = '@shopgate/blubb'
+      const appId = 'shop_12345'
+      const dcMock = nock(dcClient.dcAddress)
+        .put(`/applications/${appId}/extensions/${encodeURIComponent(extensionId)}/hooks`)
+        .reply(204)
+
+      try {
+        await dcClient.pushHooks({
+          id: extensionId,
+          steps: [
+            {
+              hooks: ['*:before', '*:after']
+            }
+          ]
+        }, appId)
+        assert.ok('Expected ok')
+        dcMock.done()
+      } catch (err) {
+        assert.ifError(err)
+        dcMock.done()
+      }
+    })
+
+    it('should update token if needed', async () => {
+      const extensionId = '@shopgate/blubb'
+      const appId = 'shop_12345'
+      const newToken = 'toktoktok'
+      const dcMock = nock(dcClient.dcAddress)
+        .put(`/applications/${appId}/extensions/${encodeURIComponent(extensionId)}/hooks`)
+        .reply(204, null, { 'x-jwt': newToken })
+
+      try {
+        await dcClient.pushHooks({
+          id: extensionId,
+          steps: [
+            {
+              hooks: ['*:before', '*:after']
+            }
+          ]
+        }, appId)
+        assert.ok('Expected ok')
+        assert.equal(await dcClient.userSettings.getToken(), newToken, 'Should have updated token')
+        dcMock.done()
+      } catch (err) {
+        assert.ifError(err)
+        dcMock.done()
+      }
+    })
+
+    it('should not do a request if no hooks provided', async () => {
+      const extensionId = '@shopgate/blubb'
+      const appId = 'shop_12345'
+      const dcMock = nock(dcClient.dcAddress)
+      try {
+        await dcClient.pushHooks({
+          id: extensionId,
+          steps: [
+            {
+            }
+          ]
+        }, appId)
+        assert.ok('Expected  ok')
+        dcMock.done()
+      } catch (err) {
+        assert.ifError(err)
+        dcMock.done()
+      }
+    })
+  })
+
+  describe('clear Hooks', () => {
+    it('should do a delete request', async () => {
+      const appId = 'shop_12345'
+      const dcMock = nock(dcClient.dcAddress)
+        .delete(`/applications/${appId}/hooks`)
+        .reply(204)
+
+      try {
+        await dcClient.clearHooks(appId)
+        assert.ok('Expected ok')
+        dcMock.done()
+      } catch (err) {
+        assert.ifError(err)
+        dcMock.done()
+      }
+    })
+
+    it('should update token if needed', async () => {
+      const appId = 'shop_12345'
+      const newToken = 'toktoktok'
+      const dcMock = nock(dcClient.dcAddress)
+        .delete(`/applications/${appId}/hooks`)
+        .reply(204, null, { 'x-jwt': newToken })
+
+      try {
+        await dcClient.clearHooks(appId)
+        assert.ok('Expected ok')
+        assert.equal(await dcClient.userSettings.getToken(), newToken, 'Should have updated token')
+        dcMock.done()
+      } catch (err) {
+        assert.ifError(err)
         dcMock.done()
       }
     })

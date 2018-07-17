@@ -2,8 +2,12 @@
 * Added `extension manage` command to attach/detache multiple extensions at once
 * Added ability to log request and response to console when using context.tracedRequest()
 * Updated `init` command to not ask for permission if option `--force` is used
-* Updated to use `@shopgate/cloud-sdk-webpack@^1.14.2`
+* Updated to use `@shopgate/cloud-sdk-webpack@^1.15.2`
 * Fixed behaviour of --trusted on `extension create` (leaving this flag without trusted|false will create a trusted extension)
+* Added support for hooks in pipelines
+* Fixed crash while activating local pipelines on the remote server
+* Removed resetting the app's start page URL upon `frontend setup`
+* Add error on storage set if the value is undefined (adapt to production behaviour)
 * Added `backend start` will reset hooks
 
 ## v1.4.1

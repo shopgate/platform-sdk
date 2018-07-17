@@ -233,14 +233,14 @@ describe('BackendProcess', () => {
       logger.info = (message) => {
         if (message === 'Establishing SDK connection') return
 
-        assert.equal(message, 'Activated local pipelines on the remote server')
-        done()
+        assert.equal(message.split('...')[0], 'Activated local pipelines on the remote server')
       }
 
       socketIOMock.on('reloadPipelines', (cb) => cb(null))
 
       backendProcess.connect()
         .then(() => backendProcess.reloadPipelineController())
+        .then(done)
     })
 
     it('should fail if socket sends error (reload)', (done) => {
