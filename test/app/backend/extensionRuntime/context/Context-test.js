@@ -2,7 +2,7 @@ const assert = require('assert')
 const Context = require('../../../../../lib/app/backend/extensionRuntime/context/Context')
 const fsExtra = require('fs-extra')
 const path = require('path')
-const request = require('request')
+const requestPromise = require('request-promise-native')
 const nock = require('nock')
 
 const defaultMeta = { appId: 'shop_1337', deviceId: '1234567890' }
@@ -192,7 +192,7 @@ describe('Context', () => {
   it('should have tracedRequest', () => {
     const context = new Context(null, null, null, null, '', defaultMeta, null)
     assert.equal(typeof context.tracedRequest, 'function')
-    assert.equal(context.tracedRequest(), request)
+    assert.equal(context.tracedRequest(), requestPromise)
   })
 
   it('should not log a tracedRequest when logging not requested', (done) => {
@@ -271,6 +271,89 @@ describe('Context', () => {
 
       nockMock.done()
       done()
+    })
+  })
+
+  describe('promisified tracedRequest', () => {
+    it('should not log a tracedRequest when logging not requested', async () => {
+      const testRequestUrl = 'https://google.com'
+      const testResponseBody = 'I\'m Feeling Lucky'
+      const nockMock = nock(testRequestUrl).get('/').reply(200, testResponseBody)
+      const context = new Context(null, null, null, null, '', defaultMeta, loggerStub)
+
+      try {
+        const body = await context.tracedRequest('span name').get('https://google.com')
+        assert.equal(body, testResponseBody)
+        assert.strictEqual(loggerStub.traceCallCount, 0)
+        assert.strictEqual(loggerStub.debugCallCount, 0)
+        assert.strictEqual(loggerStub.infoCallCount, 0)
+        assert.strictEqual(loggerStub.warnCallCount, 0)
+        assert.strictEqual(loggerStub.errorCallCount, 0)
+        assert.strictEqual(loggerStub.fatalCallCount, 0)
+
+        nockMock.done()
+      } catch (err) {
+        assert.ifError(err)
+      }
+    })
+
+    it('should log tracedRequest to info when logging requested without log level', async () => {
+      const testRequestUrl = 'https://google.com'
+      const testResponseBody = 'I\'m Feeling Lucky'
+      const nockMock = nock(testRequestUrl).get('/').reply(200, testResponseBody)
+      const context = new Context(null, null, null, null, '', defaultMeta, loggerStub)
+
+      try {
+        const data = await context.tracedRequest('span name', { log: true }).get('https://google.com')
+        assert.equal(data.body, testResponseBody)
+        assert.strictEqual(loggerStub.traceCallCount, 0)
+        assert.strictEqual(loggerStub.debugCallCount, 0)
+        assert.strictEqual(loggerStub.infoCallCount, 2)
+        assert.strictEqual(loggerStub.warnCallCount, 0)
+        assert.strictEqual(loggerStub.errorCallCount, 0)
+        assert.strictEqual(loggerStub.fatalCallCount, 0)
+
+        nockMock.done()
+      } catch (err) {
+        assert.ifError(err)
+      }
+    })
+
+    it('should log tracedRequest to requested log level when logging requested', async () => {
+      const logLevels = ['trace', 'debug', 'info', 'warn', 'error', 'fatal']
+      const testRequestUrl = 'https://google.com'
+      const testResponseBody = 'I\'m Feeling Lucky'
+      const nockMock = nock(testRequestUrl).get('/').times(logLevels.length).reply(200, testResponseBody)
+      const context = new Context(null, null, null, null, '', defaultMeta, loggerStub)
+
+      await Promise.all(logLevels.map(async (logLevel) => {
+        try {
+          const data = await context.tracedRequest('span name', { log: true, logLevel }).get('https://google.com')
+          assert.equal(data.body, testResponseBody)
+          assert.strictEqual(loggerStub[`${logLevel}CallCount`], 2)
+        } catch (err) {
+          assert.ifError(err)
+        }
+      }))
+
+      nockMock.done()
+    })
+
+    it('should log tracedRequest to info when logging requested with unknown log level', async () => {
+      const testRequestUrl = 'https://google.com'
+      const testResponseBody = 'I\'m Feeling Lucky'
+      const nockMock = nock(testRequestUrl).get('/').reply(200, testResponseBody)
+      const context = new Context(null, null, null, null, '', defaultMeta, loggerStub)
+
+      try {
+        const data = await context.tracedRequest('span name', { log: true, logLevel: 'lol' }).get('https://google.com')
+        assert.equal(data.body, testResponseBody)
+        assert.strictEqual(loggerStub.infoCallCount, 2)
+
+        nockMock.done()
+      } catch (err) {
+        assert.ifError(err)
+      }
     })
   })
 })
