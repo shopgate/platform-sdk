@@ -2,7 +2,6 @@ const assert = require('assert')
 const Context = require('../../../../../lib/app/backend/extensionRuntime/context/Context')
 const fsExtra = require('fs-extra')
 const path = require('path')
-const requestPromise = require('request-promise-native')
 const nock = require('nock')
 
 const defaultMeta = { appId: 'shop_1337', deviceId: '1234567890' }
@@ -192,7 +191,6 @@ describe('Context', () => {
   it('should have tracedRequest', () => {
     const context = new Context(null, null, null, null, '', defaultMeta, null)
     assert.equal(typeof context.tracedRequest, 'function')
-    assert.equal(context.tracedRequest(), requestPromise)
   })
 
   it('should not log a tracedRequest when logging not requested', (done) => {
@@ -282,7 +280,8 @@ describe('Context', () => {
       const context = new Context(null, null, null, null, '', defaultMeta, loggerStub)
 
       try {
-        const body = await context.tracedRequest('span name').get('https://google.com')
+        const res = await context.tracedRequest('span name').get('https://google.com')
+        const { body } = res
         assert.equal(body, testResponseBody)
         assert.strictEqual(loggerStub.traceCallCount, 0)
         assert.strictEqual(loggerStub.debugCallCount, 0)
