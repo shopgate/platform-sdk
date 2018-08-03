@@ -1,6 +1,6 @@
 ## v1.6.0
 * Promisified version of `tracedRequest` method
-* Upgraded development dependencies
+* Upgraded vulnerable dependencies
 
 ## v1.5.0
 * Added `extension manage` command to attach/detache multiple extensions at once
