@@ -507,8 +507,8 @@ describe('ExtensionAction', () => {
       it('should download and unzip the boilerplate', (done) => {
         const state = {}
         mockFs.restore()
-        const n = nock('https://github.com')
-          .get('/shopgate/cloud-sdk-boilerplate-extension/archive/master.zip')
+        const n = nock('https://data.shopgate.com')
+          .get('/connect/platform-sdk/latest.zip')
           .replyWithFile(200, path.join('test', 'testfiles', 'cloud-sdk-boilerplate-extension.zip'), { 'Content-Type': 'application/zip' })
 
         setTimeout(() => {
@@ -525,10 +525,56 @@ describe('ExtensionAction', () => {
           })
       })
 
+      it('should download beta of the boilerplate if pkg is beta', (done) => {
+        const state = {}
+        mockFs.restore()
+        const n = nock('https://data.shopgate.com')
+          .get('/connect/platform-sdk/beta.zip')
+          .replyWithFile(200, path.join('test', 'testfiles', 'cloud-sdk-boilerplate-extension.zip'), { 'Content-Type': 'application/zip' })
+
+        process.env['SDK_BETA'] = true
+        setTimeout(() => {
+          callbacks['close'][0]()
+        }, 500)
+
+        subjectUnderTest
+          ._downloadBoilerplate(extensionFolder, state)
+          .then(() => {
+            delete process.env['SDK_BETA']
+            mockFs()
+            assert.ok(state.cloned)
+            n.done()
+            done()
+          })
+      })
+
+      it('should download custom boilerplate if set via env', async function () {
+        const state = {}
+        mockFs.restore()
+        const n = nock('https://data.random.org')
+          .get('/some.zip')
+          .replyWithFile(200, path.join('test', 'testfiles', 'cloud-sdk-boilerplate-extension.zip'), { 'Content-Type': 'application/zip' })
+
+        process.env['BOILERPLATE_URL'] = 'https://data.random.org/some.zip'
+        setTimeout(() => {
+          callbacks['close'][0]()
+        }, 500)
+
+        try {
+          await subjectUnderTest._downloadBoilerplate(extensionFolder, state)
+          delete process.env['BOILERPLATE_URL']
+          mockFs()
+          assert.ok(state.cloned)
+          n.done()
+        } catch (err) {
+          assert.ifError(err)
+        }
+      })
+
       it('should fail because of error while loading or unzipping', (done) => {
         const state = {}
-        const n = nock('https://github.com')
-          .get('/shopgate/cloud-sdk-boilerplate-extension/archive/master.zip')
+        const n = nock('https://data.shopgate.com')
+          .get('/connect/platform-sdk/latest.zip')
           .reply(404, { error: 'error' })
 
         setTimeout(() => {
