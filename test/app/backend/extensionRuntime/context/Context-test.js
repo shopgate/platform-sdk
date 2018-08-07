@@ -280,7 +280,7 @@ describe('Context', () => {
       const context = new Context(null, null, null, null, '', defaultMeta, loggerStub)
 
       try {
-        const res = await context.tracedRequest('span name').get('https://google.com')
+        const res = await context.tracedRequest('span name').get('https://google.com', {resolveWithFullResponse: true, simple: false})
         const { body } = res
         assert.equal(body, testResponseBody)
         assert.strictEqual(loggerStub.traceCallCount, 0)
@@ -303,7 +303,7 @@ describe('Context', () => {
       const context = new Context(null, null, null, null, '', defaultMeta, loggerStub)
 
       try {
-        const data = await context.tracedRequest('span name', { log: true }).get('https://google.com')
+        const data = await context.tracedRequest('span name', { log: true }).get('https://google.com', {resolveWithFullResponse: true, simple: false})
         assert.equal(data.body, testResponseBody)
         assert.strictEqual(loggerStub.traceCallCount, 0)
         assert.strictEqual(loggerStub.debugCallCount, 0)
@@ -327,7 +327,7 @@ describe('Context', () => {
 
       await Promise.all(logLevels.map(async (logLevel) => {
         try {
-          const data = await context.tracedRequest('span name', { log: true, logLevel }).get('https://google.com')
+          const data = await context.tracedRequest('span name', { log: true, logLevel }).get('https://google.com', {resolveWithFullResponse: true, simple: false})
           assert.equal(data.body, testResponseBody)
           assert.strictEqual(loggerStub[`${logLevel}CallCount`], 2)
         } catch (err) {
@@ -345,7 +345,7 @@ describe('Context', () => {
       const context = new Context(null, null, null, null, '', defaultMeta, loggerStub)
 
       try {
-        const data = await context.tracedRequest('span name', { log: true, logLevel: 'lol' }).get('https://google.com')
+        const data = await context.tracedRequest('span name', { log: true, logLevel: 'lol' }).get('https://google.com', {resolveWithFullResponse: true, simple: false})
         assert.equal(data.body, testResponseBody)
         assert.strictEqual(loggerStub.infoCallCount, 2)
 
