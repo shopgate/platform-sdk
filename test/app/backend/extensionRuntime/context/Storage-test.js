@@ -120,6 +120,22 @@ describe('Storage', () => {
       })
     })
 
+    it('should cb with an error if trying to save undefined value', () => {
+      const storage = new Storage(storageFilePath, log)
+
+      return new Promise((resolve, reject) => {
+        storage.set('key', undefined, err => {
+          try {
+            assert.ok(err)
+            assert.equal(err.message, 'Cannot save undefined value')
+          } catch (err) {
+            reject(err)
+          }
+          resolve()
+        })
+      })
+    })
+
     it('should set value and return promise', async () => {
       const value = { foo: 'bar' }
       const key = 'foo/bar/foobar'
@@ -137,6 +153,22 @@ describe('Storage', () => {
         assert.fail('Expected error to be thrown.')
       } catch (err) {
         assert.ok(err)
+      }
+    })
+
+    it('should throw an error if value is undefined', async () => {
+      const storage = new Storage(storageFilePath, log)
+
+      let expectedErrorThrown = false
+      try {
+        await storage.set('foo')
+      } catch (err) {
+        assert.equal(err.message, 'Cannot save undefined value')
+        expectedErrorThrown = true
+      }
+
+      if (!expectedErrorThrown) {
+        assert.fail('Expected error to be thrown.')
       }
     })
   })
