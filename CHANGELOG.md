@@ -1,3 +1,6 @@
+## v1.7.0
+* changed boilerplate extension code endpoint
+
 ## v1.6.0
 * Promisified version of `tracedRequest` method
 * Upgraded vulnerable dependencies

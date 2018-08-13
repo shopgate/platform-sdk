@@ -29,7 +29,7 @@
   }
 
   caporal.version(pkg.version)
-  process.env['SDK_BETA'] = process.env['SDK_BETA'] || semver.prerelease(pkg.version).includes('beta')
+  process.env['SDK_BETA'] = process.env['SDK_BETA'] || (Array.isArray(semver.prerelease(pkg.version)) && semver.prerelease(pkg.version).includes('beta'))
 
   let appFolder
 
