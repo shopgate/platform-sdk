@@ -5,7 +5,7 @@ const UserSettings = require('../lib/user/UserSettings')
 const path = require('path')
 const UnauthorizedError = require('../lib/errors/UnauthorizedError')
 const mockFs = require('mock-fs')
-describe.only('DcHttpClient', () => {
+describe('DcHttpClient', () => {
   before(done => {
     mockFs()
     done()
