@@ -47,6 +47,7 @@ describe('FrontendAction', () => {
     await fsEx.emptyDir(path.join(appPath, SETTINGS_FOLDER))
     dcHttpClient = new DcHttpClient(userSettings, null)
 
+    dcHttpClient.checkPermissions = async () => (true)
     fsExtraMock.existsSync = () => true
     fsExtraMock.readJSONSync = () => {}
     fsExtraMock.readdir = () => Promise.resolve()
