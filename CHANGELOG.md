@@ -4,6 +4,9 @@
 ## v1.6.0
 * Promisified version of `tracedRequest` method
 * Upgraded vulnerable dependencies
+* Improved error message on invalid extension-config
+* Extension-config validated during `backend start`
+* Fix bug setting undefined values in storages
 
 ## v1.5.0
 * Added `extension manage` command to attach/detache multiple extensions at once

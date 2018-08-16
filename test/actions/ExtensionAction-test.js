@@ -457,7 +457,7 @@ describe('ExtensionAction', () => {
       it('should get the user input by command', () => {
         const options = {
           extension: '@o1/e1',
-          trusted: 'trusted'
+          trusted: false
         }
         const types = ['backend', 'frontend']
 

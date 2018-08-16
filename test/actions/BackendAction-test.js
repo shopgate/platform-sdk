@@ -471,6 +471,7 @@ describe('BackendAction', () => {
       }
 
       appSettings.loadAttachedExtensions = () => { return { testExtension: { path: 'test-extension' } } }
+      subjectUnderTest.validateExtensionConfigs = () => { return true }
       subjectUnderTest._startSubProcess = () => {}
 
       await subjectUnderTest.run({})
