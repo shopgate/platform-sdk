@@ -111,6 +111,7 @@ describe('ExtensionAction', () => {
       assert(caporal.command.calledWith('extension detach'))
       assert(caporal.command.calledWith('extension manage'))
       assert(caporal.command.calledWith('extension upload'))
+      assert(caporal.command.calledWith('theme upload'))
     })
     it('should throw if user not logged in', async () => {
       await userSettings.setToken(null)
@@ -846,7 +847,8 @@ describe('ExtensionAction', () => {
       getAllExtensionPropertiesStub = sinon.stub(subjectUnderTest, '_getAllExtensionProperties').resolves([
         { id: '@acme/one', dir: 'acme-one' },
         { id: '@acme/two', dir: 'acme-two' },
-        { id: '@acme/three', dir: 'acme-three' }
+        { id: '@acme/three', dir: 'acme-three' },
+        { id: '@acme/theme', dir: 'acme-theme' }
       ])
 
       nock.disableNetConnect()
@@ -856,7 +858,8 @@ describe('ExtensionAction', () => {
         [extensionsFolder]: {
           'acme-one': { 'extension-config.json': '{"id": "@acme/one", "version": "1.0.0"}' },
           'acme-two': { 'extension-config.json': '{"id": "@acme/two"}' },
-          'acme-three': {}
+          'acme-three': {},
+          'acme-theme': { 'extension-config.json': '{"id":"@acme/theme", "version": "1.0.0", "type":"theme"}' }
         }
       }
 
@@ -1167,6 +1170,41 @@ describe('ExtensionAction', () => {
         .catch((err) => {
           assert.equal(err.message, 'Preprocessing timeout expired. Try increasing the timeout with --preprocess-timeout option')
         })
+    })
+
+    it('should support `theme upload` command', async () => {
+      nock(SGCLOUD_DC_ADDRESS)
+        .get(`/extensions/${encodeURIComponent('@acme/theme')}`)
+        .reply(200)
+
+      let calls = 0
+      let maxCalls = 4
+      nock(SGCLOUD_DC_ADDRESS)
+        .get(`/extensions/${encodeURIComponent('@acme/theme')}/versions/1.0.0`)
+        .times(maxCalls)
+        .reply((uri, requestBody) => {
+          calls++
+
+          switch (calls) {
+            case 1:
+              return [200, { status: 'DRAFT' }]
+
+            case maxCalls:
+              return [200, { status: 'UPLOADED' }]
+
+            default:
+              return [200, { status: 'PREPROCESSING' }]
+          }
+        })
+
+      nock(SGCLOUD_DC_ADDRESS)
+        .put(`/extensions/${encodeURIComponent('@acme/theme')}/versions/1.0.0/file`)
+        .reply(201)
+
+      const isThemeSymbol = ExtensionAction.IS_THEME
+      await subjectUnderTest.uploadExtension({ [isThemeSymbol]: true, extension: 'acme-theme' }, { pollInterval: 3 })
+
+      sinon.assert.calledWith(loggerInfoStub, 'Theme version successfully uploaded')
     })
   })
 })
