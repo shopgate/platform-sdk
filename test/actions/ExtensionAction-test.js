@@ -9,6 +9,7 @@ const proxyquire = require('proxyquire')
 const inquirer = require('inquirer')
 const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
+const DcHttpClient = require('../../lib/DcHttpClient')
 const { EXTENSIONS_FOLDER } = require('../../lib/app/Constants')
 const logger = require('../../lib/logger')
 
@@ -60,17 +61,21 @@ const userSettingsFolder = path.join('build', 'usersettings')
 const appPath = path.join('build', 'appsettings')
 
 describe('ExtensionAction', () => {
+  const SGCLOUD_DC_ADDRESS = 'http://dc.shopgate.cloud'
   let subjectUnderTest
   let userSettings
   let appSettings
+  let dcHttpClient
 
   beforeEach(async () => {
     process.env.USER_PATH = userSettingsFolder
+    process.env.SGCLOUD_DC_ADDRESS = SGCLOUD_DC_ADDRESS
     mockFs()
     appSettings = new AppSettings(appPath)
     appSettings.getId = async () => ('shop_123')
-    userSettings = await new UserSettings().setToken({})
-    subjectUnderTest = new ExtensionAction(appSettings, userSettings)
+    userSettings = await new UserSettings().setToken('TEST_TOKEN')
+    dcHttpClient = new DcHttpClient(userSettings, null)
+    subjectUnderTest = new ExtensionAction(appSettings, userSettings, dcHttpClient)
   })
 
   afterEach(async () => {
@@ -96,7 +101,8 @@ describe('ExtensionAction', () => {
         attachExtensions: async () => (true),
         createExtension: async () => (true),
         detachExtensions: async () => (true),
-        manageExtensions: async () => (true)
+        manageExtensions: async () => (true),
+        uploadExtension: async () => (true)
       })
       ExtensionAction.register(caporal)
 
@@ -104,6 +110,7 @@ describe('ExtensionAction', () => {
       assert(caporal.command.calledWith('extension attach'))
       assert(caporal.command.calledWith('extension detach'))
       assert(caporal.command.calledWith('extension manage'))
+      assert(caporal.command.calledWith('extension upload'))
     })
     it('should throw if user not logged in', async () => {
       await userSettings.setToken(null)
@@ -806,6 +813,360 @@ describe('ExtensionAction', () => {
 
         assert.ok(!await fsEx.exists(extensionPath))
       })
+    })
+  })
+
+  describe('extension upload', () => {
+    let extensionsFolder
+    let mockedFs
+
+    let loggerInfoStub
+    let loggerWarnStub
+    let loggerErrorStub
+    let inquirerPromptStub
+    let getAllExtensionPropertiesStub
+
+    before(async () => {
+      loggerInfoStub = sinon.stub(logger, 'info')
+      loggerWarnStub = sinon.stub(logger, 'warn')
+      loggerErrorStub = sinon.stub(logger, 'error')
+      inquirerPromptStub = sinon.stub(inquirer, 'prompt')
+    })
+
+    after(async () => {
+      loggerInfoStub.restore()
+      loggerWarnStub.restore()
+      loggerErrorStub.restore()
+      inquirerPromptStub.restore()
+
+      mockFs.restore()
+    })
+
+    beforeEach(async () => {
+      getAllExtensionPropertiesStub = sinon.stub(subjectUnderTest, '_getAllExtensionProperties').resolves([
+        { id: '@acme/one', dir: 'acme-one' },
+        { id: '@acme/two', dir: 'acme-two' },
+        { id: '@acme/three', dir: 'acme-three' }
+      ])
+
+      nock.disableNetConnect()
+
+      extensionsFolder = path.join(subjectUnderTest.appSettings.getApplicationFolder(), EXTENSIONS_FOLDER)
+      mockedFs = {
+        [extensionsFolder]: {
+          'acme-one': { 'extension-config.json': '{"id": "@acme/one", "version": "1.0.0"}' },
+          'acme-two': { 'extension-config.json': '{"id": "@acme/two"}' },
+          'acme-three': {}
+        }
+      }
+
+      mockFs(mockedFs)
+    })
+
+    afterEach(async () => {
+      loggerInfoStub.reset()
+      loggerWarnStub.reset()
+      loggerErrorStub.reset()
+      inquirerPromptStub.reset()
+
+      nock.enableNetConnect()
+      mockFs.restore()
+    })
+
+    it('should throw an error if an extension directory does not exist', async () => {
+      mockFs.restore()
+      mockFs({})
+
+      try {
+        await subjectUnderTest.uploadExtension({ extension: 'acme-four' })
+        assert.fail('Expected to throw an error on the previous line')
+      } catch (err) {
+        assert.equal(err.message, 'Extension directory acme-four does not exist')
+      }
+    })
+
+    it('should log a warning when no extensions are available to pick', async () => {
+      getAllExtensionPropertiesStub.returns([])
+      await subjectUnderTest.uploadExtension()
+
+      sinon.assert.callCount(loggerWarnStub, 1)
+      sinon.assert.callCount(inquirerPromptStub, 0)
+    })
+
+    it('should throw an error if extension-config.json is invalid', async () => {
+      await subjectUnderTest.uploadExtension({ extension: 'acme-two' })
+        .then(() => {
+          assert.fail('Expected to throw an error')
+        })
+        .catch((err) => {
+          assert.equal(err.message, 'Invalid extension-config.json')
+        })
+    })
+
+    it('should throw an error if there is no extension-config.json', async () => {
+      await subjectUnderTest.uploadExtension({ extension: 'acme-three' })
+        .then(() => {
+          assert.fail('Expected to throw an error')
+        })
+        .catch((err) => {
+          assert.equal(err.message, 'There is no extension-config.json in acme-three')
+        })
+    })
+
+    it('should throw an error if extension does not exist in DevCenter', async () => {
+      nock(SGCLOUD_DC_ADDRESS)
+        .get(`/extensions/${encodeURIComponent('@acme/one')}`)
+        .reply(404, {
+          code: 'NotFound',
+          message: 'Extension Not found'
+        })
+
+      await subjectUnderTest.uploadExtension({ extension: 'acme-one' })
+        .then(() => {
+          assert.fail('Expected to throw an error')
+        })
+        .catch((err) => {
+          assert.equal(err.message, 'Error getting @acme/one: Extension Not found')
+        })
+    })
+
+    it('should throw an error if extension version does not exist in DevCenter', async () => {
+      inquirerPromptStub.resolves({ createVersion: false })
+
+      nock(SGCLOUD_DC_ADDRESS)
+        .get(`/extensions/${encodeURIComponent('@acme/one')}`)
+        .reply(200)
+
+      nock(SGCLOUD_DC_ADDRESS)
+        .get(`/extensions/${encodeURIComponent('@acme/one')}/versions/1.0.0`)
+        .reply(404, {
+          code: 'ResourceNotFound',
+          message: 'Version not found'
+        })
+
+      await subjectUnderTest.uploadExtension({ extension: 'acme-one' })
+        .then(() => {
+          assert.fail('Expected to throw an error')
+        })
+        .catch((err) => {
+          assert.equal(err.message, 'Extension version 1.0.0 does not exist. Exiting.')
+        })
+    })
+
+    it('should throw an error if another upload is in progress', async () => {
+      nock(SGCLOUD_DC_ADDRESS)
+        .get(`/extensions/${encodeURIComponent('@acme/one')}`)
+        .reply(200)
+
+      nock(SGCLOUD_DC_ADDRESS)
+        .get(`/extensions/${encodeURIComponent('@acme/one')}/versions/1.0.0`)
+        .reply(200, {
+          status: 'PREPROCESSING'
+        })
+
+      await subjectUnderTest.uploadExtension({ extension: 'acme-one' })
+        .then(() => {
+          assert.fail('Expected to throw an error')
+        })
+        .catch((err) => {
+          assert.equal(err.message, 'Another upload is in progress. Try later.')
+        })
+    })
+
+    it('should pack and upload an extension', async () => {
+      nock(SGCLOUD_DC_ADDRESS)
+        .get(`/extensions/${encodeURIComponent('@acme/one')}`)
+        .reply(200)
+
+      let calls = 0
+      let maxCalls = 4
+      nock(SGCLOUD_DC_ADDRESS)
+        .get(`/extensions/${encodeURIComponent('@acme/one')}/versions/1.0.0`)
+        .times(maxCalls)
+        .reply((uri, requestBody) => {
+          calls++
+
+          switch (calls) {
+            case 1:
+              return [200, { status: 'DRAFT' }]
+
+            case maxCalls:
+              return [200, { status: 'UPLOADED' }]
+
+            default:
+              return [200, { status: 'PREPROCESSING' }]
+          }
+        })
+
+      nock(SGCLOUD_DC_ADDRESS)
+        .put(`/extensions/${encodeURIComponent('@acme/one')}/versions/1.0.0/file`)
+        .reply(201)
+
+      await subjectUnderTest.uploadExtension({ extension: 'acme-one' }, { pollInterval: 3 })
+
+      sinon.assert.calledWith(loggerInfoStub, 'Extension version successfully uploaded')
+    })
+
+    it('should throw an error if upload was unsuccessfull', async () => {
+      nock(SGCLOUD_DC_ADDRESS)
+        .get(`/extensions/${encodeURIComponent('@acme/one')}`)
+        .reply(200)
+
+      nock(SGCLOUD_DC_ADDRESS)
+        .get(`/extensions/${encodeURIComponent('@acme/one')}/versions/1.0.0/log`)
+        .reply(200, {
+          logs: [{
+            name: 'ERROR OCCURED DURING UPLOAD'
+          }]
+        })
+
+      let calls = 0
+      let maxCalls = 4
+      nock(SGCLOUD_DC_ADDRESS)
+        .get(`/extensions/${encodeURIComponent('@acme/one')}/versions/1.0.0`)
+        .times(maxCalls)
+        .reply(() => {
+          calls++
+
+          switch (calls) {
+            case 1:
+              return [200, { status: 'DRAFT' }]
+
+            case maxCalls:
+              return [200, { status: 'ERROR' }]
+
+            default:
+              return [200, { status: 'PREPROCESSING' }]
+          }
+        })
+
+      nock(SGCLOUD_DC_ADDRESS)
+        .put(`/extensions/${encodeURIComponent('@acme/one')}/versions/1.0.0/file`)
+        .reply(201)
+
+      await subjectUnderTest.uploadExtension({ extension: 'acme-one' }, { pollInterval: 3 })
+        .then(() => {
+          assert.fail('Expected to throw an error')
+        })
+        .catch((err) => {
+          assert.equal(err.message, 'ERROR OCCURED DURING UPLOAD')
+        })
+    })
+
+    it('should update a version if it is in UPLOADED state', async () => {
+      nock(SGCLOUD_DC_ADDRESS)
+        .get(`/extensions/${encodeURIComponent('@acme/one')}`)
+        .reply(200)
+
+      nock(SGCLOUD_DC_ADDRESS)
+        .patch(`/extensions/${encodeURIComponent('@acme/one')}/versions/1.0.0`)
+        .reply(200, { status: 'DRAFT' })
+
+      let calls = 0
+      let maxCalls = 4
+      nock(SGCLOUD_DC_ADDRESS)
+        .get(`/extensions/${encodeURIComponent('@acme/one')}/versions/1.0.0`)
+        .times(maxCalls)
+        .reply((uri, requestBody) => {
+          calls++
+
+          switch (calls) {
+            case 1:
+              return [200, { status: 'UPLOADED' }]
+
+            case maxCalls:
+              return [200, { status: 'UPLOADED' }]
+
+            default:
+              return [200, { status: 'PREPROCESSING' }]
+          }
+        })
+
+      nock(SGCLOUD_DC_ADDRESS)
+        .put(`/extensions/${encodeURIComponent('@acme/one')}/versions/1.0.0/file`)
+        .reply(201)
+
+      await subjectUnderTest.uploadExtension({ extension: 'acme-one' }, { pollInterval: 3 })
+
+      sinon.assert.calledWith(loggerInfoStub, 'Extension version successfully uploaded')
+    })
+
+    it('should create a version if it does not exist', async () => {
+      inquirerPromptStub.resolves({ createVersion: true })
+
+      nock(SGCLOUD_DC_ADDRESS)
+        .get(`/extensions/${encodeURIComponent('@acme/one')}`)
+        .reply(200)
+
+      nock(SGCLOUD_DC_ADDRESS)
+        .post(`/extensions/${encodeURIComponent('@acme/one')}/versions`)
+        .reply(201, { version: '1.0.0', status: 'DRAFT' })
+
+      let calls = 0
+      let maxCalls = 4
+      nock(SGCLOUD_DC_ADDRESS)
+        .get(`/extensions/${encodeURIComponent('@acme/one')}/versions/1.0.0`)
+        .times(maxCalls)
+        .reply((uri, requestBody) => {
+          calls++
+
+          switch (calls) {
+            case 1:
+              return [404, {}]
+
+            case maxCalls:
+              return [200, { status: 'UPLOADED' }]
+
+            default:
+              return [200, { status: 'PREPROCESSING' }]
+          }
+        })
+
+      nock(SGCLOUD_DC_ADDRESS)
+        .put(`/extensions/${encodeURIComponent('@acme/one')}/versions/1.0.0/file`)
+        .reply(201)
+
+      await subjectUnderTest.uploadExtension({ extension: 'acme-one' }, { pollInterval: 3 })
+
+      sinon.assert.calledWith(loggerInfoStub, 'Extension version successfully uploaded')
+    })
+
+    it('should throw an error if the upload has taken too much time', async () => {
+      nock(SGCLOUD_DC_ADDRESS)
+        .get(`/extensions/${encodeURIComponent('@acme/one')}`)
+        .reply(200)
+
+      let calls = 0
+      let maxCalls = 4
+      nock(SGCLOUD_DC_ADDRESS)
+        .get(`/extensions/${encodeURIComponent('@acme/one')}/versions/1.0.0`)
+        .times(maxCalls)
+        .reply(() => {
+          calls++
+
+          switch (calls) {
+            case 1:
+              return [200, { status: 'DRAFT' }]
+
+            case maxCalls:
+              return [200, { status: 'UPLOADED' }]
+
+            default:
+              return [200, { status: 'PREPROCESSING' }]
+          }
+        })
+
+      nock(SGCLOUD_DC_ADDRESS)
+        .put(`/extensions/${encodeURIComponent('@acme/one')}/versions/1.0.0/file`)
+        .reply(201)
+
+      await subjectUnderTest.uploadExtension({ extension: 'acme-one' }, { pollInterval: 100, preprocessTimeout: 10 })
+        .then(() => {
+          assert.fail('Expected to throw an error')
+        })
+        .catch((err) => {
+          assert.equal(err.message, 'Preprocessing timeout expired. Try increasing the timeout with --preprocess-timeout option')
+        })
     })
   })
 })
