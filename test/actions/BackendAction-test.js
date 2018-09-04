@@ -453,6 +453,7 @@ describe('BackendAction', () => {
 
     it('should write the extension configs for the app', async () => {
       subjectUnderTest.appSettings.EXTENSIONS_FOLDER = 'extensions'
+      subjectUnderTest.dcHttpClient.checkPermissions = async () => { return true }
       const extensionConfigPath = path.join(
         subjectUnderTest.appSettings.getApplicationFolder(), EXTENSIONS_FOLDER,
         'test-extension',
@@ -470,6 +471,7 @@ describe('BackendAction', () => {
       }
 
       appSettings.loadAttachedExtensions = () => { return { testExtension: { path: 'test-extension' } } }
+      subjectUnderTest.validateExtensionConfigs = () => { return true }
       subjectUnderTest._startSubProcess = () => {}
 
       await subjectUnderTest.run({})
