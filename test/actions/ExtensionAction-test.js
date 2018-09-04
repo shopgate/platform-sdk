@@ -930,7 +930,7 @@ describe('ExtensionAction', () => {
         await subjectUnderTest.uploadExtension({ extension: 'acme-four' })
         assert.fail('Expected to throw an error on the previous line')
       } catch (err) {
-        assert.equal(err.message, 'Extension directory acme-four does not exist')
+        assert.equal(err.message, 'Extension folder acme-four does not exist')
       }
     })
 
@@ -962,7 +962,7 @@ describe('ExtensionAction', () => {
         })
     })
 
-    it('should throw an error if extension does not exist in DevCenter', async () => {
+    it('should throw an error if extension does not exist in Shopgate Developer Center', async () => {
       nock(SGCLOUD_DC_ADDRESS)
         .get(`/extensions/${encodeURIComponent('@acme/one')}`)
         .reply(404, {
@@ -979,7 +979,7 @@ describe('ExtensionAction', () => {
         })
     })
 
-    it('should throw an error if extension version does not exist in DevCenter', async () => {
+    it('should throw an error if extension version does not exist in Shopgate Developer Center', async () => {
       inquirerPromptStub.resolves({ createVersion: false })
 
       nock(SGCLOUD_DC_ADDRESS)
@@ -1247,8 +1247,7 @@ describe('ExtensionAction', () => {
         .put(`/extensions/${encodeURIComponent('@acme/theme')}/versions/1.0.0/file`)
         .reply(201)
 
-      const isThemeSymbol = ExtensionAction.IS_THEME
-      await subjectUnderTest.uploadExtension({ [isThemeSymbol]: true, extension: 'acme-theme' }, { pollInterval: 3 })
+      await subjectUnderTest.uploadExtension({ isTheme: true, extension: 'acme-theme' }, { pollInterval: 3 })
 
       sinon.assert.calledWith(loggerInfoStub, 'Theme version successfully uploaded')
     })
