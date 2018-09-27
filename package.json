@@ -1,6 +1,6 @@
 {
   "name": "@shopgate/platform-sdk",
-  "version": "1.6.0-beta.1",
+  "version": "1.6.0",
   "description": "Shopgate's Platform SDK",
   "main": "index.js",
   "scripts": {
@@ -105,20 +105,5 @@
   "pre-commit": [
     "lint-staged",
     "test"
-  ],
-  "nyc": {
-    "include": [
-      "**/*.js"
-    ],
-    "exclude": [
-      "build",
-      "test"
-    ],
-    "reporter": [
-      "lcov",
-      "text-summary"
-    ],
-    "all": true,
-    "report-dir": "build"
-  }
+  ]
 }
