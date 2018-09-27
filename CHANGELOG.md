@@ -1,5 +1,6 @@
 ## v1.7.0
 * changed boilerplate extension code endpoint
+* Updated to use `@shopgate/cloud-sdk-webpack@^1.16.0`
 
 ## v1.6.0
 * Promisified version of `tracedRequest` method
