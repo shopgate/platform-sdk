@@ -1,18 +1,17 @@
 require('longjohn')
 const assert = require('assert')
 const request = require('request')
-
 const nock = require('nock')
 const CliProxy = require('../lib/app/backend/CliProxy')
 
 describe('CliProxy', () => {
   let cliProxy
   const appSettings = {
-    validate: () => (this),
-    getId: async () => ('shop_123')
+    validate: () => (this)
   }
 
   beforeEach(async () => {
+    appSettings.getId = async () => ('shop_123')
     cliProxy = new CliProxy(appSettings, { info: () => { } })
   })
 
@@ -29,6 +28,21 @@ describe('CliProxy', () => {
         sessionId: 'sessionId',
         deviceId: 'deviceId'
       })
+      cliProxy._startPipelineServer = async () => (true)
+      return cliProxy.start()
+    })
+
+    it('should run through (admin)', async () => {
+      const applicationId = 'admin_123'
+      const deviceId = 'device_123'
+
+      nock(`https://${applicationId}.sandbox.connect.shopgate.com`)
+        .head('/')
+        .reply(200, null, {
+          'set-cookie': [`SGCONNECT=${deviceId}; path=/`]
+        })
+
+      appSettings.getId = async () => applicationId
       cliProxy._startPipelineServer = async () => (true)
       return cliProxy.start()
     })
@@ -67,7 +81,7 @@ describe('CliProxy', () => {
           'sg-device-id': 1
         })
 
-      cliProxy._getIdsFromRapid(rapidUrl, 10006).then(() => { api.done(); done() })
+      cliProxy._getIdsFromRapid(rapidUrl, 'shop_10006').then(() => { api.done(); done() })
     })
 
     it('should return error on missing body', (done) => {
@@ -77,7 +91,7 @@ describe('CliProxy', () => {
           'sg-device-id': 1
         })
 
-      cliProxy._getIdsFromRapid(rapidUrl, 10006).catch(err => {
+      cliProxy._getIdsFromRapid(rapidUrl, 'shop_10006').catch(err => {
         assert.ok(err)
         api.done()
         done()
@@ -89,7 +103,7 @@ describe('CliProxy', () => {
         .post('/')
         .reply(200, returnObj)
 
-      cliProxy._getIdsFromRapid(rapidUrl, 10006).catch(err => {
+      cliProxy._getIdsFromRapid(rapidUrl, 'shop_10006').catch(err => {
         assert.ok(err)
         api.done()
         done()
@@ -99,7 +113,14 @@ describe('CliProxy', () => {
 
   describe('_startPipelineServer()', () => {
     it('should start server', (done) => {
-      cliProxy._startPipelineServer(1238, 'rapidUrl', 1, 1, 10006).then(server => {
+      cliProxy._startPipelineServer(1238, 'rapidUrl', 1, 1, 'shop_10006').then(server => {
+        assert.ok(server)
+        done()
+      })
+    })
+
+    it('should start server (admin)', (done) => {
+      cliProxy._startPipelineServer(1238, 'rapidUrl', 1, 1, 'admin_10006').then(server => {
         assert.ok(server)
         done()
       })
