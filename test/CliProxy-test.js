@@ -37,7 +37,7 @@ describe('CliProxy', () => {
       const deviceId = 'device_123'
 
       nock(`https://${applicationId}.sandbox.connect.shopgate.com`)
-        .head('/')
+        .get('/')
         .reply(200, null, {
           'set-cookie': [`SGCONNECT=${deviceId}; path=/`]
         })
