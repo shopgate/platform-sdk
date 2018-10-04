@@ -896,6 +896,7 @@ describe('ExtensionAction', () => {
       getAllExtensionPropertiesStub = sinon.stub(subjectUnderTest, '_getAllExtensionProperties').resolves([
         { id: '@acme/one', dir: 'acme-one' },
         { id: '@acme/two', dir: 'acme-two' },
+        { id: '@acme/five', dir: 'acme-five' },
         { id: '@acme/three', dir: 'acme-three' },
         { id: '@acme/theme', dir: 'acme-theme' }
       ])
@@ -907,6 +908,7 @@ describe('ExtensionAction', () => {
         [extensionsFolder]: {
           'acme-one': { 'extension-config.json': '{"id": "@acme/one", "version": "1.0.0"}' },
           'acme-two': { 'extension-config.json': '{"id": "@acme/two"}' },
+          'acme-five': { 'extension-config.json': '{"version": "1.0.0"}' },
           'acme-three': {},
           'acme-theme': { 'extension-config.json': '{"id":"@acme/theme", "version": "1.0.0", "type":"theme"}' }
         }
@@ -926,14 +928,11 @@ describe('ExtensionAction', () => {
     })
 
     it('should throw an error if an extension directory does not exist', async () => {
-      mockFs.restore()
-      mockFs({})
-
       try {
-        await subjectUnderTest.uploadExtension({ extension: 'acme-four' })
+        await subjectUnderTest.uploadExtension({ extension: 'acme-six' })
         assert.fail('Expected to throw an error on the previous line')
       } catch (err) {
-        assert.equal(err.message, 'Extension directory acme-four does not exist')
+        assert.equal(err.message, 'Extension directory acme-six does not exist')
       }
     })
 
@@ -948,12 +947,21 @@ describe('ExtensionAction', () => {
       }
     })
 
-    it('should throw an error if extension-config.json is invalid', async () => {
+    it('should throw an error if extension-config.json does not contain id', async () => {
+      try {
+        await subjectUnderTest.uploadExtension({ extension: 'acme-five' })
+        assert.fail('Expected to throw an error')
+      } catch (err) {
+        assert.equal(err.message, `There is no 'id' property in ./${extensionsFolder}/acme-five/extension-config.json`)
+      }
+    })
+
+    it('should throw an error if extension-config.json does not contain version', async () => {
       try {
         await subjectUnderTest.uploadExtension({ extension: 'acme-two' })
         assert.fail('Expected to throw an error')
       } catch (err) {
-        assert.equal(err.message, 'Invalid extension-config.json')
+        assert.equal(err.message, `There is no 'version' property in ./${extensionsFolder}/acme-two/extension-config.json`)
       }
     })
 
