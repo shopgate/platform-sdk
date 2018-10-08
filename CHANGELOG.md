@@ -2,6 +2,8 @@
 * changed boilerplate extension code endpoint
 * Updated to use `@shopgate/cloud-sdk-webpack@^1.16.0`
 * Added `extension upload` and `theme upload` commands for uploading extensions and themes respectively
+* Updated error handling for various occasions e.g. wrong organisation
+* Added extension-config.json validation on backend start
 
 ## v1.6.0
 * Promisified version of `tracedRequest` method
