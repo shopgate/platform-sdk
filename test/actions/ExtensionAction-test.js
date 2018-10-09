@@ -977,7 +977,7 @@ describe('ExtensionAction', () => {
     it('should throw an error if an extension does not exist', async () => {
       nock(SGCLOUD_DC_ADDRESS)
         .put(`/extensions/${encodeURIComponent('@acme/one')}/versions/1.0.0/file`)
-        .query({ force: false })
+        .query({ force: false, cancelReview: false })
         .reply(404, { code: 'NotFoundError', message: 'Extension not found' })
 
       try {
@@ -991,7 +991,7 @@ describe('ExtensionAction', () => {
     it('should throw an error if there is another preprocessing started', async () => {
       nock(SGCLOUD_DC_ADDRESS)
         .put(`/extensions/${encodeURIComponent('@acme/one')}/versions/1.0.0/file`)
-        .query({ force: false })
+        .query({ force: false, cancelReview: false })
         .reply(409, { code: 'ConflictError', message: 'Another upload in progress' })
 
       try {
@@ -1005,7 +1005,7 @@ describe('ExtensionAction', () => {
     it('should pack and upload an extension', async () => {
       nock(SGCLOUD_DC_ADDRESS)
         .put(`/extensions/${encodeURIComponent('@acme/one')}/versions/1.0.0/file`)
-        .query({ force: false })
+        .query({ force: false, cancelReview: false })
         .reply(201)
 
       let calls = 0
@@ -1032,7 +1032,7 @@ describe('ExtensionAction', () => {
     it('should support a theme uploading', async () => {
       nock(SGCLOUD_DC_ADDRESS)
         .put(`/extensions/${encodeURIComponent('@acme/theme')}/versions/1.0.0/file`)
-        .query({ force: false })
+        .query({ force: false, cancelReview: false })
         .reply(201)
 
       let calls = 0
