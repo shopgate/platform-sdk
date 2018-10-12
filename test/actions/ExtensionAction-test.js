@@ -944,7 +944,7 @@ describe('ExtensionAction', () => {
         await subjectUnderTest.uploadExtension()
         assert.fail('Expected to throw an error on the previous line')
       } catch (err) {
-        assert.equal(err.message, `There are no extensions in './${extensionsFolder}'`)
+        assert.equal(err.message, `There are no extensions in '.${path.sep}${extensionsFolder}'`)
       }
     })
 
@@ -953,7 +953,7 @@ describe('ExtensionAction', () => {
         await subjectUnderTest.uploadExtension({ extension: 'acme-five' })
         assert.fail('Expected to throw an error')
       } catch (err) {
-        assert.equal(err.message, `There is no 'id' property in ./${extensionsFolder}/acme-five/extension-config.json`)
+        assert.equal(err.message, `There is no 'id' property in .${path.sep}${extensionsFolder}/acme-five/extension-config.json`)
       }
     })
 
@@ -962,7 +962,7 @@ describe('ExtensionAction', () => {
         await subjectUnderTest.uploadExtension({ extension: 'acme-two' })
         assert.fail('Expected to throw an error')
       } catch (err) {
-        assert.equal(err.message, `There is no 'version' property in ./${extensionsFolder}/acme-two/extension-config.json`)
+        assert.equal(err.message, `There is no 'version' property in .${path.sep}${extensionsFolder}/acme-two/extension-config.json`)
       }
     })
 
@@ -980,7 +980,7 @@ describe('ExtensionAction', () => {
         await subjectUnderTest.uploadExtension({ extension: 'acme-wrong' })
         assert.fail('Expected to throw an error')
       } catch (err) {
-        assert.equal(err.message, `Validation of ./${extensionsFolder}/acme-wrong/extension-config.json failed: "invalid" is not allowed`)
+        assert.equal(err.message, `Validation of .${path.sep}${extensionsFolder}/acme-wrong/extension-config.json failed: "invalid" is not allowed`)
       }
     })
 
