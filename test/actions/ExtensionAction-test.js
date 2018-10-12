@@ -910,7 +910,8 @@ describe('ExtensionAction', () => {
           'acme-two': { 'extension-config.json': '{"id": "@acme/two"}' },
           'acme-five': { 'extension-config.json': '{"version": "1.0.0"}' },
           'acme-three': {},
-          'acme-theme': { 'extension-config.json': '{"id":"@acme/theme", "version": "1.0.0", "type":"theme"}' }
+          'acme-theme': { 'extension-config.json': '{"id":"@acme/theme", "version": "1.0.0", "type":"theme"}' },
+          'acme-wrong': { 'extension-config.json': '{"id":"@acme/wrong", "version": "1.0.0", "invalid": "wrong"}' }
         }
       }
 
@@ -971,6 +972,15 @@ describe('ExtensionAction', () => {
         assert.fail('Expected to throw an error')
       } catch (err) {
         assert.equal(err.message, 'There is no extension-config.json in acme-three')
+      }
+    })
+
+    it('should throw an error if the validation of extension-config.json failed', async () => {
+      try {
+        await subjectUnderTest.uploadExtension({ extension: 'acme-wrong' })
+        assert.fail('Expected to throw an error')
+      } catch (err) {
+        assert.equal(err.message, `Validation of ./${extensionsFolder}/acme-wrong/extension-config.json failed: "invalid" is not allowed`)
       }
     })
 
