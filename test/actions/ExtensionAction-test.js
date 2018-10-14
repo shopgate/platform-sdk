@@ -994,7 +994,7 @@ describe('ExtensionAction', () => {
         await subjectUnderTest.uploadExtension({ extension: 'acme-one' }, { pollInterval: 3 })
         assert.fail('Should have failed on the previous step')
       } catch (err) {
-        assert.equal(err.message, 'Extension @acme/one was not found in Shopgate Developer Center')
+        assert.equal(err.message, 'Extension @acme/one was not found. Please log in to the Shopgate Developer Center to create it.')
       }
     })
 
