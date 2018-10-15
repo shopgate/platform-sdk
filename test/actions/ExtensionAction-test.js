@@ -1036,7 +1036,7 @@ describe('ExtensionAction', () => {
         })
 
       await subjectUnderTest.uploadExtension({ extension: 'acme-one' }, { pollInterval: 3 })
-      sinon.assert.calledWith(loggerPlainStub, 'Extension @acme/one@1.0.0 successfully uploaded')
+      sinon.assert.calledWith(loggerPlainStub, 'Extension @acme/one@1.0.0 was successfully uploaded')
     })
 
     it('should support a theme uploading', async () => {
@@ -1063,7 +1063,7 @@ describe('ExtensionAction', () => {
         })
 
       await subjectUnderTest.uploadExtension({ extension: 'acme-theme' }, { pollInterval: 3, _isTheme: true })
-      sinon.assert.calledWith(loggerPlainStub, 'Theme @acme/theme@1.0.0 successfully uploaded')
+      sinon.assert.calledWith(loggerPlainStub, 'Theme @acme/theme@1.0.0 was successfully uploaded')
     })
   })
 })
