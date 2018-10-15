@@ -1,7 +1,7 @@
 const Logger = require('../../../../lib/app/backend/extensionRuntime/Logger')
 const assert = require('assert')
 const bunyan = require('bunyan')
-const sinon = require('sinon')
+const sinon = require('sinon').createSandbox()
 
 describe('ExtensionRuntime Logger', () => {
   const logLevels = Object.keys(bunyan.levelFromName)
@@ -19,11 +19,10 @@ describe('ExtensionRuntime Logger', () => {
     const logger = new Logger()
     if (!process.send) process.send = function () {}
     beforeEach(() => {
-      sinon.sandbox.create()
-      sinon.sandbox.stub(process, 'send')
+      sinon.stub(process, 'send')
     })
     afterEach(() => {
-      sinon.sandbox.restore()
+      sinon.restore()
     })
 
     for (let i = 0; i < logLevels.length; i++) {
