@@ -21,7 +21,7 @@
     process.exit(1)
   }
 
-  const notifier = updateNotifier({ pkg, updateCheckInterval: 0 })
+  const notifier = updateNotifier({ pkg, updateCheckInterval: 0, isGlobal: true })
   notifier.notify()
 
   if (notifier.update) {
