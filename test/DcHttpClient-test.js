@@ -3,7 +3,7 @@ const nock = require('nock')
 const DcHttpClient = require('../lib/DcHttpClient')
 const UserSettings = require('../lib/user/UserSettings')
 const path = require('path')
-const UnauthorizedError = require('../lib/errors/UnauthorizedError')
+const { UnauthorizedError } = require('../lib/errors')
 const mockFs = require('mock-fs')
 describe('DcHttpClient', () => {
   before(done => {
@@ -106,6 +106,49 @@ describe('DcHttpClient', () => {
         assert.ok(err)
         dcMock.done()
       })
+    })
+  })
+
+  describe('checkPermissions', () => {
+    const appId = 'foo'
+    it('should be ok if response is okay', async () => {
+      const dcMock = nock(dcClient.dcAddress)
+      .get(`/applications/${appId}`)
+      .reply(200, {})
+
+      try {
+        await dcClient.checkPermissions(appId)
+      } catch (err) {
+        assert.fail(err)
+      } finally {
+        dcMock.done()
+      }
+    })
+
+    it('should throw an error if access is denied', async () => {
+      const dcMock = nock(dcClient.dcAddress).get(`/applications/${appId}`)
+      .reply(403, {
+        code: 'Forbidden'
+      })
+      try {
+        await dcClient.checkPermissions(appId)
+      } catch (err) {
+        assert.ok(err)
+        assert.equal(err.message, `You don't have access to this application`)
+      } finally {
+        dcMock.done()
+      }
+    })
+
+    it('should update user token', async () => {
+      const newToken = 'foobarTokenNew13456'
+      const dcMock = nock(dcClient.dcAddress)
+          .get(`/applications/${appId}`)
+          .reply(200, {}, { 'x-jwt': newToken })
+
+      await dcClient.checkPermissions(appId)
+      assert.equal(await dcClient.userSettings.getToken(), newToken)
+      dcMock.done()
     })
   })
 
