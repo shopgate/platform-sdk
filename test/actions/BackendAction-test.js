@@ -443,9 +443,15 @@ describe('BackendAction', () => {
       subjectUnderTest.pushHooks = () => {}
       appSettings.loadAttachedExtensions = () => { return { testExtension: { path: '..' } } }
       subjectUnderTest._startSubProcess = () => {}
+      let checkPermissionsCalled = false
+      let validateExtensionConfigsCalled = false
+      subjectUnderTest.dcHttpClient.checkPermissions = () => { checkPermissionsCalled = true }
+      subjectUnderTest.validateExtensionConfigs = () => { validateExtensionConfigsCalled = true }
       try {
         subjectUnderTest.writeExtensionConfigs = () => {}
         await subjectUnderTest.run({})
+        assert.ok(checkPermissionsCalled, 'checkPermissions was not called')
+        assert.ok(validateExtensionConfigsCalled, 'validateExtensionConfigs was not called')
       } catch (err) {
         assert.ifError(err)
       }
@@ -453,6 +459,7 @@ describe('BackendAction', () => {
 
     it('should write the extension configs for the app', async () => {
       subjectUnderTest.appSettings.EXTENSIONS_FOLDER = 'extensions'
+      subjectUnderTest.dcHttpClient.checkPermissions = async () => { return true }
       const extensionConfigPath = path.join(
         subjectUnderTest.appSettings.getApplicationFolder(), EXTENSIONS_FOLDER,
         'test-extension',
@@ -472,9 +479,15 @@ describe('BackendAction', () => {
       appSettings.loadAttachedExtensions = () => { return { testExtension: { path: 'test-extension' } } }
       subjectUnderTest.validateExtensionConfigs = () => { return true }
       subjectUnderTest._startSubProcess = () => {}
+      let checkPermissionsCalled = false
+      let validateExtensionConfigsCalled = false
+      subjectUnderTest.dcHttpClient.checkPermissions = () => { checkPermissionsCalled = true }
+      subjectUnderTest.validateExtensionConfigs = () => { validateExtensionConfigsCalled = true }
 
       await subjectUnderTest.run({})
       assert.ok(called !== 0, 'dcClient generateExtensionConfig should have been called at least once')
+      assert.ok(checkPermissionsCalled, 'checkPermissions was not called')
+      assert.ok(validateExtensionConfigsCalled, 'validateExtensionConfigs was not called')
     })
 
     it('should pass true to StepExecutor\'s "inspect" constructor argument when called with --inspect', async () => {
@@ -484,7 +497,14 @@ describe('BackendAction', () => {
         if (this.backendProcess.executor.inspect !== true) throw new Error('Expected third constructor argument "inspect" to true.')
       }
 
+      let checkPermissionsCalled = false
+      let validateExtensionConfigsCalled = false
+      subjectUnderTest.dcHttpClient.checkPermissions = () => { checkPermissionsCalled = true }
+      subjectUnderTest.validateExtensionConfigs = () => { validateExtensionConfigsCalled = true }
+
       await subjectUnderTest.run({ inspect: true })
+      assert.ok(checkPermissionsCalled, 'checkPermissions was not called')
+      assert.ok(validateExtensionConfigsCalled, 'validateExtensionConfigs was not called')
     })
 
     it('should pass false to StepExecutor\'s "inspect" constructor argument when called without --inspect', async () => {
@@ -493,7 +513,14 @@ describe('BackendAction', () => {
         if (this.backendProcess.executor.inspect !== false) throw new Error('Expected third constructor argument "inspect" to false.')
       }
 
+      let checkPermissionsCalled = false
+      let validateExtensionConfigsCalled = false
+      subjectUnderTest.dcHttpClient.checkPermissions = () => { checkPermissionsCalled = true }
+      subjectUnderTest.validateExtensionConfigs = () => { validateExtensionConfigsCalled = true }
+
       await subjectUnderTest.run({})
+      assert.ok(checkPermissionsCalled, 'checkPermissions was not called')
+      assert.ok(validateExtensionConfigsCalled, 'validateExtensionConfigs was not called')
     })
   })
 })

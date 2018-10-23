@@ -9,6 +9,7 @@ const proxyquire = require('proxyquire')
 const inquirer = require('inquirer')
 const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
+const DcHttpClient = require('../../lib/DcHttpClient')
 const { EXTENSIONS_FOLDER } = require('../../lib/app/Constants')
 const logger = require('../../lib/logger')
 
@@ -60,17 +61,21 @@ const userSettingsFolder = path.join('build', 'usersettings')
 const appPath = path.join('build', 'appsettings')
 
 describe('ExtensionAction', () => {
+  const SGCLOUD_DC_ADDRESS = 'http://dc.shopgate.cloud'
   let subjectUnderTest
   let userSettings
   let appSettings
+  let dcHttpClient
 
   beforeEach(async () => {
     process.env.USER_PATH = userSettingsFolder
+    process.env.SGCLOUD_DC_ADDRESS = SGCLOUD_DC_ADDRESS
     mockFs()
     appSettings = new AppSettings(appPath)
     appSettings.getId = async () => ('shop_123')
-    userSettings = await new UserSettings().setToken({})
-    subjectUnderTest = new ExtensionAction(appSettings, userSettings)
+    userSettings = await new UserSettings().setToken('TEST_TOKEN')
+    dcHttpClient = new DcHttpClient(userSettings, null)
+    subjectUnderTest = new ExtensionAction(appSettings, userSettings, dcHttpClient)
   })
 
   afterEach(async () => {
@@ -96,7 +101,8 @@ describe('ExtensionAction', () => {
         attachExtensions: async () => (true),
         createExtension: async () => (true),
         detachExtensions: async () => (true),
-        manageExtensions: async () => (true)
+        manageExtensions: async () => (true),
+        uploadExtension: async () => (true)
       })
       ExtensionAction.register(caporal)
 
@@ -104,6 +110,8 @@ describe('ExtensionAction', () => {
       assert(caporal.command.calledWith('extension attach'))
       assert(caporal.command.calledWith('extension detach'))
       assert(caporal.command.calledWith('extension manage'))
+      assert(caporal.command.calledWith('extension upload'))
+      assert(caporal.command.calledWith('theme upload'))
     })
     it('should throw if user not logged in', async () => {
       await userSettings.setToken(null)
@@ -507,8 +515,8 @@ describe('ExtensionAction', () => {
       it('should download and unzip the boilerplate', (done) => {
         const state = {}
         mockFs.restore()
-        const n = nock('https://github.com')
-          .get('/shopgate/cloud-sdk-boilerplate-extension/archive/master.zip')
+        const n = nock('https://data.shopgate.com')
+          .get('/connect/platform-sdk/latest.zip')
           .replyWithFile(200, path.join('test', 'testfiles', 'cloud-sdk-boilerplate-extension.zip'), { 'Content-Type': 'application/zip' })
 
         setTimeout(() => {
@@ -525,10 +533,56 @@ describe('ExtensionAction', () => {
           })
       })
 
+      it('should download beta of the boilerplate if pkg is beta', (done) => {
+        const state = {}
+        mockFs.restore()
+        const n = nock('https://data.shopgate.com')
+          .get('/connect/platform-sdk/beta.zip')
+          .replyWithFile(200, path.join('test', 'testfiles', 'cloud-sdk-boilerplate-extension.zip'), { 'Content-Type': 'application/zip' })
+
+        process.env['SDK_BETA'] = true
+        setTimeout(() => {
+          callbacks['close'][0]()
+        }, 500)
+
+        subjectUnderTest
+          ._downloadBoilerplate(extensionFolder, state)
+          .then(() => {
+            delete process.env['SDK_BETA']
+            mockFs()
+            assert.ok(state.cloned)
+            n.done()
+            done()
+          })
+      })
+
+      it('should download custom boilerplate if set via env', async function () {
+        const state = {}
+        mockFs.restore()
+        const n = nock('https://data.random.org')
+          .get('/some.zip')
+          .replyWithFile(200, path.join('test', 'testfiles', 'cloud-sdk-boilerplate-extension.zip'), { 'Content-Type': 'application/zip' })
+
+        process.env['BOILERPLATE_URL'] = 'https://data.random.org/some.zip'
+        setTimeout(() => {
+          callbacks['close'][0]()
+        }, 500)
+
+        try {
+          await subjectUnderTest._downloadBoilerplate(extensionFolder, state)
+          delete process.env['BOILERPLATE_URL']
+          mockFs()
+          assert.ok(state.cloned)
+          n.done()
+        } catch (err) {
+          assert.ifError(err)
+        }
+      })
+
       it('should fail because of error while loading or unzipping', (done) => {
         const state = {}
-        const n = nock('https://github.com')
-          .get('/shopgate/cloud-sdk-boilerplate-extension/archive/master.zip')
+        const n = nock('https://data.shopgate.com')
+          .get('/connect/platform-sdk/latest.zip')
           .reply(404, { error: 'error' })
 
         setTimeout(() => {
@@ -806,6 +860,210 @@ describe('ExtensionAction', () => {
 
         assert.ok(!await fsEx.exists(extensionPath))
       })
+    })
+  })
+
+  describe('extension upload', () => {
+    let extensionsFolder
+    let mockedFs
+
+    let loggerInfoStub
+    let loggerWarnStub
+    let loggerErrorStub
+    let loggerPlainStub
+    let inquirerPromptStub
+    let getAllExtensionPropertiesStub
+
+    before(async () => {
+      loggerInfoStub = sinon.stub(logger, 'info')
+      loggerWarnStub = sinon.stub(logger, 'warn')
+      loggerErrorStub = sinon.stub(logger, 'error')
+      loggerPlainStub = sinon.stub(logger, 'plain')
+      inquirerPromptStub = sinon.stub(inquirer, 'prompt')
+    })
+
+    after(async () => {
+      loggerInfoStub.restore()
+      loggerWarnStub.restore()
+      loggerErrorStub.restore()
+      loggerPlainStub.restore()
+      inquirerPromptStub.restore()
+
+      mockFs.restore()
+    })
+
+    beforeEach(async () => {
+      getAllExtensionPropertiesStub = sinon.stub(subjectUnderTest, '_getAllExtensionProperties').resolves([
+        { id: '@acme/one', dir: 'acme-one' },
+        { id: '@acme/two', dir: 'acme-two' },
+        { id: '@acme/five', dir: 'acme-five' },
+        { id: '@acme/three', dir: 'acme-three' },
+        { id: '@acme/theme', dir: 'acme-theme' }
+      ])
+
+      nock.disableNetConnect()
+
+      extensionsFolder = path.join(subjectUnderTest.appSettings.getApplicationFolder(), EXTENSIONS_FOLDER)
+      mockedFs = {
+        [extensionsFolder]: {
+          'acme-one': { 'extension-config.json': '{"id": "@acme/one", "version": "1.0.0"}' },
+          'acme-two': { 'extension-config.json': '{"id": "@acme/two"}' },
+          'acme-five': { 'extension-config.json': '{"version": "1.0.0"}' },
+          'acme-three': {},
+          'acme-theme': { 'extension-config.json': '{"id":"@acme/theme", "version": "1.0.0", "type":"theme"}' },
+          'acme-wrong': { 'extension-config.json': '{"id":"@acme/wrong", "version": "1.0.0", "invalid": "wrong"}' }
+        }
+      }
+
+      mockFs(mockedFs)
+    })
+
+    afterEach(async () => {
+      loggerInfoStub.reset()
+      loggerWarnStub.reset()
+      loggerErrorStub.reset()
+      inquirerPromptStub.reset()
+
+      nock.enableNetConnect()
+      mockFs.restore()
+    })
+
+    it('should throw an error if an extension directory does not exist', async () => {
+      try {
+        await subjectUnderTest.uploadExtension({ extension: 'acme-six' })
+        assert.fail('Expected to throw an error on the previous line')
+      } catch (err) {
+        assert.equal(err.message, 'Extension directory acme-six does not exist')
+      }
+    })
+
+    it('should throw an error if there are no extensions available to pick', async () => {
+      getAllExtensionPropertiesStub.returns([])
+
+      try {
+        await subjectUnderTest.uploadExtension()
+        assert.fail('Expected to throw an error on the previous line')
+      } catch (err) {
+        assert.equal(err.message, `There are no extensions in '.${path.sep}${extensionsFolder}'`)
+      }
+    })
+
+    it('should throw an error if extension-config.json does not contain id', async () => {
+      try {
+        await subjectUnderTest.uploadExtension({ extension: 'acme-five' })
+        assert.fail('Expected to throw an error')
+      } catch (err) {
+        assert.equal(err.message, `There is no 'id' property in .${path.sep}${extensionsFolder}${path.sep}acme-five${path.sep}extension-config.json`)
+      }
+    })
+
+    it('should throw an error if extension-config.json does not contain version', async () => {
+      try {
+        await subjectUnderTest.uploadExtension({ extension: 'acme-two' })
+        assert.fail('Expected to throw an error')
+      } catch (err) {
+        assert.equal(err.message, `There is no 'version' property in .${path.sep}${extensionsFolder}${path.sep}acme-two${path.sep}extension-config.json`)
+      }
+    })
+
+    it('should throw an error if there is no extension-config.json', async () => {
+      try {
+        await subjectUnderTest.uploadExtension({ extension: 'acme-three' })
+        assert.fail('Expected to throw an error')
+      } catch (err) {
+        assert.equal(err.message, 'There is no extension-config.json in acme-three')
+      }
+    })
+
+    it('should throw an error if the validation of extension-config.json failed', async () => {
+      try {
+        await subjectUnderTest.uploadExtension({ extension: 'acme-wrong' })
+        assert.fail('Expected to throw an error')
+      } catch (err) {
+        assert.equal(err.message, `Validation of .${path.sep}${extensionsFolder}${path.sep}acme-wrong${path.sep}extension-config.json failed: "invalid" is not allowed`)
+      }
+    })
+
+    it('should throw an error if an extension does not exist', async () => {
+      nock(SGCLOUD_DC_ADDRESS)
+        .put(`/extensions/${encodeURIComponent('@acme/one')}/versions/1.0.0/file`)
+        .query({ force: false, cancelReview: false })
+        .reply(404, { code: 'NotFoundError', message: 'Extension not found' })
+
+      try {
+        await subjectUnderTest.uploadExtension({ extension: 'acme-one' }, { pollInterval: 3 })
+        assert.fail('Should have failed on the previous step')
+      } catch (err) {
+        assert.equal(err.message, 'Extension @acme/one was not found. Please log in to the Shopgate Developer Center to create it.')
+      }
+    })
+
+    it('should throw an error if there is another preprocessing started', async () => {
+      nock(SGCLOUD_DC_ADDRESS)
+        .put(`/extensions/${encodeURIComponent('@acme/one')}/versions/1.0.0/file`)
+        .query({ force: false, cancelReview: false })
+        .reply(409, { code: 'ConflictError', message: 'Another upload in progress' })
+
+      try {
+        await subjectUnderTest.uploadExtension({ extension: 'acme-one' }, { pollInterval: 3 })
+        assert.fail('Should have failed on the previous step')
+      } catch (err) {
+        assert.equal(err.message, 'Another upload in progress')
+      }
+    })
+
+    it('should pack and upload an extension', async () => {
+      nock(SGCLOUD_DC_ADDRESS)
+        .put(`/extensions/${encodeURIComponent('@acme/one')}/versions/1.0.0/file`)
+        .query({ force: false, cancelReview: false })
+        .reply(201)
+
+      let calls = 0
+      let maxCalls = 4
+      nock(SGCLOUD_DC_ADDRESS)
+        .get(`/extensions/${encodeURIComponent('@acme/one')}/versions/1.0.0`)
+        .times(maxCalls)
+        .reply(() => {
+          calls++
+
+          switch (calls) {
+            case maxCalls:
+              return [200, { status: 'UPLOADED' }]
+
+            default:
+              return [200, { status: 'PREPROCESSING' }]
+          }
+        })
+
+      await subjectUnderTest.uploadExtension({ extension: 'acme-one' }, { pollInterval: 3 })
+      sinon.assert.calledWith(loggerPlainStub, 'Extension @acme/one@1.0.0 was successfully uploaded')
+    })
+
+    it('should support a theme uploading', async () => {
+      nock(SGCLOUD_DC_ADDRESS)
+        .put(`/extensions/${encodeURIComponent('@acme/theme')}/versions/1.0.0/file`)
+        .query({ force: false, cancelReview: false })
+        .reply(201)
+
+      let calls = 0
+      let maxCalls = 4
+      nock(SGCLOUD_DC_ADDRESS)
+        .get(`/extensions/${encodeURIComponent('@acme/theme')}/versions/1.0.0`)
+        .times(maxCalls)
+        .reply(() => {
+          calls++
+
+          switch (calls) {
+            case maxCalls:
+              return [200, { status: 'UPLOADED' }]
+
+            default:
+              return [200, { status: 'PREPROCESSING' }]
+          }
+        })
+
+      await subjectUnderTest.uploadExtension({ extension: 'acme-theme' }, { pollInterval: 3, _isTheme: true })
+      sinon.assert.calledWith(loggerPlainStub, 'Theme @acme/theme@1.0.0 was successfully uploaded')
     })
   })
 })
