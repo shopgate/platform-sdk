@@ -10,7 +10,7 @@ const inquirer = require('inquirer')
 const UserSettings = require('../../lib/user/UserSettings')
 const AppSettings = require('../../lib/app/AppSettings')
 const DcHttpClient = require('../../lib/DcHttpClient')
-const { EXTENSIONS_FOLDER } = require('../../lib/app/Constants')
+const { EXTENSIONS_FOLDER, THEMES_FOLDER } = require('../../lib/app/Constants')
 const logger = require('../../lib/logger')
 
 let callbacks = {}
@@ -865,6 +865,7 @@ describe('ExtensionAction', () => {
 
   describe('extension upload', () => {
     let extensionsFolder
+    let themesFolder
     let mockedFs
 
     let loggerInfoStub
@@ -904,14 +905,17 @@ describe('ExtensionAction', () => {
       nock.disableNetConnect()
 
       extensionsFolder = path.join(subjectUnderTest.appSettings.getApplicationFolder(), EXTENSIONS_FOLDER)
+      themesFolder = path.join(subjectUnderTest.appSettings.getApplicationFolder(), THEMES_FOLDER)
       mockedFs = {
         [extensionsFolder]: {
           'acme-one': { 'extension-config.json': '{"id": "@acme/one", "version": "1.0.0"}' },
           'acme-two': { 'extension-config.json': '{"id": "@acme/two"}' },
           'acme-five': { 'extension-config.json': '{"version": "1.0.0"}' },
           'acme-three': {},
-          'acme-theme': { 'extension-config.json': '{"id":"@acme/theme", "version": "1.0.0", "type":"theme"}' },
           'acme-wrong': { 'extension-config.json': '{"id":"@acme/wrong", "version": "1.0.0", "invalid": "wrong"}' }
+        },
+        [themesFolder]: {
+          'acme-theme': { 'extension-config.json': '{"id":"@acme/theme", "version": "1.0.0", "type":"theme"}' }
         }
       }
 

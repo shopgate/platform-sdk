@@ -1,3 +1,7 @@
+## v1.7.1
+* Fixed `theme upload` command to look for themes in the `themes` directory
+* `--force` flag on `extension/theme upload` assumes "yes" for both version creation and review cancel prompts now
+
 ## v1.7.0
 * Updated boilerplate extension code endpoint
 * Updated to use `@shopgate/cloud-sdk-webpack@1.17.1`
