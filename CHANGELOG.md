@@ -1,3 +1,6 @@
+## v1.7.2
+* Re-attach local pipelines upon PLC restart or redeploy
+
 ## v1.7.1
 * Fixed `theme upload` command to look for themes in the `themes` directory
 * `--force` flag on `extension/theme upload` assumes "yes" for both version creation and review cancel prompts now
