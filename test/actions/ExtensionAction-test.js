@@ -423,16 +423,25 @@ describe('ExtensionAction', () => {
 
     describe('general', () => {
       it('should create an extension', async () => {
-        subjectUnderTest._getUserInput = () => { return new Promise((resolve, reject) => { resolve({}) }) }
-        subjectUnderTest._checkIfExtensionExists = () => { return new Promise((resolve, reject) => { resolve({}) }) }
-        subjectUnderTest._downloadBoilerplate = () => { return new Promise((resolve, reject) => { resolve({}) }) }
-        subjectUnderTest._renameBoilerplate = () => { return new Promise((resolve, reject) => { resolve({}) }) }
-        subjectUnderTest._removeUnusedDirs = () => { return new Promise((resolve, reject) => { resolve({}) }) }
-        subjectUnderTest._removePlaceholders = () => { return new Promise((resolve, reject) => { resolve({}) }) }
-        subjectUnderTest._updateBackendFiles = () => { return new Promise((resolve, reject) => { resolve({}) }) }
-        subjectUnderTest._installFrontendDependencies = () => { return new Promise((resolve, reject) => { resolve({}) }) }
+        subjectUnderTest._getUserInput = async (options, types, userInput) => {
+          userInput.extensionName = '@org/extension'
+        }
+        subjectUnderTest._checkIfExtensionExists = async () => ({})
+        subjectUnderTest._downloadBoilerplate = async () => ({})
+        subjectUnderTest._renameBoilerplate = async () => {
+          const extensionPath = path.join(appPath, 'extensions', '@org-extension')
+          await fsEx.ensureDir(extensionPath)
+          await fsEx.writeJSON(path.join(extensionPath, 'extension-config.json'), { id: 'existentExtension1', trusted: false })
+        }
+        subjectUnderTest._removeUnusedDirs = async () => ({})
+        subjectUnderTest._removePlaceholders = async () => ({})
+        subjectUnderTest._updateBackendFiles = async () => ({})
+        subjectUnderTest._installFrontendDependencies = async () => ({})
+        subjectUnderTest.appSettings.attachExtension = sinon.stub()
+        subjectUnderTest.appSettings.attachExtension.resolves()
 
         await subjectUnderTest.createExtension({ types: [] }, null)
+        assert(subjectUnderTest.appSettings.attachExtension.calledOnce)
       })
 
       it('should catch an error because of sth.', async () => {
