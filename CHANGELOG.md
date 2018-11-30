@@ -1,9 +1,8 @@
-## v1.7.2
+## v1.8.0
+* Attach newly created extensions automatically
 * Re-attach local pipelines upon PLC restart or redeploy
-
-## v1.7.1
-* Fixed `theme upload` command to look for themes in the `themes` directory
 * `--force` flag on `extension/theme upload` assumes "yes" for both version creation and review cancel prompts now
+* Fixed `theme upload` command to look for themes in the `themes` directory
 
 ## v1.7.0
 * Updated boilerplate extension code endpoint
