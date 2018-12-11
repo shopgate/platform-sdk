@@ -1,3 +1,9 @@
+## v1.8.0
+* Attach newly created extensions automatically
+* Re-attach local pipelines upon PLC restart or redeploy
+* `--force` flag on `extension/theme upload` assumes "yes" for both version creation and review cancel prompts now
+* Fixed `theme upload` command to look for themes in the `themes` directory
+
 ## v1.7.0
 * Updated boilerplate extension code endpoint
 * Updated to use `@shopgate/cloud-sdk-webpack@1.17.1`
