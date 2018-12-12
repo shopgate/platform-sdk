@@ -60,7 +60,7 @@
     "errio": "^1.2.2",
     "fs-extra": "^4.0.3",
     "glob": "^7.1.2",
-    "inquirer": "^4.0.2",
+    "inquirer": "^6.2.1",
     "jsonlint": "^1.6.2",
     "longjohn": "^0.2.12",
     "micromatch": "^3.1.10",
