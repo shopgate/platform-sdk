@@ -1,17 +1,21 @@
 const assert = require('assert')
-const path = require('path')
 const fsEx = require('fs-extra')
-const PipelineWatcher = require('../../../lib/app/backend/PipelineWatcher')
+const os = require('os')
+const path = require('path')
+const { promisify } = require('util')
 const { EXTENSIONS_FOLDER } = require('../../../lib/app/Constants')
-const mockFs = require('mock-fs')
-const appPath = path.join('build', 'appsettings')
+const PipelineWatcher = require('../../../lib/app/backend/PipelineWatcher')
 
 describe('PipelineWatcher', () => {
+  let appPath
   let pipelineWatcher
   let extensionsPipelineFolder
 
+  before(async () => {
+    appPath = await promisify(fsEx.mkdtemp)(path.join(os.tmpdir(), 'sgtest-'))
+  })
+
   beforeEach(() => {
-    mockFs()
     process.env.APP_PATH = appPath
     extensionsPipelineFolder = path.join(appPath, EXTENSIONS_FOLDER, 'testExtension', 'pipelines')
     pipelineWatcher = new PipelineWatcher({ getApplicationFolder: () => appPath })
@@ -20,8 +24,9 @@ describe('PipelineWatcher', () => {
 
   afterEach(() => {
     delete process.env.APP_PATH
-    mockFs.restore()
   })
+
+  after(async () => fsEx.remove(appPath))
 
   it('should emit changed pipeline', (done) => {
     const pipelinePath = path.join(extensionsPipelineFolder, 'somePipeline.json')
@@ -29,7 +34,7 @@ describe('PipelineWatcher', () => {
     pipelineWatcher.chokidar = {
       closed: false,
       watch: (givenPath, options) => {
-        assert.equal(givenPath, path.join('build/appsettings/extensions/*/pipelines', '*.json'))
+        assert.equal(givenPath, path.join(appPath, 'extensions', '*', 'pipelines', '*.json'))
         return pipelineWatcher.chokidar
       },
       on: (event, cb) => {

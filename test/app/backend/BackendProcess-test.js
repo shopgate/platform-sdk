@@ -1,12 +1,14 @@
-const EventEmitter = require('events')
 const assert = require('assert')
-const sinon = require('sinon')
-const path = require('path')
+const EventEmitter = require('events')
 const fsEx = require('fs-extra')
-const UserSettings = require('../../../lib/user/UserSettings')
+const os = require('os')
+const path = require('path')
 const portfinder = require('portfinder')
 const proxyquire = require('proxyquire')
-const mockFs = require('mock-fs')
+const sinon = require('sinon')
+const { promisify } = require('util')
+const config = require('../../../lib/config')
+const UserSettings = require('../../../lib/user/UserSettings')
 
 class SocketIOMock extends EventEmitter {
   connect () { this.emit('connect') }
@@ -17,6 +19,7 @@ class SocketIOMock extends EventEmitter {
 }
 
 describe('BackendProcess', () => {
+  let tempDir
   let backendProcess
   let stepExecutor
   let userTestFolder
@@ -30,11 +33,14 @@ describe('BackendProcess', () => {
     'socket.io-client': () => socketIOMock
   })
 
+  before(async () => {
+    tempDir = await promisify(fsEx.mkdtemp)(path.join(os.tmpdir(), 'sgtest-'))
+    userTestFolder = path.join(tempDir, 'user')
+    appTestFolder = path.join(tempDir, 'app')
+    config.load({ userDirectory: userTestFolder })
+  })
+
   beforeEach(async () => {
-    mockFs()
-    appTestFolder = path.join('build', 'appsettings')
-    userTestFolder = path.join('build', 'usersettings')
-    process.env.USER_PATH = userTestFolder
     userSettings = await new UserSettings().setToken({})
 
     stepExecutor = {
@@ -67,8 +73,9 @@ describe('BackendProcess', () => {
       fsEx.remove(userTestFolder),
       backendProcess.disconnect()
     ])
-    mockFs.restore()
   })
+
+  after(async () => fsEx.remove(tempDir))
 
   describe('connect', () => {
     it('should react to all events', (done) => {

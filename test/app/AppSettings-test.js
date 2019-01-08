@@ -1,30 +1,21 @@
-const AppSettings = require('../../lib/app/AppSettings')
 const assert = require('assert')
-const path = require('path')
 const fsEx = require('fs-extra')
-const mockFs = require('mock-fs')
+const os = require('os')
+const path = require('path')
+const { promisify } = require('util')
+const AppSettings = require('../../lib/app/AppSettings')
 
 describe('AppSettings', () => {
   let testFolder
 
-  before(done => {
-    mockFs()
-    done()
-  })
-
-  after(done => {
-    mockFs.restore()
-    done()
-  })
-
-  beforeEach(() => {
-    testFolder = path.join('build', 'appsettings')
+  beforeEach(async () => {
+    testFolder = await promisify(fsEx.mkdtemp)(path.join(os.tmpdir(), 'sgtest-'))
     process.env.APP_PATH = testFolder
   })
 
-  afterEach((done) => {
+  afterEach(async () => {
     delete process.env.APP_PATH
-    fsEx.remove(testFolder, done)
+    await fsEx.remove(testFolder)
   })
 
   it('should throw an error if application data does not exist', async () => {

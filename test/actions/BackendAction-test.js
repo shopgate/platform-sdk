@@ -1,22 +1,24 @@
 const assert = require('assert')
-const sinon = require('sinon')
-const path = require('path')
 const fsEx = require('fs-extra')
+const os = require('os')
+const path = require('path')
 const proxyquire = require('proxyquire')
-const mockFs = require('mock-fs')
-
-const { SETTINGS_FOLDER, EXTENSIONS_FOLDER } = require('../../lib/app/Constants')
-const AppSettings = require('../../lib/app/AppSettings')
-const UserSettings = require('../../lib/user/UserSettings')
+const sinon = require('sinon')
+const { promisify } = require('util')
 const DcHttpClient = require('../../lib/DcHttpClient')
-const userSettingsFolder = path.join('build', 'usersettings')
-const appPath = path.join('build', 'appsettings')
+const AppSettings = require('../../lib/app/AppSettings')
+const { SETTINGS_FOLDER, EXTENSIONS_FOLDER } = require('../../lib/app/Constants')
+const config = require('../../lib/config')
+const UserSettings = require('../../lib/user/UserSettings')
 
 describe('BackendAction', () => {
   /**
    * @type {BackendAction}
    */
   let subjectUnderTest
+  let tempDir
+  let userSettingsFolder
+  let appPath
 
   const utils = proxyquire('../../lib/utils/utils', {
     '../logger': {
@@ -44,10 +46,10 @@ describe('BackendAction', () => {
   let debug
 
   before(async () => {
-    process.env.USER_PATH = userSettingsFolder
-    mockFs()
-    await fsEx.emptyDir(userSettingsFolder)
-    await fsEx.emptyDir(path.join(appPath, SETTINGS_FOLDER))
+    tempDir = await promisify(fsEx.mkdtemp)(path.join(os.tmpdir(), 'sgtest-'))
+    userSettingsFolder = path.join(tempDir, 'user')
+    appPath = path.join(tempDir, 'app')
+    config.load({ userDirectory: userSettingsFolder })
   })
 
   beforeEach(async () => {
@@ -100,9 +102,7 @@ describe('BackendAction', () => {
   })
 
   after(async () => {
-    await fsEx.remove(userSettingsFolder)
-    await fsEx.remove(appPath)
-    mockFs.restore()
+    await fsEx.remove(tempDir)
   })
 
   describe('general', () => {

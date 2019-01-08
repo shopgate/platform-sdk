@@ -1,17 +1,19 @@
 const assert = require('assert')
-const path = require('path')
 const fsEx = require('fs-extra')
-const EventStream = require('stream').Writable
-const sinon = require('sinon')
-const nock = require('nock')
-const mockFs = require('mock-fs')
-const proxyquire = require('proxyquire')
 const inquirer = require('inquirer')
-const UserSettings = require('../../lib/user/UserSettings')
-const AppSettings = require('../../lib/app/AppSettings')
+const nock = require('nock')
+const os = require('os')
+const path = require('path')
+const proxyquire = require('proxyquire')
+const sinon = require('sinon')
+const EventStream = require('stream').Writable
+const { promisify } = require('util')
 const DcHttpClient = require('../../lib/DcHttpClient')
+const AppSettings = require('../../lib/app/AppSettings')
 const { EXTENSIONS_FOLDER, THEMES_FOLDER } = require('../../lib/app/Constants')
+const config = require('../../lib/config')
 const logger = require('../../lib/logger')
+const UserSettings = require('../../lib/user/UserSettings')
 
 let callbacks = {}
 
@@ -57,20 +59,25 @@ const mockProcess = {
   }
 }
 
-const userSettingsFolder = path.join('build', 'usersettings')
-const appPath = path.join('build', 'appsettings')
-
 describe('ExtensionAction', () => {
   const SGCLOUD_DC_ADDRESS = 'http://dc.shopgate.cloud'
+  let tempDir
+  let userSettingsFolder
+  let appPath
   let subjectUnderTest
   let userSettings
   let appSettings
   let dcHttpClient
 
+  before(async () => {
+    tempDir = await promisify(fsEx.mkdtemp)(path.join(os.tmpdir(), 'sgtest-'))
+    userSettingsFolder = path.join(tempDir, 'user')
+    appPath = path.join(tempDir, 'app')
+    config.load({ userDirectory: userSettingsFolder })
+  })
+
   beforeEach(async () => {
-    process.env.USER_PATH = userSettingsFolder
     process.env.SGCLOUD_DC_ADDRESS = SGCLOUD_DC_ADDRESS
-    mockFs()
     appSettings = new AppSettings(appPath)
     appSettings.getId = async () => ('shop_123')
     userSettings = await new UserSettings().setToken('TEST_TOKEN')
@@ -79,8 +86,13 @@ describe('ExtensionAction', () => {
   })
 
   afterEach(async () => {
-    delete process.env.USER_PATH
+    await fsEx.emptyDir(userSettingsFolder)
+    await fsEx.emptyDir(appPath)
     delete process.env.APP_PATH
+  })
+
+  after(async () => {
+    await fsEx.remove(tempDir)
   })
 
   describe('general', () => {
@@ -352,26 +364,18 @@ describe('ExtensionAction', () => {
   describe('._getAllExtensionProperties()', () => {
     let attachedExtensionsFile
     let extensionsFolder
-    let mockedFs
 
-    after(() => {
-      mockFs.restore()
-    })
-
-    beforeEach(() => {
+    beforeEach(async () => {
       attachedExtensionsFile = subjectUnderTest.appSettings.attachedExtensionsFile
       extensionsFolder = path.join(subjectUnderTest.appSettings.getApplicationFolder(), EXTENSIONS_FOLDER)
-      // Populate the mocked fs structure to enable updates of single properties during tests
-      mockedFs = {
-        [extensionsFolder]: {
-          'acme-one': { 'extension-config.json': '{"id": "@acme/one"}' },
-          'acme-two': { 'extension-config.json': '{"id": "@acme/two"}' },
-          'empty': {}
-        },
-        [attachedExtensionsFile]: '{"attachedExtensions":{"@acme/two":{"path":"acme-two"}}}'
-      }
 
-      mockFs(mockedFs)
+      await fsEx.ensureDir(path.join(extensionsFolder, 'acme-one'))
+      await fsEx.writeFile(path.join(extensionsFolder, 'acme-one', 'extension-config.json'), '{"id": "@acme/one"}')
+      await fsEx.ensureDir(path.join(extensionsFolder, 'acme-two'))
+      await fsEx.writeFile(path.join(extensionsFolder, 'acme-two', 'extension-config.json'), '{"id": "@acme/two"}')
+      await fsEx.ensureDir(path.join(extensionsFolder, 'empty'))
+      await fsEx.ensureDir(path.dirname(attachedExtensionsFile))
+      await fsEx.writeFile(attachedExtensionsFile, '{"attachedExtensions":{"@acme/two":{"path":"acme-two"}}}')
     })
 
     it('should return the summary with one attached extension', async () => {
@@ -386,8 +390,7 @@ describe('ExtensionAction', () => {
 
     it('should return the summary with no attached extension', async () => {
       // Clear the attached extensions for this test
-      mockedFs[attachedExtensionsFile] = '{"attachedExtensions":{}}'
-      mockFs(mockedFs)
+      await fsEx.writeFile(attachedExtensionsFile, '{"attachedExtensions":{}}')
 
       const expected = [
         { id: '@acme/one', dir: 'acme-one', attached: false },
@@ -400,8 +403,7 @@ describe('ExtensionAction', () => {
 
     it('should return an empty array if no extensions are available', async () => {
       // Clear the extensions for this test
-      mockedFs[extensionsFolder] = null
-      mockFs(mockedFs)
+      await fsEx.emptyDir(extensionsFolder)
 
       const result = await subjectUnderTest._getAllExtensionProperties()
       assert.deepEqual(result, [])
@@ -409,7 +411,11 @@ describe('ExtensionAction', () => {
   })
 
   describe('extension create', () => {
-    const extensionFolder = path.join('build', 'extensions')
+    let extensionFolder
+
+    before(async () => {
+      extensionFolder = path.join(appPath, 'extensions')
+    })
 
     beforeEach((done) => {
       nock.disableNetConnect()
@@ -503,9 +509,7 @@ describe('ExtensionAction', () => {
         fsEx.ensureDirSync(folderPath)
       })
 
-      afterEach(() => {
-        fsEx.removeSync(tempFolder)
-      })
+      afterEach(async () => fsEx.removeSync(tempFolder))
 
       it('should get the user input by command', () => {
         subjectUnderTest.appSettings = { getApplicationFolder: () => tempFolder }
@@ -523,7 +527,6 @@ describe('ExtensionAction', () => {
     describe('_downloadBoilerplate', () => {
       it('should download and unzip the boilerplate', (done) => {
         const state = {}
-        mockFs.restore()
         const n = nock('https://data.shopgate.com')
           .get('/connect/platform-sdk/latest.zip')
           .replyWithFile(200, path.join('test', 'testfiles', 'cloud-sdk-boilerplate-extension.zip'), { 'Content-Type': 'application/zip' })
@@ -535,7 +538,6 @@ describe('ExtensionAction', () => {
         subjectUnderTest
           ._downloadBoilerplate(extensionFolder, state)
           .then(() => {
-            mockFs()
             assert.ok(state.cloned)
             n.done()
             done()
@@ -544,7 +546,6 @@ describe('ExtensionAction', () => {
 
       it('should download beta of the boilerplate if pkg is beta', (done) => {
         const state = {}
-        mockFs.restore()
         const n = nock('https://data.shopgate.com')
           .get('/connect/platform-sdk/beta.zip')
           .replyWithFile(200, path.join('test', 'testfiles', 'cloud-sdk-boilerplate-extension.zip'), { 'Content-Type': 'application/zip' })
@@ -558,7 +559,6 @@ describe('ExtensionAction', () => {
           ._downloadBoilerplate(extensionFolder, state)
           .then(() => {
             delete process.env['SDK_BETA']
-            mockFs()
             assert.ok(state.cloned)
             n.done()
             done()
@@ -567,7 +567,6 @@ describe('ExtensionAction', () => {
 
       it('should download custom boilerplate if set via env', async function () {
         const state = {}
-        mockFs.restore()
         const n = nock('https://data.random.org')
           .get('/some.zip')
           .replyWithFile(200, path.join('test', 'testfiles', 'cloud-sdk-boilerplate-extension.zip'), { 'Content-Type': 'application/zip' })
@@ -580,7 +579,6 @@ describe('ExtensionAction', () => {
         try {
           await subjectUnderTest._downloadBoilerplate(extensionFolder, state)
           delete process.env['BOILERPLATE_URL']
-          mockFs()
           assert.ok(state.cloned)
           n.done()
         } catch (err) {
@@ -614,10 +612,14 @@ describe('ExtensionAction', () => {
     describe('_renameBoilerplate', () => {
       const oldName = 'foo'
       const newName = 'bar'
-
-      const userInput = { extensionName: newName }
-      const defaultPath = path.join(extensionFolder, oldName)
       const state = {}
+      let userInput
+      let defaultPath
+
+      before(() => {
+        userInput = { extensionName: newName }
+        defaultPath = path.join(extensionFolder, oldName)
+      })
 
       it('should rename the boilerplate dir', () => {
         fsEx.ensureDirSync(path.join(extensionFolder, oldName))
@@ -650,7 +652,11 @@ describe('ExtensionAction', () => {
     })
 
     describe('_removeUnusedDirs', () => {
-      const extensionPath = path.join(extensionFolder, 'ex1')
+      let extensionPath
+
+      before(() => {
+        extensionPath = path.join(extensionFolder, 'ex1')
+      })
 
       it('should remove the unused dirs', () => {
         const userInput = {
@@ -679,7 +685,11 @@ describe('ExtensionAction', () => {
     })
 
     describe('removePlaceHolders', () => {
-      const extensionPath = path.join(extensionFolder, 'ex1')
+      let extensionPath
+
+      before(() => {
+        extensionPath = path.join(extensionFolder, 'ex1')
+      })
 
       beforeEach((done) => {
         fsEx.ensureDirSync(extensionPath)
@@ -736,7 +746,11 @@ describe('ExtensionAction', () => {
     })
 
     describe('updateBackendFiles', () => {
-      const extensionPath = path.join(extensionFolder, 'ex1')
+      let extensionPath
+
+      before(() => {
+        extensionPath = path.join(extensionFolder, 'ex1')
+      })
 
       beforeEach((done) => {
         fsEx.ensureDirSync(extensionPath)
@@ -779,8 +793,13 @@ describe('ExtensionAction', () => {
     })
 
     describe('installFrontendDependencies', () => {
-      const extensionPath = path.join(extensionFolder, 'ex1')
-      const frontendPath = path.join(extensionPath, 'frontend')
+      let extensionPath
+      let frontendPath
+
+      before(() => {
+        extensionPath = path.join(extensionFolder, 'ex1')
+        frontendPath = path.join(extensionPath, 'frontend')
+      })
 
       beforeEach((done) => {
         fsEx.ensureDirSync(frontendPath)
@@ -846,7 +865,11 @@ describe('ExtensionAction', () => {
     })
 
     describe('cleanUp', () => {
-      const extensionPath = path.join(extensionFolder, 'ex1')
+      let extensionPath
+
+      before(() => {
+        extensionPath = path.join(extensionFolder, 'ex1')
+      })
 
       beforeEach(async () => {
         await fsEx.ensureDir(extensionPath)
@@ -875,7 +898,6 @@ describe('ExtensionAction', () => {
   describe('extension upload', () => {
     let extensionsFolder
     let themesFolder
-    let mockedFs
 
     let loggerInfoStub
     let loggerWarnStub
@@ -898,8 +920,6 @@ describe('ExtensionAction', () => {
       loggerErrorStub.restore()
       loggerPlainStub.restore()
       inquirerPromptStub.restore()
-
-      mockFs.restore()
     })
 
     beforeEach(async () => {
@@ -915,20 +935,18 @@ describe('ExtensionAction', () => {
 
       extensionsFolder = path.join(subjectUnderTest.appSettings.getApplicationFolder(), EXTENSIONS_FOLDER)
       themesFolder = path.join(subjectUnderTest.appSettings.getApplicationFolder(), THEMES_FOLDER)
-      mockedFs = {
-        [extensionsFolder]: {
-          'acme-one': { 'extension-config.json': '{"id": "@acme/one", "version": "1.0.0"}' },
-          'acme-two': { 'extension-config.json': '{"id": "@acme/two"}' },
-          'acme-five': { 'extension-config.json': '{"version": "1.0.0"}' },
-          'acme-three': {},
-          'acme-wrong': { 'extension-config.json': '{"id":"@acme/wrong", "version": "1.0.0", "invalid": "wrong"}' }
-        },
-        [themesFolder]: {
-          'acme-theme': { 'extension-config.json': '{"id":"@acme/theme", "version": "1.0.0", "type":"theme"}' }
-        }
-      }
 
-      mockFs(mockedFs)
+      await fsEx.ensureDir(path.join(extensionsFolder, 'acme-one'))
+      await fsEx.ensureDir(path.join(extensionsFolder, 'acme-two'))
+      await fsEx.ensureDir(path.join(extensionsFolder, 'acme-five'))
+      await fsEx.ensureDir(path.join(extensionsFolder, 'acme-three'))
+      await fsEx.ensureDir(path.join(extensionsFolder, 'acme-wrong'))
+      await fsEx.writeFile(path.join(extensionsFolder, 'acme-one', 'extension-config.json'), '{"id": "@acme/one", "version": "1.0.0"}')
+      await fsEx.writeFile(path.join(extensionsFolder, 'acme-two', 'extension-config.json'), '{"id": "@acme/two"}')
+      await fsEx.writeFile(path.join(extensionsFolder, 'acme-five', 'extension-config.json'), '{"version": "1.0.0"}')
+      await fsEx.writeFile(path.join(extensionsFolder, 'acme-wrong', 'extension-config.json'), '{"id":"@acme/wrong", "version": "1.0.0", "invalid": "wrong"}')
+      await fsEx.ensureDir(path.join(themesFolder, 'acme-theme'))
+      await fsEx.writeFile(path.join(themesFolder, 'acme-theme', 'extension-config.json'), '{"id":"@acme/theme", "version": "1.0.0", "type":"theme"}')
     })
 
     afterEach(async () => {
@@ -938,7 +956,6 @@ describe('ExtensionAction', () => {
       inquirerPromptStub.reset()
 
       nock.enableNetConnect()
-      mockFs.restore()
     })
 
     it('should throw an error if an extension directory does not exist', async () => {
@@ -957,7 +974,7 @@ describe('ExtensionAction', () => {
         await subjectUnderTest.uploadExtension()
         assert.fail('Expected to throw an error on the previous line')
       } catch (err) {
-        assert.equal(err.message, `There are no extensions in '.${path.sep}${extensionsFolder}'`)
+        assert.equal(err.message, `There are no extensions in '${extensionsFolder}'`)
       }
     })
 
@@ -966,7 +983,8 @@ describe('ExtensionAction', () => {
         await subjectUnderTest.uploadExtension({ extension: 'acme-five' })
         assert.fail('Expected to throw an error')
       } catch (err) {
-        assert.equal(err.message, `There is no 'id' property in .${path.sep}${extensionsFolder}${path.sep}acme-five${path.sep}extension-config.json`)
+        const expectedFilePath = path.join(extensionsFolder, 'acme-five', 'extension-config.json')
+        assert.equal(err.message, `There is no 'id' property in ${expectedFilePath}`)
       }
     })
 
@@ -975,7 +993,8 @@ describe('ExtensionAction', () => {
         await subjectUnderTest.uploadExtension({ extension: 'acme-two' })
         assert.fail('Expected to throw an error')
       } catch (err) {
-        assert.equal(err.message, `There is no 'version' property in .${path.sep}${extensionsFolder}${path.sep}acme-two${path.sep}extension-config.json`)
+        const expectedFilePath = path.join(extensionsFolder, 'acme-two', 'extension-config.json')
+        assert.equal(err.message, `There is no 'version' property in ${expectedFilePath}`)
       }
     })
 
@@ -993,7 +1012,8 @@ describe('ExtensionAction', () => {
         await subjectUnderTest.uploadExtension({ extension: 'acme-wrong' })
         assert.fail('Expected to throw an error')
       } catch (err) {
-        assert.equal(err.message, `Validation of .${path.sep}${extensionsFolder}${path.sep}acme-wrong${path.sep}extension-config.json failed: "invalid" is not allowed`)
+        const expectedFilePath = path.join(extensionsFolder, 'acme-wrong', 'extension-config.json')
+        assert.equal(err.message, `Validation of ${expectedFilePath} failed: "invalid" is not allowed`)
       }
     })
 

@@ -1,26 +1,30 @@
 const assert = require('assert')
-const path = require('path')
 const fsEx = require('fs-extra')
-const nock = require('nock')
-const sinon = require('sinon')
-const mockFs = require('mock-fs')
 const mockStdin = require('mock-stdin').stdin
-
-const UserSettings = require('../../lib/user/UserSettings')
-const LoginAction = require('../../lib/actions/LoginAction')
+const nock = require('nock')
+const os = require('os')
+const path = require('path')
+const sinon = require('sinon')
+const { promisify } = require('util')
 const DcHttpClient = require('../../lib/DcHttpClient')
+const LoginAction = require('../../lib/actions/LoginAction')
+const config = require('../../lib/config')
+const UserSettings = require('../../lib/user/UserSettings')
 
 describe('LoginAction', () => {
-  const settingsFolder = path.join('build', 'user')
+  let settingsFolder
   let stdin
   let userSettings
   let dcHttpClient
   let subjectUnderTest
 
+  before(async () => {
+    settingsFolder = await promisify(fsEx.mkdtemp)(path.join(os.tmpdir(), 'sgtest-'))
+    config.load({ userDirectory: settingsFolder })
+  })
+
   beforeEach(async () => {
     stdin = mockStdin()
-    mockFs()
-    process.env.USER_PATH = settingsFolder
     process.env.SGCLOUD_DC_ADDRESS = 'http://dc.shopgate.cloud'
     nock.disableNetConnect()
     process.env.SGCLOUD_USER = ''
@@ -38,8 +42,9 @@ describe('LoginAction', () => {
     delete process.env.SGCLOUD_PASS
     nock.enableNetConnect()
     await fsEx.emptyDir(settingsFolder)
-    mockFs.restore()
   })
+
+  after(async () => fsEx.remove(settingsFolder))
 
   it('should register', () => {
     const commander = {}

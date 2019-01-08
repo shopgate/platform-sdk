@@ -1,8 +1,9 @@
 const assert = require('assert')
-const path = require('path')
-const mockFs = require('mock-fs')
 const fsEx = require('fs-extra')
+const os = require('os')
+const path = require('path')
 const proxyquire = require('proxyquire')
+const { promisify } = require('util')
 
 const logger = {}
 
@@ -33,6 +34,7 @@ describe('EventHandler', () => {
     file: { id: 'foo' },
     path: 'bar'
   }
+  let tempDir
 
   const settings = { getId: async () => (1), getApplicationFolder: () => './build' }
 
@@ -48,6 +50,11 @@ describe('EventHandler', () => {
     }
   }
 
+  before(async () => {
+    tempDir = await promisify(fsEx.mkdtemp)(path.join(os.tmpdir(), 'sgtest-'))
+    config.path = path.join(tempDir, 'bar')
+  })
+
   beforeEach(async () => {
     generateComponentsJson = async () => {
       generatedComponentJson = true
@@ -62,10 +69,10 @@ describe('EventHandler', () => {
     logger.info = (message) => { }
     logger.error = (message) => { }
 
-    mockFs()
+    await fsEx.emptyDir(tempDir)
   })
 
-  afterEach(async () => { mockFs.restore() })
+  after(async () => fsEx.remove(tempDir))
 
   it('should write config.json and components.json on change', (done) => {
     fsEx.ensureDirSync(path.join(config.path, 'extension'))

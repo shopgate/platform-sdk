@@ -1,6 +1,6 @@
 {
   "name": "@shopgate/platform-sdk",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "description": "Shopgate's Platform SDK",
   "main": "index.js",
   "scripts": {
@@ -57,6 +57,8 @@
     "caporal": "^0.10.0",
     "chalk": "^2.3.0",
     "chokidar": "^1.7.0",
+    "convict": "^4.4.1",
+    "dotenv": "^6.2.0",
     "errio": "^1.2.2",
     "fs-extra": "^4.0.3",
     "glob": "^7.1.2",
@@ -87,7 +89,6 @@
     "coveralls": "^3.0.0",
     "lint-staged": "^6.1.0",
     "mocha": "^5.2.0",
-    "mock-fs": "^4.5.0",
     "mock-stdin": "^0.3.1",
     "nock": "^9.1.6",
     "nsp": "^3.2.1",
