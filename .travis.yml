@@ -15,8 +15,8 @@ matrix:
     - os: osx
 
 before_script:
-  - if [[ "$TRAVIS_NODE_VERSION" == "10" && "$TRAVIS_OS_NAME" == "linux" ]]; mv .npmrc _npmrc
-  - if [[ "$TRAVIS_NODE_VERSION" == "10" && "$TRAVIS_OS_NAME" == "linux" ]]; npm i
+  - if [[ "$TRAVIS_NODE_VERSION" == "10" && "$TRAVIS_OS_NAME" == "linux" ]]; then mv .npmrc _npmrc; fi
+  - if [[ "$TRAVIS_NODE_VERSION" == "10" && "$TRAVIS_OS_NAME" == "linux" ]]; then npm i; fi
   - if [[ "$TRAVIS_NODE_VERSION" == "10" && "$TRAVIS_OS_NAME" == "linux" ]]; then npm run lint; fi
   - if [[ "$TRAVIS_NODE_VERSION" == "10" && "$TRAVIS_OS_NAME" == "linux" ]]; then npm run check; fi
 
