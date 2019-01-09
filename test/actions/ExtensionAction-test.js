@@ -645,7 +645,8 @@ describe('ExtensionAction', () => {
           }).catch((err) => {
             assert.ok(
               (err.message.indexOf('EEXIST') !== -1) ||
-              (err.message.indexOf('ENOTEMPTY') !== -1)
+              (err.message.indexOf('ENOTEMPTY') !== -1) ||
+              (os.platform() === 'win32' && err.message.indexOf('EPERM') !== -1)
             )
           })
       })

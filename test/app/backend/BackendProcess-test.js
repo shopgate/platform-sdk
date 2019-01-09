@@ -330,33 +330,22 @@ describe('BackendProcess', () => {
       })
     })
 
-    it('should call "disconnect(false)" and send SIGINT upon incoming "disconnectedByOtherUser" from socket', () => {
-      return new Promise((resolve, reject) => {
-        let sigintSent = false
-        let disconnectCalled = false
+    it('should call "disconnect(false)" and send SIGINT upon incoming "disconnectedByOtherUser" from socket', async () => {
+      const killStub = sinon.stub(process, 'kill')
+      const disconnectStub = sinon.stub(backendProcess, 'disconnect')
+      await backendProcess.connect()
+      socketIOMock.emit('disconnectedByOtherUser', 'reason')
 
-        process.removeAllListeners('SIGINT')
-
-        process.on('SIGINT', () => {
-          if (disconnectCalled) resolve()
-          sigintSent = true
-        })
-
-        backendProcess.disconnect = reconnect => {
-          try {
-            assert.ok(!reconnect)
-          } catch (err) {
-            reject(err)
-          }
-
-          if (sigintSent) resolve()
-          disconnectCalled = !reconnect
-        }
-
-        backendProcess.connect().then(() => {
-          socketIOMock.emit('disconnectedByOtherUser', 'reason')
+      await new Promise((resolve) => {
+        process.nextTick(() => {
+          sinon.assert.calledWith(disconnectStub, false)
+          sinon.assert.calledWith(killStub, process.pid, 'SIGINT')
+          resolve()
         })
       })
+
+      killStub.restore()
+      disconnectStub.restore()
     })
   })
 
@@ -378,33 +367,22 @@ describe('BackendProcess', () => {
       })
     })
 
-    it('should call "disconnect(false)" and send SIGINT upon incoming "connectionInProgress" from socket', () => {
-      return new Promise((resolve, reject) => {
-        let sigintSent = false
-        let disconnectCalled = false
+    it('should call "disconnect(false)" and send SIGINT upon incoming "connectionInProgress" from socket', async () => {
+      const killStub = sinon.stub(process, 'kill')
+      const disconnectStub = sinon.stub(backendProcess, 'disconnect')
+      await backendProcess.connect()
+      socketIOMock.emit('connectionInProgress', 'reason')
 
-        process.removeAllListeners('SIGINT')
-
-        process.on('SIGINT', () => {
-          if (disconnectCalled) resolve()
-          sigintSent = true
-        })
-
-        backendProcess.disconnect = reconnect => {
-          try {
-            assert.ok(!reconnect)
-          } catch (err) {
-            reject(err)
-          }
-
-          if (sigintSent) resolve()
-          disconnectCalled = !reconnect
-        }
-
-        backendProcess.connect().then(() => {
-          socketIOMock.emit('connectionInProgress', 'reason')
+      await new Promise((resolve) => {
+        process.nextTick(() => {
+          sinon.assert.calledWith(disconnectStub, false)
+          sinon.assert.calledWith(killStub, process.pid, 'SIGINT')
+          resolve()
         })
       })
+
+      killStub.restore()
+      disconnectStub.restore()
     })
   })
 })
