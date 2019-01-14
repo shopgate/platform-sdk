@@ -4,11 +4,13 @@
  * This source code is licensed under the Apache 2.0 license found in the
  * LICENSE file in the root directory of this source tree.
  */
-const path = require('path')
 const assert = require('assert')
-const proxyquire = require('proxyquire')
-const mockFs = require('mock-fs')
 const fsEx = require('fs-extra')
+const os = require('os')
+const path = require('path')
+const proxyquire = require('proxyquire')
+const { promisify } = require('util')
+
 let logger = {}
 
 const FrontendSettings = proxyquire('../../../lib/app/frontend/FrontendSettings', {
@@ -16,21 +18,28 @@ const FrontendSettings = proxyquire('../../../lib/app/frontend/FrontendSettings'
 })
 
 describe('FrontendSettings', () => {
+  let tempDir
   let settingsPath
   /** @type {FrontendSettings} */
   let settings
 
+  before(async () => {
+    tempDir = await promisify(fsEx.mkdtemp)(path.join(os.tmpdir(), 'sgtest-'))
+  })
+
   beforeEach(done => {
     logger.debug = () => {}
-    mockFs()
-    settingsPath = path.join('build', 'foobar')
+    settingsPath = path.join(tempDir, 'foobar')
     settings = new FrontendSettings(settingsPath)
     done()
   })
 
-  afterEach(done => {
-    mockFs.restore()
-    done()
+  afterEach(async () => {
+    await fsEx.emptyDir(tempDir)
+  })
+
+  after(async () => {
+    await fsEx.remove(tempDir)
   })
 
   describe('loadSettings', () => {
@@ -86,13 +95,12 @@ describe('FrontendSettings', () => {
     }
 
     beforeEach(async () => {
-      mockFs()
       await fsEx.ensureDir(settingsPath)
       await fsEx.writeJson(settings.frontendSettingsFile, orgSettings)
     })
 
-    afterEach(() => {
-      mockFs.restore()
+    afterEach(async () => {
+      await fsEx.emptyDir(tempDir)
     })
 
     describe('getIpAddress', () => {

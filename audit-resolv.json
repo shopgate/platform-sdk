@@ -1,0 +1,8 @@
+{
+  "725|@shopgate/cloud-sdk-webpack>webpack-dev-server": {
+    "ignore": 1
+  },
+  "577|@shopgate/cloud-sdk-webpack>ejs-loader>lodash": {
+    "ignore": 1
+  }
+}

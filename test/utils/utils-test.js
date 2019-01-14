@@ -1,8 +1,9 @@
 const assert = require('assert')
-const path = require('path')
-const mockFs = require('mock-fs')
 const fsEx = require('fs-extra')
+const os = require('os')
+const path = require('path')
 const proxyquire = require('proxyquire')
+const { promisify } = require('util')
 const { EXTENSIONS_FOLDER, THEMES_FOLDER } = require('../../lib/app/Constants')
 
 const logger = {
@@ -15,59 +16,61 @@ const utils = proxyquire('../../lib/utils/utils', {
   '../logger': logger
 })
 
-describe('utils', () => {
-  before(done => {
-    mockFs()
-    done()
-  })
-
-  after(done => {
-    mockFs.restore()
-    done()
-  })
-
+describe('utils', async () => {
   describe('resetProject', () => {
-    const testProjectDir = path.join('build', 'testProject')
+    const dirs = []
+    const files = []
+    let tempDir
+    let testProjectDir
 
-    const settingsDir = path.join(testProjectDir, '.sgcloud')
-    const ext1Dir = path.join(testProjectDir, 'extensions', 'te1', 'extension')
-    const ext2Dir = path.join(testProjectDir, 'extensions', 'te2', 'extension')
-    const theme1Dir = path.join(testProjectDir, 'themes', 'tt1', 'config')
-    const theme2Dir = path.join(testProjectDir, 'themes', 'tt2', 'config')
-    const plDir = path.join(testProjectDir, 'pipelines')
-    const tplDir = path.join(testProjectDir, 'trustedPipelines')
+    before(async () => {
+      tempDir = await promisify(fsEx.mkdtemp)(path.join(os.tmpdir(), 'sgtest-'))
+      testProjectDir = path.join(tempDir, 'testProject')
 
-    const dirs = [
-      settingsDir,
-      ext1Dir,
-      ext2Dir,
-      theme1Dir,
-      theme2Dir,
-      plDir,
-      tplDir
-    ]
+      const settingsDir = path.join(testProjectDir, '.sgcloud')
+      const ext1Dir = path.join(testProjectDir, 'extensions', 'te1', 'extension')
+      const ext2Dir = path.join(testProjectDir, 'extensions', 'te2', 'extension')
+      const theme1Dir = path.join(testProjectDir, 'themes', 'tt1', 'config')
+      const theme2Dir = path.join(testProjectDir, 'themes', 'tt2', 'config')
+      const plDir = path.join(testProjectDir, 'pipelines')
+      const tplDir = path.join(testProjectDir, 'trustedPipelines')
 
-    const appFile = path.join(settingsDir, 'app.json')
-    const storageFile = path.join(settingsDir, 'storage.json')
-    const extensionsFile = path.join(settingsDir, 'attachedExtensions.json')
-    const ext1ConfFile = path.join(ext1Dir, 'config.json')
-    const ext2ConfFile = path.join(ext2Dir, 'config.json')
-    const theme1AppFile = path.join(theme1Dir, 'app.json')
-    const theme2AppFile = path.join(theme2Dir, 'app.json')
-    const pl = path.join(plDir, 'pl.json')
-    const tpl = path.join(tplDir, 'tpl.json')
+      dirs.push(
+        settingsDir,
+        ext1Dir,
+        ext2Dir,
+        theme1Dir,
+        theme2Dir,
+        plDir,
+        tplDir
+      )
 
-    const files = [
-      appFile,
-      storageFile,
-      extensionsFile,
-      ext1ConfFile,
-      ext2ConfFile,
-      theme1AppFile,
-      theme2AppFile,
-      pl,
-      tpl
-    ]
+      const appFile = path.join(settingsDir, 'app.json')
+      const storageFile = path.join(settingsDir, 'storage.json')
+      const extensionsFile = path.join(settingsDir, 'attachedExtensions.json')
+      const ext1ConfFile = path.join(ext1Dir, 'config.json')
+      const ext2ConfFile = path.join(ext2Dir, 'config.json')
+      const theme1AppFile = path.join(theme1Dir, 'app.json')
+      const theme2AppFile = path.join(theme2Dir, 'app.json')
+      const pl = path.join(plDir, 'pl.json')
+      const tpl = path.join(tplDir, 'tpl.json')
+
+      files.push(
+        appFile,
+        storageFile,
+        extensionsFile,
+        ext1ConfFile,
+        ext2ConfFile,
+        theme1AppFile,
+        theme2AppFile,
+        pl,
+        tpl
+      )
+    })
+
+    after(async () => {
+      await fsEx.remove(tempDir)
+    })
 
     beforeEach((done) => {
       process.env.APP_PATH = testProjectDir
@@ -98,8 +101,6 @@ describe('utils', () => {
   })
 
   describe('generateComponentsJson', () => {
-    const projectDir = path.join('build', 'componentsJSON')
-
     const attachedExtensions = {
       '@a/b': {
         path: 'b'
@@ -134,15 +135,19 @@ describe('utils', () => {
       }
     }
 
-    const appSettings = {
-      loadAttachedExtensions: () => attachedExtensions,
-      getApplicationFolder: () => projectDir
-    }
+    const themes = ['gmd', 'ios']
+    const appSettings = {}
 
-    const themes = [
-      'gmd',
-      'ios'
-    ]
+    let tempDir
+    let projectDir
+
+    before(async () => {
+      tempDir = await promisify(fsEx.mkdtemp)(path.join(os.tmpdir(), 'sgtest-'))
+      projectDir = path.join(tempDir, 'componentsJSON')
+
+      appSettings.loadAttachedExtensions = () => attachedExtensions
+      appSettings.getApplicationFolder = () => projectDir
+    })
 
     beforeEach(async () => {
       await fsEx.ensureDir(projectDir)
@@ -162,7 +167,9 @@ describe('utils', () => {
       }
     })
 
-    afterEach(async () => { await fsEx.remove(projectDir) })
+    afterEach(async () => fsEx.remove(projectDir))
+
+    after(async () => fsEx.remove(tempDir))
 
     it('should create components json', async () => {
       await utils.generateComponentsJson(appSettings)
@@ -182,7 +189,8 @@ describe('utils', () => {
   })
 
   describe('findThemes', () => {
-    const testFolder = path.join('build', 'findThemesTest')
+    let tempDir
+    let testFolder
 
     const appSettings = {
       getApplicationFolder: () => testFolder
@@ -190,6 +198,11 @@ describe('utils', () => {
 
     const validThemes = ['ios', 'gmd']
     const dirs = validThemes.concat(['.git', '.idea'])
+
+    before(async () => {
+      tempDir = await promisify(fsEx.mkdtemp)(path.join(os.tmpdir(), 'sgtest-'))
+      testFolder = path.join(tempDir, 'findThemesTest')
+    })
 
     beforeEach(async () => {
       for (let i in dirs) {
@@ -201,9 +214,9 @@ describe('utils', () => {
       }
     })
 
-    afterEach(async () => {
-      await fsEx.remove(testFolder)
-    })
+    afterEach(async () => fsEx.remove(testFolder))
+
+    after(async () => fsEx.remove(tempDir))
 
     it('should find all valid themes', async () => {
       const themes = await utils.findThemes(appSettings)

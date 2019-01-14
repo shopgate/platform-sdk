@@ -1,17 +1,16 @@
 const assert = require('assert')
-const proxyquire = require('proxyquire')
-const path = require('path')
 const fsEx = require('fs-extra')
+const os = require('os')
+const path = require('path')
+const proxyquire = require('proxyquire')
 const sinon = require('sinon')
-const AppSettings = require('../../lib/app/AppSettings')
-const UserSettings = require('../../lib/user/UserSettings')
+const { promisify } = require('util')
 const DcHttpClient = require('../../lib/DcHttpClient')
-const mockFs = require('mock-fs')
+const AppSettings = require('../../lib/app/AppSettings')
 const { SETTINGS_FOLDER } = require('../../lib/app/Constants')
+const config = require('../../lib/config')
+const UserSettings = require('../../lib/user/UserSettings')
 const utils = require('../../lib/utils/utils')
-
-const appPath = path.join('build', 'appsettings')
-const userPath = path.join('build', 'usersettings')
 
 const fsExtraMock = {}
 const inquirer = {}
@@ -21,6 +20,9 @@ class FrontendProcessMock {
 }
 
 describe('FrontendAction', () => {
+  let tempDir
+  let userPath
+  let appPath
   let subjectUnderTest
   let appSettings
   let userSettings
@@ -39,9 +41,14 @@ describe('FrontendAction', () => {
     '../utils/utils': utils
   })
 
+  before(async () => {
+    tempDir = await promisify(fsEx.mkdtemp)(path.join(os.tmpdir(), 'sgtest-'))
+    userPath = path.join(tempDir, 'user')
+    appPath = path.join(tempDir, 'app')
+    config.load({ userDirectory: userPath })
+  })
+
   beforeEach(async () => {
-    mockFs()
-    process.env.USER_PATH = userPath
     await fsEx.emptyDir(userPath)
     userSettings = await new UserSettings().setToken({})
     await fsEx.emptyDir(path.join(appPath, SETTINGS_FOLDER))
@@ -66,8 +73,10 @@ describe('FrontendAction', () => {
 
   afterEach(() => {
     delete process.env.APP_PATH
-    delete process.env.USER_PATH
-    mockFs.restore()
+  })
+
+  after(async () => {
+    await fsEx.remove(tempDir)
   })
 
   describe('constructor', async () => {

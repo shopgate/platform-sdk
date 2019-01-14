@@ -1,25 +1,35 @@
 const assert = require('assert')
-const path = require('path')
 const fsEx = require('fs-extra')
-const mockFs = require('mock-fs')
+const os = require('os')
+const path = require('path')
+const { promisify } = require('util')
 const Storage = require('../../../../../lib/app/backend/extensionRuntime/context/Storage')
 
 describe('Storage', () => {
+  let tempDir
   let settingsFolderPath
   let storageFilePath
   let log
 
+  before(async () => {
+    tempDir = await promisify(fsEx.mkdtemp)(path.join(os.tmpdir(), 'sgtest-'))
+  })
+
   beforeEach(() => {
-    mockFs()
-    settingsFolderPath = path.join('path', 'to')
+    settingsFolderPath = path.join(tempDir, 'path', 'to')
     storageFilePath = path.join(settingsFolderPath, 'storage.json')
     log = { log: true, debug: () => { } }
     fsEx.ensureDirSync(settingsFolderPath)
   })
 
-  afterEach(() => {
-    mockFs.restore()
+  afterEach(async () => {
+    await fsEx.emptyDir(tempDir)
   })
+
+  after(async () => {
+    await fsEx.remove(tempDir)
+  })
+
   describe('constructor', () => {
     it('should construct', () => {
       const storage = new Storage(storageFilePath, log)

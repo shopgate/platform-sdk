@@ -1,29 +1,38 @@
 const assert = require('assert')
-const path = require('path')
 const fsEx = require('fs-extra')
+const os = require('os')
+const path = require('path')
+const { promisify } = require('util')
 const ExtensionConfigWatcher = require('../../lib/app/ExtensionConfigWatcher')
-const mockFs = require('mock-fs')
-const appPath = path.join('build', 'appsettings')
 
 describe('ExtensionConfigWatcher', () => {
+  let tempDir
+  let appPath
   let extensionConfigWatcher
 
-  beforeEach((done) => {
-    mockFs()
+  before(async () => {
+    tempDir = await promisify(fsEx.mkdtemp)(path.join(os.tmpdir(), 'sgtest-'))
+    appPath = path.join(tempDir, 'app')
+  })
 
+  beforeEach(async () => {
+    await fsEx.emptyDir(tempDir)
     process.env.APP_PATH = appPath
     const appSettingsMock = { getApplicationFolder: () => appPath, settingsFolder: 'build/appsettings' }
     extensionConfigWatcher = new ExtensionConfigWatcher(appSettingsMock)
 
-    fsEx.emptyDir(path.join(appPath, 'extensions'), done)
+    await fsEx.emptyDir(path.join(appPath, 'extensions'))
   })
 
   afterEach(async () => {
     delete process.env.APP_PATH
 
     await extensionConfigWatcher.stop()
-    await fsEx.remove(appPath)
-    mockFs.restore()
+    await fsEx.emptyDir(appPath)
+  })
+
+  after(async () => {
+    await fsEx.remove(tempDir)
   })
 
   it('should emit changed config', (done) => {
@@ -44,7 +53,7 @@ describe('ExtensionConfigWatcher', () => {
       removeAllListeners: async () => (true),
       closed: false,
       watch: (givenPath, options) => {
-        assert.equal(givenPath, path.join('build/appsettings/extensions/*', 'extension-config.json'))
+        assert.equal(givenPath, path.join(appPath, 'extensions', '*', 'extension-config.json'))
         return extensionConfigWatcher.chokidar
       },
       on: (event, cb) => {

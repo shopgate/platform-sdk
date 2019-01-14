@@ -1,20 +1,25 @@
 const assert = require('assert')
-const path = require('path')
-const nock = require('nock')
-const sinon = require('sinon')
-const LogoutAction = require('../../lib/actions/LogoutAction')
-const UserSettings = require('../../lib/user/UserSettings')
-const settingsFolder = path.join('build', 'user')
-const mockFs = require('mock-fs')
 const fsEx = require('fs-extra')
+const nock = require('nock')
+const os = require('os')
+const path = require('path')
+const sinon = require('sinon')
+const { promisify } = require('util')
+const LogoutAction = require('../../lib/actions/LogoutAction')
+const config = require('../../lib/config')
+const UserSettings = require('../../lib/user/UserSettings')
 
 describe('LogoutAction', () => {
+  let settingsFolder
   let userSettings
   let subjectUnderTest
 
+  before(async () => {
+    settingsFolder = await promisify(fsEx.mkdtemp)(path.join(os.tmpdir(), 'sgtest-'))
+    config.load({ userDirectory: settingsFolder })
+  })
+
   beforeEach(async () => {
-    mockFs()
-    process.env.USER_PATH = settingsFolder
     process.env.SGCLOUD_DC_ADDRESS = 'http://dc.shopgate.cloud'
     nock.disableNetConnect()
     process.env.SGCLOUD_USER = ''
@@ -30,9 +35,10 @@ describe('LogoutAction', () => {
     delete process.env.SGCLOUD_USER
     delete process.env.SGCLOUD_PASS
     nock.enableNetConnect()
-    await fsEx.remove(settingsFolder)
-    mockFs.restore()
+    await fsEx.emptyDir(settingsFolder)
   })
+
+  after(async () => fsEx.remove(settingsFolder))
 
   it('should register', (done) => {
     LogoutAction.build({})

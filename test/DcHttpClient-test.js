@@ -1,32 +1,29 @@
 const assert = require('assert')
+const fsEx = require('fs-extra')
 const nock = require('nock')
-const DcHttpClient = require('../lib/DcHttpClient')
-const UserSettings = require('../lib/user/UserSettings')
+const os = require('os')
 const path = require('path')
+const { promisify } = require('util')
+const DcHttpClient = require('../lib/DcHttpClient')
 const { UnauthorizedError } = require('../lib/errors')
-const mockFs = require('mock-fs')
-describe('DcHttpClient', () => {
-  before(done => {
-    mockFs()
-    done()
-  })
+const UserSettings = require('../lib/user/UserSettings')
+const config = require('../lib/config')
 
-  after(done => {
-    mockFs.restore()
-    done()
-  })
+describe('DcHttpClient', () => {
+  let tempDir
   let dcClient
 
-  before(() => {
-    process.env.USER_PATH = path.join('build', 'usersettings')
-  })
-
-  after(() => {
-    delete process.env.USER_PATH
+  before(async () => {
+    tempDir = await promisify(fsEx.mkdtemp)(path.join(os.tmpdir(), 'sgtest-'))
+    config.load({ userDirectory: tempDir })
   })
 
   beforeEach(async () => {
     dcClient = new DcHttpClient(await new UserSettings().setToken({}), { debug: () => {} })
+  })
+
+  after(async () => {
+    await fsEx.remove(tempDir)
   })
 
   describe('getInfos', () => {

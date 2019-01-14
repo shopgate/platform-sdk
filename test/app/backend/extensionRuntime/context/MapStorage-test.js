@@ -1,27 +1,37 @@
 const assert = require('assert')
-const path = require('path')
 const fsEx = require('fs-extra')
-const mockFs = require('mock-fs')
+const os = require('os')
+const path = require('path')
+const { promisify } = require('util')
 const MapStorage = require('../../../../../lib/app/backend/extensionRuntime/context/MapStorage')
 
 describe('MapStorage', () => {
+  let tempDir
   let settingsFolderPath
   let storageFilePath
   let storageFilePathNonExisting
   let log
 
+  before(async () => {
+    tempDir = await promisify(fsEx.mkdtemp)(path.join(os.tmpdir(), 'sgtest-'))
+  })
+
   beforeEach(() => {
-    mockFs()
-    settingsFolderPath = path.join('path', 'to')
+    settingsFolderPath = path.join(tempDir, 'path', 'to')
     storageFilePath = path.join(settingsFolderPath, 'map_storage.json')
     storageFilePathNonExisting = path.join('non-existent-folder', 'storage.json')
     log = { log: true, debug: () => { } }
     fsEx.ensureDirSync(settingsFolderPath)
   })
 
-  afterEach(() => {
-    mockFs.restore()
+  afterEach(async () => {
+    await fsEx.emptyDir(tempDir)
   })
+
+  after(async () => {
+    await fsEx.remove(tempDir)
+  })
+
   describe('constructor', () => {
     it('should construct', () => {
       const storage = new MapStorage(storageFilePath, log)
