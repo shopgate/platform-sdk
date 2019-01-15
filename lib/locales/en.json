@@ -26,7 +26,9 @@
     "ERROR_COULD_NOT_REMOVE_PIPELINE": "Could not remove pipeline ''{pipelineId}'': {message}",
     "ERROR_CHECK_INVALID_PIPELINE": "invalid pipeline; check the pipeline.id property in {file}",
     "ERROR_PIPELINE_ID_SHOULD_MATCH_FILENAME": "Pipeline ID \"{pipelineId}\" should match its file name!",
-    "ERROR_PIPELINE_ID_AND_FILENAME_MISMATCH": "Pipeline ID \"{pipelineId}\" and file name \"{filename}\" mismatch! The ID of a pipeline and its file name should be the same."
+    "ERROR_PIPELINE_ID_AND_FILENAME_MISMATCH": "Pipeline ID \"{pipelineId}\" and file name \"{filename}\" mismatch! The ID of a pipeline and its file name should be the same.",
+    "ERROR_NO_PIPELINES_DIRECTORY": "no pipelines folder found",
+    "ERROR_NO_PIPELINES": "no pipelines in pipeline folder"
   },
   "lib/actions/ExtensionAction": {
     "CREATE_DESCRIPTION": "Creates a new extension",
@@ -64,7 +66,7 @@
     "REMOVING_UNUSED_DIRS_DONE": "Removing unused dirs ... done",
     "REMOVING_PLACEHOLDERS": "Removing placeholders in {extensionPath} ...",
     "REMOVING_PLACEHOLDERS_DONE": "Removing placeholders in {changes} ... done",
-    "ERROR_NO_FILES_MATCH_PATTERN": "No files match the pattern: {pattern}",
+    "ERROR_NO_FILES_MATCH_PATTERN": "No files match the pattern",
     "UPDATING_BACKEND_FILES": "Updating backend files",
     "UPDATING_BACKEND_FILES_DONE": "Updating backend files ... done",
     "INSTALLING_FRONTEND_DEPENDENCIES": "Installing frontend depenencies ...",
@@ -96,9 +98,9 @@
     "ERROR_NO_THEMES_IN_DIRECTORY": "There are no themes in ''{directory}''",
     "INPUT_SELECT_EXTENSION_TO_UPLOAD": "Select an extension to upload",
     "INPUT_SELECT_THEME_TO_UPLOAD": "Select a theme to upload",
-    "ERROR_INVALID_JSON_IN_CONFIG": "Invalid JSON in {directory}",
-    "ERROR_NO_ID_IN_CONFIG": "There is no 'id' property in {directory}",
-    "ERROR_NO_VERSION_IN_CONFIG": "There is no 'version' property in {directory}",
+    "ERROR_INVALID_JSON_IN_CONFIG": "Invalid JSON in {configPath}",
+    "ERROR_NO_ID_IN_CONFIG": "There is no 'id' property in {configPath}",
+    "ERROR_NO_VERSION_IN_CONFIG": "There is no 'version' property in {configPath}",
     "ERROR_NO_CONFIG_IN_DIRECTORY": "There is no extension-config.json in {directory}",
     "BUILDING_EXCLUSION_LIST": "Building a list of exclusions based on .gitignore file",
     "NO_GITIGNORE_IN_DIRECTORY": ".gitignore does not exist in {directory}. Using defaults",
@@ -135,7 +137,7 @@
     "APP_INIT_SUCCESSFULL": "The Application \"{appId}\" was successfully initialized",
     "NO_APP_SETTINGS": "App settings are not present",
     "ERROR_SANDBOX_APPID_INVALID": "Sandbox App ID (--appId) is invalid",
-    "INPUT_SANDBOX_APPID": "Enter your Sandbox App ID:",
+    "INPUT_SANDBOX_APPID": "Enter your Sandbox App ID",
     "REINIT_WARNING": "The application {appId} is currently initialized.\n\nReinit will delete the following project content:\n - project related settings\n - generated extension/theme config files\n - active (trusted) pipelines",
     "INPUT_OVERWRITE_APP": "Do you really want to overwrite your current application ({appId})? (y/N)",
     "INPUT_IGNORE_RUNNING_PROCESSES": "Processe(s): {pids} running, reinit can cause problems in these processes; ignore? (y,N)",
@@ -147,8 +149,8 @@
     "LOGIN_EMAIL_DESCRIPTION": "Email address to login",
     "LOGIN_PASSWORD_DESCRIPTION": "Password to login",
     "LOGIN_SUCCESSFULL": "Login successful",
-    "INPUT_USERNAME": "Enter your email address:",
-    "INPUT_PASSWORD": "Enter your password:"
+    "INPUT_USERNAME": "Enter your email address",
+    "INPUT_PASSWORD": "Enter your password"
   },
   "lib/actions/LogoutAction": {
     "LOGOUT_DESCRIPTION": "Logout",
@@ -242,13 +244,15 @@
   },
   "lib/app/frontend/FrontendSetup": {
     "SETUP_ABORTED": "Setup aborted. Re-run in order to finish the process with new settings.",
+    "SUCCESS": "SUCCESS",
     "PROJECT_READY": "Your {project} project is now ready!",
     "FRONTEND_SETUP_DONE": "FrontendSetup done"
   },
   "lib/app/frontend/LogHelper": {
     "SILENT_MODE": "SILENT MODE: logs will be suppressed.",
     "SETUP_PROCESS_INTRO": "This will guide you through the setup process.",
-    "PLEASE_ANSWER_QUESTIONS": "Please answer the following questions:",
+    "PLEASE_ANSWER_QUESTIONS": "Please answer the following questions",
+    "ATTENTION": "ATTENTION",
     "NO_FRONTEND_CONFIG": "No frontend configuration could be found!",
     "NO_FRONTEND_CONFIG_FOLLOWUP": "This is needed to run the {prefix}!",
     "DEV_SERVER_STARTED": "The development server is started. You can access the output by:",

@@ -37,7 +37,7 @@ describe('LogHelper', () => {
     process.env.silent = true
 
     logHelper.logSilentMode()
-    sinon.assert.calledWith(logger.plain, bold('  SILENT MODE: logs will be suppressed.\n'))
+    sinon.assert.calledWith(logger.plain, `  ${bold('SILENT MODE: logs will be suppressed.')}\n`)
 
     process.env.silent = false
   })
