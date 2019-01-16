@@ -30,10 +30,10 @@ describe('FrontendAction', () => {
 
   const FrontendAction = proxyquire('../../lib/actions/FrontendAction', {
     '../logger': {
-      info: () => {},
-      error: () => {},
-      debug: () => {},
-      warn: () => {}
+      info: () => { },
+      error: () => { },
+      debug: () => { },
+      warn: () => { }
     },
     '../app/frontend/FrontendProcess': FrontendProcessMock,
     'fs-extra': fsExtraMock,
@@ -56,7 +56,7 @@ describe('FrontendAction', () => {
 
     dcHttpClient.checkPermissions = async () => (true)
     fsExtraMock.existsSync = () => true
-    fsExtraMock.readJSONSync = () => {}
+    fsExtraMock.readJSONSync = () => { }
     fsExtraMock.readdir = () => Promise.resolve()
     fsExtraMock.lstat = () => Promise.resolve()
 
@@ -137,7 +137,10 @@ describe('FrontendAction', () => {
       fsExtraMock.lstat = () => Promise.resolve({ isDirectory: () => true })
       subjectUnderTest.dcHttpClient.generateExtensionConfig = () => Promise.resolve({})
 
-      appSettings.getFrontendSettings = () => { return { getIpAddress: () => '1.2.3.4', getPort: () => 8080 } }
+      appSettings.getFrontendSettings = () => ({
+        getStartpageIpAddress: () => '1.2.3.4',
+        getPort: () => 8080
+      })
 
       subjectUnderTest.setStartPage = (appId, address, port) => {
         assert.equal(appId, 'foobarTest')
