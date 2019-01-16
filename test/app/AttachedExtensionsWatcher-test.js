@@ -1,27 +1,42 @@
 const assert = require('assert')
-const path = require('path')
 const fsEx = require('fs-extra')
+const os = require('os')
+const path = require('path')
+const { promisify } = require('util')
 const AttachedExtensionsWatcher = require('../../lib/app/AttachedExtensionsWatcher')
+const config = require('../../lib/config')
 const UserSettings = require('../../lib/user/UserSettings')
 const utils = require('../../lib/utils/utils')
-const appPath = path.join('build', 'appsettings')
-const mockFs = require('mock-fs')
+
 describe('AttachedExtensionsWatcher', () => {
+  let tempDir
+  let userDir
+  let appPath
   let attachedExtensionsWatcher
   let appSettingsMock
 
+  before(async () => {
+    tempDir = await promisify(fsEx.mkdtemp)(path.join(os.tmpdir(), 'sgtest-'))
+    userDir = path.join(tempDir, 'user')
+    appPath = path.join(tempDir, 'app')
+    config.load({ userDirectory: userDir })
+  })
+
   beforeEach(async () => {
-    mockFs()
-    await new UserSettings().setToken({})
+    await fsEx.emptyDir(tempDir)
     await fsEx.emptyDir(path.join(appPath, '.sgcloud'))
+    await new UserSettings().setToken({})
   })
 
   afterEach(async () => {
     delete process.env.APP_PATH
 
     await attachedExtensionsWatcher.stop()
-    await fsEx.remove(appPath)
-    mockFs.restore()
+    await fsEx.emptyDir(appPath)
+  })
+
+  after(async () => {
+    await fsEx.remove(tempDir)
   })
 
   const getWatcher = (chokidar, attachedExtensions) => {

@@ -1,39 +1,21 @@
-const UserSettings = require('../../lib/user/UserSettings')
 const assert = require('assert')
-const path = require('path')
 const fsEx = require('fs-extra')
-const mockFs = require('mock-fs')
+const os = require('os')
+const path = require('path')
+const { promisify } = require('util')
+const config = require('../../lib/config')
+const UserSettings = require('../../lib/user/UserSettings')
 
 describe('UserSettings', () => {
   let testFolder
-  before(done => {
-    mockFs()
-    done()
+
+  beforeEach(async () => {
+    testFolder = await promisify(fsEx.mkdtemp)(path.join(os.tmpdir(), 'sgtest-'))
+    config.load({ userDirectory: testFolder })
   })
 
-  after(done => {
-    mockFs.restore()
-    done()
-  })
-  beforeEach(() => {
-    testFolder = path.join('build', 'usersettings')
-    process.env.USER_PATH = testFolder
-  })
-
-  afterEach((done) => {
-    delete process.env.USER_PATH
-    fsEx.remove(testFolder, done)
-  })
-
-  it('should have default settingsFolder', () => {
-    delete process.env.USER_PATH
-    assert.ok(new UserSettings().settingsFolder.includes('.sgcloud'))
-  })
-
-  it('should accept USER_PATH env as settingsFolder', () => {
-    testFolder = path.join('build', '-testFoobar-')
-    process.env.USER_PATH = testFolder
-    assert.equal(new UserSettings().settingsFolder, testFolder)
+  afterEach(async () => {
+    await fsEx.remove(testFolder)
   })
 
   it('should return session loaded from file', async () => {

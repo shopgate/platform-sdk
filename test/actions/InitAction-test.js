@@ -1,31 +1,54 @@
-const nock = require('nock')
-const sinon = require('sinon')
 const assert = require('assert')
-const InitAction = require('../../lib/actions/InitAction')
-const UserSettings = require('../../lib/user/UserSettings')
-const AppSettings = require('../../lib/app/AppSettings')
-const DcHttpClient = require('../../lib/DcHttpClient')
-const path = require('path')
-const mockFs = require('mock-fs')
-const userSettingsFolder = path.join('build', 'usersettings')
-const appPath = path.join('build', 'appsettings')
 const fsEx = require('fs-extra')
+const nock = require('nock')
+const os = require('os')
+const path = require('path')
+const sinon = require('sinon')
+const { promisify } = require('util')
+const DcHttpClient = require('../../lib/DcHttpClient')
+const InitAction = require('../../lib/actions/InitAction')
+const AppSettings = require('../../lib/app/AppSettings')
 const { SETTINGS_FOLDER } = require('../../lib/app/Constants')
+const config = require('../../lib/config')
+const UserSettings = require('../../lib/user/UserSettings')
 
 describe('InitAction', () => {
+  let tempDir
+  let userSettingsFolder
+  let appPath
   let subjectUnderTest
   let userSettings
   let appSettings
   let dcHttpClient
 
-  before(done => {
-    mockFs()
-    done()
+  before(async () => {
+    tempDir = await promisify(fsEx.mkdtemp)(path.join(os.tmpdir(), 'sgtest-'))
+    userSettingsFolder = path.join(tempDir, 'user')
+    appPath = path.join(tempDir, 'app')
+    process.env.APP_PATH = appPath
+    config.load({ userDirectory: userSettingsFolder })
   })
 
-  after(done => {
-    mockFs.restore()
-    done()
+  beforeEach(async () => {
+    process.env.SGCLOUD_DC_ADDRESS = 'http://test.test'
+    process.env.APP_PATH = appPath
+    await fsEx.emptyDir(userSettingsFolder)
+    userSettings = new UserSettings()
+    await userSettings.setToken({})
+    appSettings = new AppSettings(appPath)
+    dcHttpClient = new DcHttpClient(userSettings)
+    subjectUnderTest = new InitAction(appSettings, userSettings, dcHttpClient)
+  })
+
+  afterEach(async () => {
+    delete process.env.SGCLOUD_DC_ADDRESS
+    delete process.env.APP_PATH
+    await fsEx.emptyDir(userSettingsFolder)
+    await fsEx.emptyDir(appPath)
+  })
+
+  after(async () => {
+    await fsEx.remove(tempDir)
   })
 
   it('should register', () => {
@@ -43,26 +66,6 @@ describe('InitAction', () => {
     assert(commander.option.calledWith('--appId <appId>'))
     assert(commander.description.calledOnce)
     assert(commander.action.calledOnce)
-  })
-
-  beforeEach(async () => {
-    process.env.USER_PATH = userSettingsFolder
-    process.env.SGCLOUD_DC_ADDRESS = 'http://test.test'
-    await fsEx.emptyDir(userSettingsFolder)
-    userSettings = new UserSettings()
-    await userSettings.setToken({})
-    appSettings = new AppSettings(appPath)
-    dcHttpClient = new DcHttpClient(userSettings)
-    subjectUnderTest = new InitAction(appSettings, userSettings, dcHttpClient)
-  })
-
-  afterEach(async () => {
-    delete process.env.USER_PATH
-    delete process.env.SGCLOUD_DC_ADDRESS
-    await fsEx.remove(userSettingsFolder)
-
-    delete process.env.APP_PATH
-    await fsEx.remove(appPath)
   })
 
   it('should throw if user not logged in', async () => {

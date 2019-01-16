@@ -1,17 +1,35 @@
 const assert = require('assert')
-const path = require('path')
 const fsEx = require('fs-extra')
-const sinon = require('sinon')
-const StepExecutor = require('../../../../lib/app/backend/extensionRuntime/StepExecutor')
-const AppSettings = require('../../../../lib/app/AppSettings')
-const UserSettings = require('../../../../lib/user/UserSettings')
-const DcHttpClient = require('../../../../lib/DcHttpClient')
-const appPath = path.join('build', 'appsettings')
+const os = require('os')
+const path = require('path')
 const proxyquire = require('proxyquire').noPreserveCache()
+const sinon = require('sinon')
+const { promisify } = require('util')
+const config = require('../../../../lib/config')
+const DcHttpClient = require('../../../../lib/DcHttpClient')
+const AppSettings = require('../../../../lib/app/AppSettings')
 const { EXTENSIONS_FOLDER, SETTINGS_FOLDER } = require('../../../../lib/app/Constants')
-const mockFs = require('mock-fs')
+const StepExecutor = require('../../../../lib/app/backend/extensionRuntime/StepExecutor')
+const UserSettings = require('../../../../lib/user/UserSettings')
+
 let forkMock = () => (true)
+
 describe('StepExecutor', () => {
+  let tempDir
+  let userDir
+  let appPath
+
+  before(async () => {
+    tempDir = await promisify(fsEx.mkdtemp)(path.join(os.tmpdir(), 'sgtest-'))
+    userDir = path.join(tempDir, 'user')
+    appPath = path.join(tempDir, 'app')
+    config.load({ userDirectory: userDir })
+  })
+
+  after(async () => {
+    await fsEx.remove(tempDir)
+  })
+
   describe('watcher', () => {
     it('should start the watcher', (done) => {
       const watcher = {
@@ -101,22 +119,26 @@ describe('StepExecutor', () => {
     let appSettings
     let userSettings
     let dcHttpClient
-    const extensionDir = path.join(appPath, EXTENSIONS_FOLDER, 'foobar', 'extension')
+    let extensionDir
 
     let basicProcessMock
+
+    before(() => {
+      extensionDir = path.join(appPath, EXTENSIONS_FOLDER, 'foobar', 'extension')
+    })
+
     beforeEach(async function () {
       this.timeout(10000)
 
-      mockFs()
       basicProcessMock = {
         connected: true,
         on: (code, callback) => {
           callback()
         }
       }
-      userTestFolder = path.join('build', 'usersettings')
-      process.env.USER_PATH = userTestFolder
-      appTestFolder = path.join('build', 'appsettings')
+      userTestFolder = path.join(tempDir, 'usersettings')
+      config.load({ userDirectory: userTestFolder })
+      appTestFolder = path.join(tempDir, 'appsettings')
       process.env.SGCLOUD_DC_WS_ADDRESS = `http://nockedDc`
       process.env.APP_PATH = appTestFolder
       log = { info: () => { }, error: () => { }, debug: () => { }, warn: () => { } }
@@ -147,7 +169,6 @@ describe('StepExecutor', () => {
           fsEx.remove(appTestFolder),
           fsEx.remove(userTestFolder)
         ])
-        mockFs.restore()
       } catch (err) {
         assert.ifError(err)
       } finally {
@@ -273,7 +294,6 @@ describe('StepExecutor', () => {
           }
         }
       }
-      mockFs.restore()
       const StepExecutorMocked = proxyquire('../../../../lib/app/backend/extensionRuntime/StepExecutor', {
         child_process: {
           fork: (program, { execArgv }, options) => {
@@ -283,7 +303,6 @@ describe('StepExecutor', () => {
         }
       })
 
-      mockFs()
       const executor = new StepExecutorMocked({ info: () => { } }, { getApplicationFolder: () => appPath }, null, true)
       await executor.start()
 
@@ -342,7 +361,6 @@ describe('StepExecutor', () => {
           }
         }
       }
-      mockFs.restore()
       const StepExecutorMocked = proxyquire('../../../../lib/app/backend/extensionRuntime/StepExecutor', {
         child_process: {
           fork: (program, { execArgv }, options) => {
@@ -352,7 +370,6 @@ describe('StepExecutor', () => {
         }
       })
 
-      mockFs()
       const executor = new StepExecutorMocked({ info: () => { } }, { getApplicationFolder: () => appPath }, null, false)
       await executor.start()
 

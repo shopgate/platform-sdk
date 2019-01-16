@@ -1,12 +1,14 @@
-const EventEmitter = require('events')
 const assert = require('assert')
-const sinon = require('sinon')
-const path = require('path')
+const EventEmitter = require('events')
 const fsEx = require('fs-extra')
-const UserSettings = require('../../../lib/user/UserSettings')
+const os = require('os')
+const path = require('path')
 const portfinder = require('portfinder')
 const proxyquire = require('proxyquire')
-const mockFs = require('mock-fs')
+const sinon = require('sinon')
+const { promisify } = require('util')
+const config = require('../../../lib/config')
+const UserSettings = require('../../../lib/user/UserSettings')
 
 class SocketIOMock extends EventEmitter {
   connect () { this.emit('connect') }
@@ -17,6 +19,7 @@ class SocketIOMock extends EventEmitter {
 }
 
 describe('BackendProcess', () => {
+  let tempDir
   let backendProcess
   let stepExecutor
   let userTestFolder
@@ -30,11 +33,14 @@ describe('BackendProcess', () => {
     'socket.io-client': () => socketIOMock
   })
 
+  before(async () => {
+    tempDir = await promisify(fsEx.mkdtemp)(path.join(os.tmpdir(), 'sgtest-'))
+    userTestFolder = path.join(tempDir, 'user')
+    appTestFolder = path.join(tempDir, 'app')
+    config.load({ userDirectory: userTestFolder })
+  })
+
   beforeEach(async () => {
-    mockFs()
-    appTestFolder = path.join('build', 'appsettings')
-    userTestFolder = path.join('build', 'usersettings')
-    process.env.USER_PATH = userTestFolder
     userSettings = await new UserSettings().setToken({})
 
     stepExecutor = {
@@ -67,8 +73,9 @@ describe('BackendProcess', () => {
       fsEx.remove(userTestFolder),
       backendProcess.disconnect()
     ])
-    mockFs.restore()
   })
+
+  after(async () => fsEx.remove(tempDir))
 
   describe('connect', () => {
     it('should react to all events', (done) => {
@@ -323,33 +330,22 @@ describe('BackendProcess', () => {
       })
     })
 
-    it('should call "disconnect(false)" and send SIGINT upon incoming "disconnectedByOtherUser" from socket', () => {
-      return new Promise((resolve, reject) => {
-        let sigintSent = false
-        let disconnectCalled = false
+    it('should call "disconnect(false)" and send SIGINT upon incoming "disconnectedByOtherUser" from socket', async () => {
+      const killStub = sinon.stub(process, 'kill')
+      const disconnectStub = sinon.stub(backendProcess, 'disconnect')
+      await backendProcess.connect()
+      socketIOMock.emit('disconnectedByOtherUser', 'reason')
 
-        process.removeAllListeners('SIGINT')
-
-        process.on('SIGINT', () => {
-          if (disconnectCalled) resolve()
-          sigintSent = true
-        })
-
-        backendProcess.disconnect = reconnect => {
-          try {
-            assert.ok(!reconnect)
-          } catch (err) {
-            reject(err)
-          }
-
-          if (sigintSent) resolve()
-          disconnectCalled = !reconnect
-        }
-
-        backendProcess.connect().then(() => {
-          socketIOMock.emit('disconnectedByOtherUser', 'reason')
+      await new Promise((resolve) => {
+        process.nextTick(() => {
+          sinon.assert.calledWith(disconnectStub, false)
+          sinon.assert.calledWith(killStub, process.pid, 'SIGINT')
+          resolve()
         })
       })
+
+      killStub.restore()
+      disconnectStub.restore()
     })
   })
 
@@ -371,33 +367,22 @@ describe('BackendProcess', () => {
       })
     })
 
-    it('should call "disconnect(false)" and send SIGINT upon incoming "connectionInProgress" from socket', () => {
-      return new Promise((resolve, reject) => {
-        let sigintSent = false
-        let disconnectCalled = false
+    it('should call "disconnect(false)" and send SIGINT upon incoming "connectionInProgress" from socket', async () => {
+      const killStub = sinon.stub(process, 'kill')
+      const disconnectStub = sinon.stub(backendProcess, 'disconnect')
+      await backendProcess.connect()
+      socketIOMock.emit('connectionInProgress', 'reason')
 
-        process.removeAllListeners('SIGINT')
-
-        process.on('SIGINT', () => {
-          if (disconnectCalled) resolve()
-          sigintSent = true
-        })
-
-        backendProcess.disconnect = reconnect => {
-          try {
-            assert.ok(!reconnect)
-          } catch (err) {
-            reject(err)
-          }
-
-          if (sigintSent) resolve()
-          disconnectCalled = !reconnect
-        }
-
-        backendProcess.connect().then(() => {
-          socketIOMock.emit('connectionInProgress', 'reason')
+      await new Promise((resolve) => {
+        process.nextTick(() => {
+          sinon.assert.calledWith(disconnectStub, false)
+          sinon.assert.calledWith(killStub, process.pid, 'SIGINT')
+          resolve()
         })
       })
+
+      killStub.restore()
+      disconnectStub.restore()
     })
   })
 })

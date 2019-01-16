@@ -5,22 +5,24 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-const {join} = require('path')
-const sinon = require('sinon')
 const assert = require('assert')
+const fsEx = require('fs-extra')
+const os = require('os')
+const path = require('path')
 const proxyquire = require('proxyquire')
+const sinon = require('sinon')
+const { promisify } = require('util')
 
 const forkFailError = 'Fork failed!'
 let forkFail = false
 let forkSpy
 const logSetupNeededSpy = sinon.spy()
 
-const userSettingsPath = join('build', 'usersettings')
-const appSettingsPath = join('build', 'appsettings')
-
-const mockFs = require('mock-fs')
-
 describe('FrontendProcess', () => {
+  let tempDir
+  let userSettingsPath
+  let appSettingsPath
+
   let frontendProcess
 
   let frontendSettings = null
@@ -30,14 +32,10 @@ describe('FrontendProcess', () => {
     loadAttachedExtensions: () => {}
   }
 
-  before(done => {
-    mockFs()
-    done()
-  })
-
-  after(done => {
-    mockFs.restore()
-    done()
+  before(async () => {
+    tempDir = await promisify(fsEx.mkdtemp)(path.join(os.tmpdir(), 'sgtest-'))
+    userSettingsPath = path.join(tempDir, 'user')
+    appSettingsPath = path.join(tempDir, 'app')
   })
 
   beforeEach(() => {
@@ -46,7 +44,6 @@ describe('FrontendProcess', () => {
 
     appSettings.getId = () => {}
     frontendSettings = {}
-    mockFs.restore()
     const FrontendProcess = proxyquire('../../../lib/app/frontend/FrontendProcess', {
       child_process: {
         fork: forkSpy = sinon.spy(() => {
@@ -57,7 +54,6 @@ describe('FrontendProcess', () => {
         logSetupNeeded: logSetupNeededSpy
       }
     })
-    mockFs()
 
     const frontendSetup = {
       run: () => Promise.resolve()
@@ -66,6 +62,14 @@ describe('FrontendProcess', () => {
     frontendProcess = new FrontendProcess({
       theme: null
     }, frontendSetup, appSettings)
+  })
+
+  afterEach(async () => {
+    await fsEx.emptyDir(tempDir)
+  })
+
+  after(async () => {
+    await fsEx.remove(tempDir)
   })
 
   describe('run()', () => {

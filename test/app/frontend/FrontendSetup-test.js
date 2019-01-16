@@ -5,12 +5,13 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-const { join } = require('path')
-const sinon = require('sinon')
 const assert = require('assert')
-const proxyquire = require('proxyquire')
 const fsEx = require('fs-extra')
-const mockFs = require('mock-fs')
+const os = require('os')
+const path = require('path')
+const proxyquire = require('proxyquire')
+const sinon = require('sinon')
+const { promisify } = require('util')
 
 let requestSpyFail = false
 let requestStatusCode = 201
@@ -58,9 +59,6 @@ const FrontendSetup = proxyquire('../../../lib/app/frontend/FrontendSetup', {
   './setupQuestions': questionSpy
 })
 
-const userSettingsPath = join('build', 'usersettings')
-const appSettingsPath = join('build', 'appsettings')
-
 const defaultConfig = {
   ip: '0.0.0.0',
   port: 8080,
@@ -80,14 +78,14 @@ let appSettings = {
 let frontendSetup
 
 describe('FrontendSetup', () => {
-  before(done => {
-    mockFs()
-    done()
-  })
+  let tempDir
+  let userSettingsPath
+  let appSettingsPath
 
-  after(done => {
-    mockFs.restore()
-    done()
+  before(async () => {
+    tempDir = await promisify(fsEx.mkdtemp)(path.join(os.tmpdir(), 'sgtest-'))
+    userSettingsPath = path.join(tempDir, 'user')
+    appSettingsPath = path.join(tempDir, 'app')
   })
 
   beforeEach(() => {
@@ -119,12 +117,14 @@ describe('FrontendSetup', () => {
     questionSpyFail = false
   })
 
-  afterEach((done) => {
+  afterEach(async () => {
     delete process.env.USER_PATH
     delete process.env.APP_PATH
-    fsEx.remove(userSettingsPath, () => {
-      fsEx.remove(appSettingsPath, done)
-    })
+    await fsEx.emptyDir(tempDir)
+  })
+
+  after(async () => {
+    await fsEx.remove(tempDir)
   })
 
   describe('run()', () => {
