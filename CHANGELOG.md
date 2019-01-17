@@ -1,3 +1,6 @@
+## 1.9.0
+* Frontend process doesn't need a setup anymore and can be accessed via `localhost` or `127.0.0.1` by default.
+
 ## v1.8.0
 * Attach newly created extensions automatically
 * Re-attach local pipelines upon PLC restart or redeploy
