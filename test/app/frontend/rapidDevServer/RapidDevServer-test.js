@@ -99,16 +99,16 @@ describe('RapidDevServer', () => {
   })
 
   describe('start()', () => {
-    it('should throw an error if server already exists', (done) => {
+    it('should throw an error if server already exists', async () => {
       try {
         rapidDevServer.server = {}
-        rapidDevServer.start()
+        await rapidDevServer.start()
         rapidDevServer.server = null
-        done('Did not throw!')
+        throw new Error('Did not throw!')
       } catch (error) {
         assert.equal(error, rapidDevServer.existingServerError)
         rapidDevServer.server = null
-        done()
+        return true
       }
     })
 
