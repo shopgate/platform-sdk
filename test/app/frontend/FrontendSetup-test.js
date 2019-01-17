@@ -107,6 +107,7 @@ describe('FrontendSetup', () => {
     frontendSettings.setHmrPort = () => Promise.reject(new Error('error'))
     frontendSettings.setRemotePort = () => Promise.reject(new Error('error'))
     frontendSettings.setSourceMapsType = () => Promise.reject(new Error('error'))
+    frontendSettings.getStartpageIpAddress = () => Promise.resolve(defaultConfig.startpageIpAddress)
 
     frontendSetup = new FrontendSetup(null, appSettings)
     frontendSetup.defaultConfig = defaultConfig
@@ -191,7 +192,12 @@ describe('FrontendSetup', () => {
       saveSpy = sinon.spy()
       loggerSpy.resetHistory()
       frontendSettings.setIpAddress = (ip) => {
-        assert.equal(ip, defaultConfig.ip)
+        assert.equal(ip, undefined)
+        return Promise.resolve()
+      }
+
+      frontendSettings.setStartpageIpAddress = (ip) => {
+        assert.equal(ip, undefined)
         return Promise.resolve()
       }
 
