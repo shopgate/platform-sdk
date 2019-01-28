@@ -162,7 +162,7 @@ describe('StepExecutor', () => {
     afterEach(async () => {
       delete process.env.SGCLOUD_DC_WS_ADDRESS
       delete process.env.APP_PATH
-      delete process.env.USER_PATH
+      delete process.env.USER_DIR
 
       try {
         await Promise.all([

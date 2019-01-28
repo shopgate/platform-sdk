@@ -64,7 +64,7 @@ describe('BackendProcess', () => {
   afterEach(async () => {
     delete process.env.SGCLOUD_DC_ADDRESS
     delete process.env.APP_PATH
-    delete process.env.USER_PATH
+    delete process.env.USER_DIR
 
     socketIOMock.removeAllListeners()
 

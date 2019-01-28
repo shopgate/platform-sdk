@@ -27,7 +27,7 @@ const setupAppEnvironment = async () => {
   appSettingsPath = path.join(tempDir, 'app')
   config.load({ userDirectory: userSettingsPath })
 
-  process.env.USER_PATH = userSettingsPath
+  process.env.USER_DIR = userSettingsPath
   process.env.APP_PATH = appSettingsPath
   process.env.appId = appId
 
@@ -42,7 +42,7 @@ const setupAppEnvironment = async () => {
  * Cleares the application environment after each teast.
  */
 const clearAppEnviroment = async () => {
-  delete process.env.USER_PATH
+  delete process.env.USER_DIR
   delete process.env.APP_PATH
   delete process.env.appId
 
