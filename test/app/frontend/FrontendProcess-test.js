@@ -27,9 +27,9 @@ describe('FrontendProcess', () => {
 
   let frontendSettings = null
   let appSettings = {
-    getApplicationFolder: () => {},
+    getApplicationFolder: () => { },
     getFrontendSettings: () => frontendSettings,
-    loadAttachedExtensions: () => {}
+    loadAttachedExtensions: () => { }
   }
 
   before(async () => {
@@ -42,7 +42,7 @@ describe('FrontendProcess', () => {
     process.env.USER_PATH = userSettingsPath
     process.env.APP_PATH = appSettingsPath
 
-    appSettings.getId = () => {}
+    appSettings.getId = () => { }
     frontendSettings = {}
     const FrontendProcess = proxyquire('../../../lib/app/frontend/FrontendProcess', {
       child_process: {
@@ -74,23 +74,8 @@ describe('FrontendProcess', () => {
 
   describe('run()', () => {
     beforeEach(() => {
-      frontendProcess.rapidDevServer = async () => {}
-      frontendProcess.webpackDevServer = async () => {}
-    })
-
-    it('should run the frontend setup if nothing is set', () => {
-      const runSpy = sinon.spy(frontendProcess.frontendSetup, 'run')
-
-      frontendSettings.getIpAddress = () => Promise.resolve(null)
-      frontendSettings.getPort = () => Promise.resolve(null)
-      frontendSettings.getApiPort = () => Promise.resolve(null)
-
-      return frontendProcess.run()
-        .then(() => {
-          sinon.assert.calledOnce(runSpy)
-          runSpy.restore()
-        })
-        .catch(err => assert.ifError(err))
+      frontendProcess.rapidDevServer = async () => { }
+      frontendProcess.webpackDevServer = async () => { }
     })
 
     it('it should skip the setup if variables are set', () => {
@@ -113,24 +98,6 @@ describe('FrontendProcess', () => {
     beforeEach(() => {
       frontendProcess.frontendSetup.run = () => Promise.resolve()
       frontendProcess.webpackDevServer = () => Promise.resolve()
-    })
-
-    it('should start the rapid dev server if no variables are set', () => {
-      const runSpy = sinon.spy(frontendProcess.frontendSetup, 'run')
-      const rapidDevServerSpy = sinon.spy(frontendProcess, 'rapidDevServer')
-
-      frontendSettings.getIpAddress = () => Promise.resolve(null)
-      frontendSettings.getPort = () => Promise.resolve(null)
-      frontendSettings.getApiPort = () => Promise.resolve(null)
-      frontendSettings.loadSettings = () => Promise.resolve({})
-
-      return frontendProcess.run()
-        .then(() => {
-          sinon.assert.calledOnce(runSpy)
-          sinon.assert.calledOnce(rapidDevServerSpy)
-          runSpy.restore()
-        })
-        .catch(err => assert.ifError(err))
     })
 
     it('should start the call the rapid dev server if all is set', () => {
@@ -171,26 +138,7 @@ describe('FrontendProcess', () => {
   describe('webpackDevServer()', () => {
     beforeEach(() => {
       frontendProcess.frontendSetup.run = () => Promise.resolve()
-      frontendProcess.rapidDevServer = async () => {}
-    })
-
-    it('should start the webpack dev server if no variables are set', () => {
-      const runSpy = sinon.spy(frontendProcess.frontendSetup, 'run')
-      const webpackDevServerSpy = sinon.spy(frontendProcess, 'webpackDevServer')
-
-      frontendSettings.getIpAddress = () => Promise.resolve(null)
-      frontendSettings.getPort = () => Promise.resolve(null)
-      frontendSettings.getApiPort = () => Promise.resolve(null)
-      frontendSettings.loadSettings = () => Promise.resolve({})
-      appSettings.getApplicationFolder = () => 'folder'
-
-      return frontendProcess.run()
-        .then(() => {
-          sinon.assert.calledOnce(runSpy)
-          sinon.assert.calledOnce(webpackDevServerSpy)
-          runSpy.restore()
-        })
-        .catch((err) => assert.ifError(err))
+      frontendProcess.rapidDevServer = async () => { }
     })
 
     it('should start the call the webpack dev server if all is set', () => {
