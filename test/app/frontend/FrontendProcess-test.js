@@ -39,7 +39,7 @@ describe('FrontendProcess', () => {
   })
 
   beforeEach(() => {
-    process.env.USER_PATH = userSettingsPath
+    process.env.USER_DIR = userSettingsPath
     process.env.APP_PATH = appSettingsPath
 
     appSettings.getId = () => { }

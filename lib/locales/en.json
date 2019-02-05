@@ -186,6 +186,7 @@
     "GOT_DISCONNECT_REQUEST": "Developer connector sent disconnect request. Reason: {reason}"
   },
   "lib/app/backend/CliProxy": {
+    "UNEXPECTED_RESPONSE": "Unexpected response",
     "ERROR_NO_RESPONSE_COMMANDS": "No response commands or no deviceId in header from rapid",
     "ERROR_SERVER_ALREADY_RUNNING": "server already running",
     "PROXY_LISTENING_PORT": "Pipeline proxy is listening on {port}",

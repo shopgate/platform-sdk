@@ -53,7 +53,7 @@ describe('BackendAction', () => {
   })
 
   beforeEach(async () => {
-    process.env.USER_PATH = userSettingsFolder
+    process.env.USER_DIR = userSettingsFolder
 
     await fsEx.emptyDir(userSettingsFolder)
     await fsEx.emptyDir(path.join(appPath, SETTINGS_FOLDER))
@@ -98,7 +98,8 @@ describe('BackendAction', () => {
   afterEach(async () => {
     await subjectUnderTest.pipelineWatcher.close()
     await subjectUnderTest.extensionConfigWatcher.stop()
-    process.env.IGNORE_EXT_CONFIG_FOR = ''
+    delete process.env.IGNORE_EXT_CONFIG_FOR
+    delete process.env.USER_DIR
   })
 
   after(async () => {

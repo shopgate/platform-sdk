@@ -30,7 +30,7 @@ describe('LogoutAction', () => {
   })
 
   afterEach(async () => {
-    delete process.env.USER_PATH
+    delete process.env.USER_DIR
     delete process.env.SGCLOUD_DC_ADDRESS
     delete process.env.SGCLOUD_USER
     delete process.env.SGCLOUD_PASS
