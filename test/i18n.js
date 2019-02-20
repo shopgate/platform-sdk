@@ -91,5 +91,16 @@ describe('Internationalization', () => {
 
       assert.throws(() => { t(wrongKey) }, expectedError)
     })
+
+    it('should normalize key\'s separators', () => {
+      const modulePath = path.resolve(__dirname, '..', 'some', 'file', 'path.js').split(path.sep).join('\\')
+      const t = i18n(modulePath)
+
+      const message1 = t('key1')
+      assert.strictEqual(message1, 'value1')
+
+      const message2 = t('key2', { VAR: 'variable' })
+      assert.strictEqual(message2, 'value2 variable')
+    })
   })
 })
