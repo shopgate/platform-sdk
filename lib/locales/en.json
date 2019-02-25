@@ -183,7 +183,8 @@
     "ACTIVATED_LOCAL_PIPELINES_ON_REMOTE": "Activated local pipelines on the remote server...",
     "ACTIVATED_LOCAL_PIPELINES_ON_REMOTE_DONE": "Activated local pipelines on the remote server... done",
     "ERROR_NOT_DISCONNECTED": "Not disconnected",
-    "GOT_DISCONNECT_REQUEST": "Developer connector sent disconnect request. Reason: {reason}"
+    "GOT_DISCONNECT_REQUEST": "Developer connector sent disconnect request. Reason: {reason}",
+    "ERROR_APP_CONNECTION_ERROR": "Could not connect to the application {applicationId}. Please make sure the application is deployed and running."
   },
   "lib/app/backend/CliProxy": {
     "UNEXPECTED_RESPONSE": "Unexpected response",
