@@ -359,6 +359,43 @@ describe('ExtensionAction', () => {
       sinon.assert.callCount(detachExtensionsStub, 0)
       sinon.assert.callCount(attachExtensionsStub, 0)
     })
+
+    it('should detach gone extensions', async () => {
+      // Let the SDK to attach the extension
+      getAllExtensionPropertiesStub.restore()
+      attachExtensionsStub.restore()
+      detachExtensionsStub.restore()
+
+      // Create two extensions
+      const name1 = '@acme/one'
+      const name2 = '@acme/two'
+      const extPath1 = path.join(appPath, 'extensions', 'acme-one')
+      const extPath2 = path.join(appPath, 'extensions', 'acme-two')
+      await fsEx.ensureDir(extPath1)
+      await fsEx.ensureDir(extPath2)
+      await fsEx.writeJSON(path.join(extPath1, 'extension-config.json'), { id: name1, trusted: false })
+      await fsEx.writeJSON(path.join(extPath2, 'extension-config.json'), { id: name2, trusted: false })
+
+      // Attach the second one
+      await subjectUnderTest.attachExtensions({ extensions: ['acme-two'] })
+
+      // Now spy the methods
+      attachExtensionsStub = sinon.spy(subjectUnderTest, 'attachExtensions')
+      const detachExtensionStub = sinon.spy(subjectUnderTest.appSettings, 'detachExtension')
+
+      // Delete the attached extension directory
+      await fsEx.remove(extPath2)
+
+      // Attach a new extension
+      inquirerPromptStub.resolves({ extensions: ['@acme/one'] })
+      await subjectUnderTest.manageExtensions()
+
+      sinon.assert.callCount(inquirerPromptStub, 1)
+      sinon.assert.callCount(detachExtensionStub, 1)
+      sinon.assert.calledWithExactly(detachExtensionStub, '@acme/two')
+      sinon.assert.callCount(attachExtensionsStub, 1)
+      sinon.assert.calledWithExactly(attachExtensionsStub, { extensions: ['acme-one'] })
+    })
   })
 
   describe('._getAllExtensionProperties()', () => {
