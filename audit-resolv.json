@@ -4,5 +4,8 @@
   },
   "577|@shopgate/cloud-sdk-webpack>ejs-loader>lodash": {
     "ignore": 1
+  },
+  "786|@shopgate/cloud-sdk-webpack>chokidar>anymatch>micromatch>braces": {
+    "ignore": 1
   }
 }
