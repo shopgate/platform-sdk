@@ -3,6 +3,7 @@
 * Updated to use `@shopgate/cloud-sdk-webpack@1.18.0`
 * Updated multiple dependencies
 * Added unified translatable string handling
+* Sort extensions list alphabetically for `extension manage` command
 
 ## v1.8.0
 * Attach newly created extensions automatically
