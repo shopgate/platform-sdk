@@ -1,6 +1,6 @@
 ## 1.9.0
 * Frontend process doesn't need a setup anymore and can be accessed via `localhost` or `127.0.0.1` by default.
-* Updated to use `@shopgate/cloud-sdk-webpack@1.18.0`
+* Updated to use `@shopgate/cloud-sdk-webpack@1.19.0` that brings Webpack v4.
 * Updated multiple dependencies
 * Added unified translatable string handling
 * Sort extensions list alphabetically for `extension manage` command
