@@ -1,16 +1,4 @@
 {
-  "725|@shopgate/cloud-sdk-webpack>webpack-dev-server": {
-    "ignore": 1
-  },
-  "577|@shopgate/cloud-sdk-webpack>ejs-loader>lodash": {
-    "ignore": 1
-  },
-  "782|@shopgate/cloud-sdk-webpack>ejs-loader>lodash": {
-    "ignore": 1
-  },
-  "786|@shopgate/cloud-sdk-webpack>webpack-dev-server>http-proxy-middleware>micromatch>braces": {
-    "ignore": 1
-  },
   "786|chokidar>anymatch>micromatch>braces": {
     "ignore": 1
   }
