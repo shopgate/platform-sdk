@@ -74,7 +74,7 @@ describe('InitAction', () => {
       await subjectUnderTest.run(null)
       assert.fail('Expected an error to be thrown.')
     } catch (err) {
-      assert.equal(err.message, 'You\'re not logged in! Please run `sgconnect login` again.')
+      assert.equal(err.message, 'You\'re not logged in. Please run `sgconnect login` again.')
     }
   })
 
@@ -110,7 +110,7 @@ describe('InitAction', () => {
       delete process.env.APP_PATH
       assert.fail('Expected exception to be thrown.')
     } catch (err) {
-      assert.equal(err.message, 'The application test is not available or permissions are missing (message: Getting application data failed). Please check the application at developer.shopgate.com!')
+      assert.equal(err.message, 'The application test is not available or permissions are missing (message: Getting application data failed). Please check the application at https://developer.shopgate.com.')
       dcMock.done()
     }
   })

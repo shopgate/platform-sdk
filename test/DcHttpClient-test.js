@@ -131,7 +131,7 @@ describe('DcHttpClient', () => {
         await dcClient.checkPermissions(appId)
       } catch (err) {
         assert.ok(err)
-        assert.equal(err.message, `You don't have access to this application`)
+        assert.equal(err.message, `You do not have access to this application`)
       } finally {
         dcMock.done()
       }

@@ -127,7 +127,7 @@ describe('BackendAction', () => {
         await subjectUnderTest.run()
         assert.fail('Expected error to be thrown.')
       } catch (err) {
-        assert.equal(err.message, 'You\'re not logged in! Please run `sgconnect login` again.')
+        assert.equal(err.message, 'You\'re not logged in. Please run `sgconnect login` again.')
       }
     })
 
@@ -236,8 +236,7 @@ describe('BackendAction', () => {
             assert.ok(err)
             assert.equal(
               err.message,
-              'Pipeline ID "testPipeline123" and file name "testPipeline" mismatch! ' +
-              'The ID of a pipeline and its file name should be the same.'
+              'Pipeline ID "testPipeline123" and file name "testPipeline" mismatch. The pipeline ID and its file name should match.'
             )
             done()
           })
@@ -386,7 +385,7 @@ describe('BackendAction', () => {
         assert.ifError(err)
         subjectUnderTest._pipelineChanged(file).catch(err => {
           assert.ok(err)
-          assert.equal(err.message, `Pipeline ID "${pipeline.pipeline.id}" should match its file name!`)
+          assert.equal(err.message, `Pipeline ID "${pipeline.pipeline.id}" should match its file name`)
           done()
         })
       })
@@ -400,7 +399,7 @@ describe('BackendAction', () => {
         assert.ifError(err)
         subjectUnderTest._pipelineChanged(file).catch(err => {
           assert.ok(err)
-          assert.equal(err.message, `invalid pipeline; check the pipeline.id property in ${file}`)
+          assert.equal(err.message, `Invalid pipeline; check the pipeline.id property in ${file}`)
           done()
         })
       })
