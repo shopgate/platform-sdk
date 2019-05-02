@@ -114,18 +114,18 @@
     "should": "get user value",
     "type": "user",
     "method": "get",
-    "err": "user not logged in"
+    "err": "User not logged in"
   },
   {
     "should": "set user value",
     "type": "user",
     "method": "set",
-    "err": "user not logged in"
+    "err": "User not logged in"
   },
   {
     "should": "del user value",
     "type": "user",
     "method": "del",
-    "err": "user not logged in"
+    "err": "User not logged in"
   }
 ]

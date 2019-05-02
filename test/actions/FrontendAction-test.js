@@ -87,7 +87,7 @@ describe('FrontendAction', () => {
         subjectUnderTest = new FrontendAction(appSettings, userSettings)
       } catch (err) {
         assert.ok(err)
-        assert.equal(err.message, 'You\'re not logged in! Please run `sgconnect login` again.')
+        assert.equal(err.message, 'You\'re not logged in. Please run `sgconnect login` again.')
       }
     })
   })
@@ -105,7 +105,7 @@ describe('FrontendAction', () => {
         await subjectUnderTest.run('start', null, options)
         assert.fail()
       } catch (err) {
-        assert.equal(err.message, 'Can\'t find theme \'theme-gmd\'. Please make sure you passed the right theme.')
+        assert.equal(err.message, 'Cannot find theme \'theme-gmd\'. Please make sure you passed the right theme.')
       }
     })
 
