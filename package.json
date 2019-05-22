@@ -80,7 +80,7 @@
     "semver": "^5.5.0",
     "socket.io-client": "^2.0.4",
     "tar-fs": "^1.16.3",
-    "unzip": "^0.1.11",
+    "unzipper": "^0.9.15",
     "update-notifier": "^2.3.0",
     "uuid": "^3.2.1"
   },

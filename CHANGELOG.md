@@ -1,3 +1,6 @@
+## 1.9.2
+* Replaced `unzip` package with `unzippper` due to Node 12 incompatibility of the former
+
 ## 1.9.1
 * Bugfixes regarding webpack issues
 
