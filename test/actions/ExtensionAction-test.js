@@ -47,7 +47,7 @@ const unzip = {
   Extract: extract
 }
 const ExtensionAction = proxyquire('../../lib/actions/ExtensionAction', {
-  'unzip': unzip,
+  'unzipper': unzip,
   'child_process': {
     spawn: () => (mockProcess)
   }
