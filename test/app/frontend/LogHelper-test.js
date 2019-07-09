@@ -5,7 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-const { bold } = require('chalk')
+const { bold } = require('kleur')
 const assert = require('assert')
 const sinon = require('sinon')
 const proxyquire = require('proxyquire')
