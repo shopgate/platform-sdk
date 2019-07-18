@@ -48,7 +48,7 @@
     ]
   },
   "dependencies": {
-    "@shopgate/cloud-sdk-webpack": "1.18.0",
+    "@shopgate/cloud-sdk-webpack": "^1.19.6",
     "@shopgate/extension-config-validator": "^1.4.2",
     "ansicolors": "^0.3.2",
     "ansistyles": "^0.1.3",
@@ -56,7 +56,7 @@
     "bunyan": "^1.8.12",
     "caporal": "^1.1.0",
     "chalk": "^2.3.0",
-    "chokidar": "^1.7.0",
+    "chokidar": "^3.0.2",
     "convict": "^4.4.1",
     "dotenv": "^6.2.0",
     "errio": "^1.2.2",
