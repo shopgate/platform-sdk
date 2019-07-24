@@ -142,7 +142,8 @@
     "INPUT_OVERWRITE_APP": "Do you really want to overwrite your current application ({appId})? (y/N)",
     "INPUT_IGNORE_RUNNING_PROCESSES": "Processe(s): {pids} running, reinit can cause problems in these processes; ignore? (y,N)",
     "ERROR_NOT_LOGGED_IN": "You're not logged in. Please run `sgconnect login` again.",
-    "ERROR_APP_NOT_AVAILABLE_REASON": "The application {appId} is not available or permissions are missing (message: {reason}). Please check the application at https://developer.shopgate.com."
+    "ERROR_APP_NOT_AVAILABLE_REASON": "The application {appId} is not available or permissions are missing (message: {reason}). Please check the application at https://developer.shopgate.com.",
+    "ERROR_CANNOT_INIT_HOMEDIR": "Cannot init a new project in user's home directory"
   },
   "lib/actions/LoginAction": {
     "LOGIN_DESCRIPTION": "Login",
