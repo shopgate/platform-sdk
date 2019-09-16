@@ -1,5 +1,5 @@
 ## 1.10.0
-* Updated to use `@shopgate/cloud-sdk-webpack@1.20.3` that brings support for Babel 7.
+* Updated to use `@shopgate/cloud-sdk-webpack@1.20.4` that brings support for Babel 7.
 
 ## 1.9.2
 * Replaced `unzip` package with `unzippper` due to Node 12 incompatibility of the former
