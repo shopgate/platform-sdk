@@ -43,6 +43,7 @@ describe('InitAction', () => {
   afterEach(async () => {
     delete process.env.SGCLOUD_DC_ADDRESS
     delete process.env.APP_PATH
+    config.reset('workingDirectory')
     await fsEx.emptyDir(userSettingsFolder)
     await fsEx.emptyDir(appPath)
   })
@@ -66,6 +67,16 @@ describe('InitAction', () => {
     assert(commander.option.calledWith('--appId <appId>'))
     assert(commander.description.calledOnce)
     assert(commander.action.calledOnce)
+  })
+
+  it('should throw if run inside user\'s home directory', async () => {
+    config.load({ workingDirectory: userSettingsFolder })
+    try {
+      await subjectUnderTest.run()
+      assert.fail('Expected an error to be thrown.')
+    } catch (err) {
+      assert.deepEqual(err.message, 'Cannot init a new project in user\'s home directory')
+    }
   })
 
   it('should throw if user not logged in', async () => {
