@@ -1,5 +1,7 @@
 ## 1.10.0
 * Updated to use `@shopgate/cloud-sdk-webpack@1.20.6` that brings support for Babel 7.
+* Updated the underlying `restify` package to the latest version
+* Attached extensions config is now actualized during backed start
 * Fix which prevents running `sgconnect` commands in user's home directory
 * Updated vulnerable dependencies
 

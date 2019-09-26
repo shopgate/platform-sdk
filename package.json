@@ -74,7 +74,7 @@
     "replace-in-file": "^3.1.0",
     "request": "^2.87.0",
     "request-promise-native": "^1.0.5",
-    "restify": "^6.3.4",
+    "restify": "^8.4.0",
     "restify-cors-middleware": "^1.1.0",
     "semver": "^5.5.0",
     "socket.io-client": "^2.0.4",
