@@ -1,5 +1,5 @@
 ## 1.10.0
-* Updated to use `@shopgate/cloud-sdk-webpack@1.20.6` that brings support for Babel 7.
+* Updated to use `@shopgate/cloud-sdk-webpack@1.20.9` that brings support for Babel 7.
 * Fix which prevents running `sgconnect` commands in user's home directory
 * Updated vulnerable dependencies
 
