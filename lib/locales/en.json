@@ -173,6 +173,7 @@
   "lib/app/backend/BackendProcess": {
     "ESTABLISHING_SDK_CONNECTION": "Establishing SDK connection",
     "ERROR_CONNECTION_ERROR": "Connection error! Trying to reconnect...",
+    "ERROR_SOCKET_EMIT_TIMEOUT": "Socket emit timeout",
     "TRYING_TO_ATTACH_EXTENSION": "Trying to attach {extensionId} (trusted: {trusted}) ...",
     "EXTENSION_ATTACHED": "Extension {extensionId} (trusted: {trusted}) attached",
     "ERROR_ATTACHING_EXTENSION": "Error while attaching the extension {extensionId} (trusted: {trusted}): {reason}",
