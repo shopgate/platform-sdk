@@ -9,7 +9,6 @@
   const AppSettings = require('../lib/app/AppSettings')
   const UserSettings = require('../lib/user/UserSettings')
   const DcHttpClient = require('../lib/DcHttpClient')
-  const FrontendSettings = require('../lib/app/frontend/FrontendSettings')
   const logger = require('../lib/logger')
   const utils = require('../lib/utils/utils')
 
@@ -22,10 +21,9 @@
     process.exit(1)
   }
 
-  const notifier = updateNotifier({ pkg, updateCheckInterval: 0, isGlobal: true })
-  notifier.notify()
-
-  if (notifier.update) {
+  const notifier = updateNotifier({ pkg, updateCheckInterval: 0 })
+  if (updateNotifier.update && updateNotifier.update.latest !== pkg.version) {
+    notifier.notify({ isGlobal: true })
     process.exit(0)
   }
 
