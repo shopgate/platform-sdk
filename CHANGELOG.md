@@ -1,9 +1,10 @@
 ## 1.10.0
-* Updated to use `@shopgate/cloud-sdk-webpack@1.20.11` that brings support for Babel 7.
-* Fix which prevents running `sgconnect` commands in user's home directory
-* Updated vulnerable dependencies
-* Fix update notifier behaviour 
+* Updated to use `@shopgate/cloud-sdk-webpack@1.20.12` that brings support for Babel 7.
+* Updated vulnerable dependencies and fixed their versions
+* Increased extensions list maximum height
 * Fixed extension config changes watcher
+* Fixed update notifier behaviour
+* Fix which prevents running `sgconnect` commands in user's home directory
 
 ## 1.9.2
 * Replaced `unzip` package with `unzippper` due to Node 12 incompatibility of the former
