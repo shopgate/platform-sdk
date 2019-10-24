@@ -1,9 +1,11 @@
 ## 1.10.0
-* Updated to use `@shopgate/cloud-sdk-webpack@1.20.6` that brings support for Babel 7.
-* Updated the underlying `restify` package to the latest version
-* Attached extensions config is now actualized during backed start
+* Updated to use `@shopgate/cloud-sdk-webpack@1.20.12` that brings support for Babel 7.
+* Updated vulnerable dependencies and fixed their versions
+* Increased extensions list maximum height
+* Attached extensions config is now actualized during backend start
+* Fixed extension config changes watcher
+* Fixed update notifier behaviour
 * Fix which prevents running `sgconnect` commands in user's home directory
-* Updated vulnerable dependencies
 
 ## 1.9.2
 * Replaced `unzip` package with `unzippper` due to Node 12 incompatibility of the former
