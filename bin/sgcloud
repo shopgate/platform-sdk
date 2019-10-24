@@ -40,6 +40,9 @@
     const appSettings = new AppSettings(appFolder || '')
     const userSettings = new UserSettings()
     const dcHttpClient = new DcHttpClient(userSettings, logger)
+
+    await appSettings.validateAttachedExtensions()
+
     // load all custom actions
     const actions = require('../')
     Object.keys(actions).forEach(a => actions[a].register(caporal, appSettings, userSettings, dcHttpClient))
