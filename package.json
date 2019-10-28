@@ -48,7 +48,7 @@
     ]
   },
   "dependencies": {
-    "@shopgate/cloud-sdk-webpack": "1.20.12",
+    "@shopgate/cloud-sdk-webpack": "1.20.13",
     "@shopgate/extension-config-validator": "1.4.3",
     "ansicolors": "0.3.2",
     "ansistyles": "0.1.3",

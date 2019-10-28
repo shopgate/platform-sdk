@@ -1,5 +1,5 @@
 ## 1.10.0
-* Updated to use `@shopgate/cloud-sdk-webpack@1.20.12` that brings support for Babel 7.
+* Updated to use `@shopgate/cloud-sdk-webpack@1.20.13` that brings support for Babel 7.
 * Updated vulnerable dependencies and fixed their versions
 * Increased extensions list maximum height
 * Attached extensions config is now actualized during backend start
