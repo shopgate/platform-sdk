@@ -60,7 +60,7 @@ describe('FrontendProcess', () => {
     }
 
     frontendProcess = new FrontendProcess({
-      theme: null
+      theme: 'theme-gmd'
     }, frontendSetup, appSettings)
   })
 
@@ -100,7 +100,7 @@ describe('FrontendProcess', () => {
       frontendProcess.webpackDevServer = () => Promise.resolve()
     })
 
-    it('should start the call the rapid dev server if all is set', () => {
+    it('should start the rapid dev server if all is set', () => {
       const rapidDevServerSpy = sinon.spy(frontendProcess, 'rapidDevServer')
 
       frontendSettings.getIpAddress = () => Promise.resolve('1.1.1.1')
@@ -141,7 +141,7 @@ describe('FrontendProcess', () => {
       frontendProcess.rapidDevServer = async () => { }
     })
 
-    it('should start the call the webpack dev server if all is set', () => {
+    it('should start the webpack dev server if all is set', () => {
       const webpackDevServerSpy = sinon.spy(frontendProcess, 'webpackDevServer')
 
       frontendSettings.getIpAddress = () => Promise.resolve('1.1.1.1')
