@@ -62,6 +62,7 @@
     "errio": "1.2.2",
     "fs-extra": "4.0.3",
     "glob": "7.1.4",
+    "ignore": "5.1.4",
     "inquirer": "6.5.2",
     "jsonlint": "1.6.3",
     "longjohn": "0.2.12",
