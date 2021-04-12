@@ -1,3 +1,6 @@
+## 1.11.1
+* Fix problem with the websocket connection on node 15
+
 ## 1.11.0
 * Use the theme's webpack configuration if it exists
 
