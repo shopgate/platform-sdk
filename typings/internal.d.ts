@@ -28,6 +28,7 @@ declare namespace Internal {
     interface FrontendJson {
         sourceMapsType?: string,
         accessToken?: string,
+        startpageIp?: string,
         remotePort?: number,
         hmrPort?: number,
         apiPort?: number,
@@ -61,7 +62,13 @@ declare namespace Internal {
 
         getSourceMapsType(): Promise<string>,
 
-        setIpAddress(ip: string): Promise<void>,
+        setIpAddress(ip?: string): Promise<void>,
+
+        setStartpageIpAddress(ip?: string): Promise<void>,
+
+        getStartpageIpAddress(): Promise<string>,
+
+        setSourceMapsType(sourceMapsType?: string): Promise<void>,
 
         setPort(port: number): Promise<void>,
 
