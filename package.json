@@ -97,7 +97,7 @@
     "pre-commit": "1.2.2",
     "proxyquire": "1.8.0",
     "sinon": "7.5.0",
-    "socket.io": "2.3.0",
+    "socket.io": "2.5.0",
     "standard": "10.0.3"
   },
   "engines": {
