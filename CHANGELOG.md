@@ -1,3 +1,6 @@
+## 1.11.2
+* Introduced new process.env to enable connecting the RapidDevServer to a custom appId
+
 ## 1.11.1
 * Fix problem with the websocket connection on node 15
 
