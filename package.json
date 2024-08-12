@@ -76,7 +76,7 @@
     "request-promise-native": "1.0.7",
     "restify": "8.4.0",
     "restify-cors-middleware2": "^2.1.2",
-    "semver": "5.7.1",
+    "semver": "5.7.2",
     "socket.io-client": "^2.4.0",
     "tar-fs": "1.16.3",
     "unzipper": "0.9.15",
