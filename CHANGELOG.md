@@ -1,3 +1,6 @@
+## 1.12.0
+* Fixed issues with Windows and recent NodeJS versions
+
 ## 1.11.2
 * Introduced new process.env to enable connecting the RapidDevServer to a custom appId
 
