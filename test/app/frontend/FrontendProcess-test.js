@@ -14,11 +14,17 @@ const sinon = require('sinon')
 const { promisify } = require('util')
 
 const forkFailError = 'Fork failed!'
+const spawnFailError = 'Spawn failed!'
+const findWebpackConfigError = 'No Webpack config found!'
 let forkFail = false
+let spawnFail = false
+let existsSyncFail = false
 let forkSpy
+let spawnSpy
+let existsSyncSpy
 const logSetupNeededSpy = sinon.spy()
 
-describe('FrontendProcess', () => {
+describe.only('FrontendProcess', () => {
   let tempDir
   let userSettingsPath
   let appSettingsPath
@@ -45,10 +51,21 @@ describe('FrontendProcess', () => {
     appSettings.getId = () => { }
     frontendSettings = {}
     const FrontendProcess = proxyquire('../../../lib/app/frontend/FrontendProcess', {
+      fs: {
+        existsSync: existsSyncSpy = sinon.spy(() => {
+          return !existsSyncFail
+        })
+      },
       child_process: {
         fork: forkSpy = sinon.spy(() => {
           if (forkFail) throw new Error(forkFailError)
+        }),
+        spawn: spawnSpy = sinon.spy(() => {
+          if (spawnFail) throw new Error(spawnFailError)
         })
+      },
+      '../../i18n': () => {
+        return () => findWebpackConfigError
       },
       './LogHelper': {
         logSetupNeeded: logSetupNeededSpy
@@ -142,8 +159,6 @@ describe('FrontendProcess', () => {
     })
 
     it('should start the webpack dev server if all is set', () => {
-      const webpackDevServerSpy = sinon.spy(frontendProcess, 'webpackDevServer')
-
       frontendSettings.getIpAddress = () => Promise.resolve('1.1.1.1')
       frontendSettings.getPort = () => Promise.resolve(12345)
       frontendSettings.getApiPort = () => Promise.resolve(23456)
@@ -152,27 +167,45 @@ describe('FrontendProcess', () => {
 
       return frontendProcess.run()
         .then(() => {
-          sinon.assert.calledOnce(webpackDevServerSpy)
-          sinon.assert.calledOnce(forkSpy)
+          sinon.assert.calledOnce(existsSyncSpy)
+          sinon.assert.calledOnce(spawnSpy)
+          sinon.assert.calledWith(spawnSpy, 'npx', ['webpack-dev-server'])
         })
         .catch((err) => assert.ifError(err))
     })
 
-    it('should throw a error if something went wrong', async () => {
+    it('should throw a error if spawning the webpack-dev-server went wrong', async () => {
       frontendSettings.getIpAddress = () => Promise.resolve('1.1.1.1')
       frontendSettings.getPort = () => Promise.resolve(12345)
       frontendSettings.getApiPort = () => Promise.resolve(23456)
       frontendSettings.loadSettings = () => Promise.resolve({})
-      forkFail = true
+      spawnFail = true
 
       try {
         await frontendProcess.run()
         assert.fail('Did not throw')
       } catch (err) {
-        assert.equal(err.message, forkFailError)
+        assert.equal(err.message, spawnFailError)
       }
 
-      forkFail = false
+      spawnFail = false
+    })
+
+    it('should throw a error if no webpack config was found', async () => {
+      frontendSettings.getIpAddress = () => Promise.resolve('1.1.1.1')
+      frontendSettings.getPort = () => Promise.resolve(12345)
+      frontendSettings.getApiPort = () => Promise.resolve(23456)
+      frontendSettings.loadSettings = () => Promise.resolve({})
+      existsSyncFail = true
+
+      try {
+        await frontendProcess.run()
+        assert.fail('Did not throw')
+      } catch (err) {
+        assert.equal(err.message, findWebpackConfigError)
+      }
+
+      existsSyncFail = false
     })
   })
 })
