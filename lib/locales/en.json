@@ -249,7 +249,10 @@
     "SETUP_ABORTED": "Setup aborted. Re-run in order to finish the process with new settings.",
     "SUCCESS": "SUCCESS",
     "PROJECT_READY": "Your {project} project is now ready!",
-    "FRONTEND_SETUP_DONE": "FrontendSetup done"
+    "FRONTEND_SETUP_DONE": "Frontend setup done"
+  },
+  "lib/app/frontend/FrontendProcess": {
+    "NO_DEV_SERVER_CONFIG_FOUND": "No development server configuration could be found inside theme folder"
   },
   "lib/app/frontend/LogHelper": {
     "SILENT_MODE": "SILENT MODE: Logs will be suppressed.",
