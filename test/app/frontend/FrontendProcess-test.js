@@ -24,7 +24,7 @@ let spawnSpy
 let existsSyncSpy
 const logSetupNeededSpy = sinon.spy()
 
-describe.only('FrontendProcess', () => {
+describe('FrontendProcess', () => {
   let tempDir
   let userSettingsPath
   let appSettingsPath
