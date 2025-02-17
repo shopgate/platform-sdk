@@ -290,7 +290,7 @@
     "REMOTE_PORT": "On which port should the remote dev server (redux) run?",
     "SOURCE_MAP_TYPE": "Please specify your development sourcemap type:",
     "CONFIRM": "Are these settings correct?",
-    "INTERFACE_NAME": "Network Interface"
+    "NETWORK_INTERFACE": "Network Interface"
   },
   "lib/DcHttpClient": {
     "ERROR_LOGIN_FAILED": "Login failed",
