@@ -39,19 +39,17 @@ const server = {
   on: sinon.spy(),
   use: sinon.spy(),
   post: sinon.spy(),
-  opts: sinon.spy()
+  options: sinon.spy()
 }
 
 let serverNull = false
 
-const restify = {
-  createServer: () => {
-    if (serverNull) {
-      return null
-    }
-
-    return server
+const express = () => {
+  if (serverNull) {
+    return null
   }
+
+  return server
 }
 
 const requestFailError = new Error('The request failed!')
@@ -78,7 +76,7 @@ describe('RapidDevServer', () => {
       '../LogHelper': logHelper,
       '../../../logger': logger,
       './RapidApi': RapidApi,
-      restify,
+      express,
       request
     })
 

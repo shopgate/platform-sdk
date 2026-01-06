@@ -1,3 +1,6 @@
+## next
+* Added support for Node 24
+
 ## 1.12.0
 * Fixed issues with Windows and recent NodeJS versions
 
