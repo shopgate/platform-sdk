@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ## next
 * Added support for Node 24
 
