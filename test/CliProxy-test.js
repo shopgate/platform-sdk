@@ -159,7 +159,7 @@ describe('CliProxy', () => {
           api.done()
           nock.disableNetConnect()
           cliProxy.close().then(() => {
-            server.close(done)
+            done()
           })
         })
       })

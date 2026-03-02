@@ -65,7 +65,7 @@ const defaultConfig = {
   apiPort: 9666,
   hmrPort: 3000,
   remotePort: 8000,
-  sourceMapsType: 'cheap-module-eval-source-map',
+  sourceMapsType: 'eval-cheap-module-source-map',
   confirmed: true
 }
 const runError = 'Had an error'

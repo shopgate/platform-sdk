@@ -1,3 +1,6 @@
+## next
+* Added support for Node 24
+
 ## 1.12.1
 * Update @shopgate/extension-config-validator to support connectApiCredentials
 
