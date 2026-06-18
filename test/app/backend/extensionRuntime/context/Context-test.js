@@ -1,5 +1,7 @@
 const assert = require('assert')
+const { constants, generateKeyPairSync, privateDecrypt } = require('node:crypto')
 const Context = require('../../../../../lib/app/backend/extensionRuntime/context/Context')
+const PublicKeyRegistry = require('../../../../../lib/app/backend/extensionRuntime/context/PublicKeyRegistry')
 const fsExtra = require('fs-extra')
 const path = require('path')
 const nock = require('nock')
@@ -353,6 +355,59 @@ describe('Context', () => {
       } catch (err) {
         assert.ifError(err)
       }
+    })
+  })
+
+  describe('encrypt', () => {
+    let registry
+    let privateKey
+
+    const decrypt = (encrypted) => privateDecrypt({
+      key: privateKey,
+      padding: constants.RSA_PKCS1_OAEP_PADDING,
+      oaepHash: 'sha256'
+    }, encrypted).toString()
+
+    beforeEach(() => {
+      const keyPair = generateKeyPairSync('rsa', { modulusLength: 2048 })
+      privateKey = keyPair.privateKey
+      registry = new PublicKeyRegistry([{ alias: 'PARTNER_A', publicKeyPem: keyPair.publicKey.export({ type: 'spki', format: 'pem' }).toString() }])
+    })
+
+    it('encrypts via callback', (done) => {
+      const context = new Context(null, null, null, null, '', defaultMeta, loggerStub, registry)
+      context.encrypt('PARTNER_A', Buffer.from('secret'), (err, encrypted) => {
+        assert.ifError(err)
+        assert.strictEqual(decrypt(encrypted), 'secret')
+        done()
+      })
+    })
+
+    it('encrypts via await', async () => {
+      const context = new Context(null, null, null, null, '', defaultMeta, loggerStub, registry)
+      const encrypted = await context.encrypt('PARTNER_A', Buffer.from('secret'))
+      assert.strictEqual(decrypt(encrypted), 'secret')
+    })
+
+    it('returns a synchronously usable buffer', () => {
+      const context = new Context(null, null, null, null, '', defaultMeta, loggerStub, registry)
+      const encrypted = context.encrypt('PARTNER_A', Buffer.from('secret'))
+      assert.ok(Buffer.isBuffer(encrypted))
+      assert.strictEqual(decrypt(encrypted), 'secret')
+    })
+
+    it('passes unknown-key errors to the callback', (done) => {
+      const context = new Context(null, null, null, null, '', defaultMeta, loggerStub, registry)
+      context.encrypt('UNKNOWN', Buffer.from('secret'), (err) => {
+        assert.ok(err)
+        assert.strictEqual(err.message, 'unknown public key "UNKNOWN"')
+        done()
+      })
+    })
+
+    it('throws when no key registry is configured', () => {
+      const context = new Context(null, null, null, null, '', defaultMeta, loggerStub)
+      assert.throws(() => context.encrypt('PARTNER_A', Buffer.from('secret')), /unknown public key "PARTNER_A"/)
     })
   })
 })

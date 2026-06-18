@@ -221,7 +221,8 @@
     "ERROR_UNREGISTERED_EXTENSION_STEP": "Got step execution of unregistered extension: \"{stepId}\"",
     "ERROR_NO_EXTENSION_CONFIG": "No extension configuration found at {path}",
     "ERROR_STEP_FILE_NOT_FOUND": "StepFile {stepFile} not found",
-    "ERROR_STEP_FUNCTION_NOT_FOUND": "Cannot find step function. Please export a step function using the format ''module.exports = function ([error,] context, input, callback) '{...}'''"
+    "ERROR_STEP_FUNCTION_NOT_FOUND": "Cannot find step function. Please export a step function using the format ''module.exports = function ([error,] context, input, callback) '{...}'''",
+    "ERROR_INVALID_ENCRYPTION_KEYS": "Received invalid encryption keys, context.encrypt will be unavailable"
   },
   "lib/app/backend/extensionRuntime/StepExecutor": {
     "RUNTIME_STARTED": "Runtime started",
@@ -235,7 +236,8 @@
     "NO_CALLBACK_FOR_MESSAGE": "Got message from step runtime but no callback found. May have timed out or double used.",
     "UNKNOWN_MESSAGE" : "Unknown message from step runtime",
     "ERROR_PROCESS_NOT_RUNNING": "Process not running, please restart or try again in a few seconds",
-    "ERROR_STEP_TIMEOUT": "Step ''{stepPath}'' timeout"
+    "ERROR_STEP_TIMEOUT": "Step ''{stepPath}'' timeout",
+    "ERROR_COULD_NOT_LOAD_ENCRYPTION_KEYS": "Could not load encryption keys, context.encrypt will be unavailable"
   },
   "lib/app/backend/PipelineWatcher": {
     "ERROR_NOT_DISCONNECTED": "Not disconnected"
@@ -297,6 +299,7 @@
     "ERROR_INVALID_DC_RESPONSE": "Invalid response from Developer Connector: {response}",
     "ERROR_NO_ACCESS_TO_APP": "You do not have access to this application",
     "ERROR_COULD_NOT_GET": "Could not get {infoType}",
+    "ERROR_COULD_NOT_GET_ENCRYPTION_KEYS": "Could not get encryption keys",
     "ERROR_APP_NOT_FOUND": "The application with ID ''{applicationId}'' was not found",
     "ERROR_PIPELINE_DOWNLOAD_FAILED": "Pipeline download failed",
     "ERROR_PIPELINE_DOWNLOAD_FAILED_INFO": "Pipeline download failed: {additionalInfo}",

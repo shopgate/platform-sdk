@@ -68,6 +68,55 @@ describe('DcHttpClient', () => {
     })
   })
 
+  describe('getEncryptionKeys', () => {
+    const appId = 'foobarAppId'
+
+    it('should return the configured keys', async () => {
+      const keys = [{ alias: 'PARTNER_A', publicKeyPem: '-----BEGIN PUBLIC KEY-----\nx\n-----END PUBLIC KEY-----' }]
+      const dcMock = nock(dcClient.dcAddress)
+        .get(`/applications/${appId}/encryptionKeys`)
+        .reply(200, { keys })
+
+      assert.deepEqual(await dcClient.getEncryptionKeys(appId), keys)
+      dcMock.done()
+    })
+
+    it('should default to an empty list when no keys are returned', async () => {
+      const dcMock = nock(dcClient.dcAddress)
+        .get(`/applications/${appId}/encryptionKeys`)
+        .reply(200, {})
+
+      assert.deepEqual(await dcClient.getEncryptionKeys(appId), [])
+      dcMock.done()
+    })
+
+    it('should update the usertoken on jwt-update', async () => {
+      const newToken = 'foobarTokenNewEnc'
+      const dcMock = nock(dcClient.dcAddress)
+        .get(`/applications/${appId}/encryptionKeys`)
+        .reply(200, { keys: [] }, { 'x-jwt': newToken })
+
+      await dcClient.getEncryptionKeys(appId)
+      assert.equal(await dcClient.userSettings.getToken(), newToken)
+      dcMock.done()
+    })
+
+    it('should throw error on dc error', async () => {
+      const dcMock = nock(dcClient.dcAddress)
+        .get(`/applications/${appId}/encryptionKeys`)
+        .reply(500)
+
+      try {
+        await dcClient.getEncryptionKeys(appId)
+        assert.fail('Expected an error to be thrown.')
+      } catch (err) {
+        assert.ok(err)
+      } finally {
+        dcMock.done()
+      }
+    })
+  })
+
   describe('downloadPipelines', () => {
     const appId = 'foobarAppId'
 

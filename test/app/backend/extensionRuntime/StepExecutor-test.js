@@ -303,7 +303,12 @@ describe('StepExecutor', () => {
         }
       })
 
-      const executor = new StepExecutorMocked({ info: () => { } }, { getApplicationFolder: () => appPath }, null, true)
+      const executor = new StepExecutorMocked(
+        { info: () => { }, warn: () => { }, debug: () => { } },
+        { getApplicationFolder: () => appPath, getId: async () => 'shop_1337' },
+        { getEncryptionKeys: async () => [] },
+        true
+      )
       await executor.start()
 
       const listeningToEvents = listeners.map(object => (object.event))
@@ -370,7 +375,12 @@ describe('StepExecutor', () => {
         }
       })
 
-      const executor = new StepExecutorMocked({ info: () => { } }, { getApplicationFolder: () => appPath }, null, false)
+      const executor = new StepExecutorMocked(
+        { info: () => { }, warn: () => { }, debug: () => { } },
+        { getApplicationFolder: () => appPath, getId: async () => 'shop_1337' },
+        { getEncryptionKeys: async () => [] },
+        false
+      )
       await executor.start()
 
       const listeningToEvents = listeners.map(object => (object.event))
