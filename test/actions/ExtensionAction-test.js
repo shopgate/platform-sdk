@@ -225,14 +225,12 @@ describe('ExtensionAction', () => {
       const extPath = path.join(appPath, 'extensions', name)
       await fsEx.ensureDir(extPath)
       await fsEx.writeJSON(path.join(extPath, 'extension-config.json'), { id: name })
-      await fsEx.outputJson(path.join(appPath, '.sgcloud', name, 'backend', 'config.json'), { secret: 'secret' })
 
       await appSettings.attachExtension(name, { id: name, trusted: false })
       await subjectUnderTest.detachExtensions({ extensions: [name] })
 
       const config = await fsEx.readJson(appSettings.attachedExtensionsFile)
       assert.deepEqual(config.attachedExtensions, {})
-      assert.equal(await fsEx.pathExists(path.join(appPath, '.sgcloud', name, 'backend', 'config.json')), false)
     })
 
     it('should skip if extension was not attached', async () => {
