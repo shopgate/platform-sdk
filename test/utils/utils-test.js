@@ -30,6 +30,8 @@ describe('utils', async () => {
       const settingsDir = path.join(testProjectDir, '.sgcloud')
       const ext1Dir = path.join(testProjectDir, 'extensions', 'te1', 'extension')
       const ext2Dir = path.join(testProjectDir, 'extensions', 'te2', 'extension')
+      const backend1Dir = path.join(settingsDir, 'te1', 'backend')
+      const backend2Dir = path.join(settingsDir, 'te2', 'backend')
       const theme1Dir = path.join(testProjectDir, 'themes', 'tt1', 'config')
       const theme2Dir = path.join(testProjectDir, 'themes', 'tt2', 'config')
       const plDir = path.join(testProjectDir, 'pipelines')
@@ -39,6 +41,8 @@ describe('utils', async () => {
         settingsDir,
         ext1Dir,
         ext2Dir,
+        backend1Dir,
+        backend2Dir,
         theme1Dir,
         theme2Dir,
         plDir,
@@ -50,6 +54,8 @@ describe('utils', async () => {
       const extensionsFile = path.join(settingsDir, 'attachedExtensions.json')
       const ext1ConfFile = path.join(ext1Dir, 'config.json')
       const ext2ConfFile = path.join(ext2Dir, 'config.json')
+      const backend1ConfigFile = path.join(backend1Dir, 'config.json')
+      const backend2ConfigFile = path.join(backend2Dir, 'config.json')
       const theme1AppFile = path.join(theme1Dir, 'app.json')
       const theme2AppFile = path.join(theme2Dir, 'app.json')
       const pl = path.join(plDir, 'pl.json')
@@ -61,6 +67,8 @@ describe('utils', async () => {
         extensionsFile,
         ext1ConfFile,
         ext2ConfFile,
+        backend1ConfigFile,
+        backend2ConfigFile,
         theme1AppFile,
         theme2AppFile,
         pl,
@@ -97,6 +105,78 @@ describe('utils', async () => {
           resolve()
         }, 1000)
       })
+    })
+  })
+
+  describe('backend config paths', () => {
+    let tempDir
+    let appPath
+    let appSettings
+
+    before(async () => {
+      tempDir = await promisify(fsEx.mkdtemp)(path.join(os.tmpdir(), 'sgtest-'))
+      appPath = path.join(tempDir, 'app')
+      appSettings = {
+        getApplicationFolder: () => appPath,
+        getId: async () => 'app-id',
+        loadAttachedExtensions: async () => ({
+          extension: { path: 'extension' }
+        })
+      }
+    })
+
+    beforeEach(async () => {
+      await fsEx.emptyDir(appPath)
+      await fsEx.ensureDir(path.join(appPath, 'extensions', 'extension', 'extension'))
+      await fsEx.ensureDir(path.join(appPath, 'extensions', 'extension', 'frontend'))
+      await fsEx.writeJson(path.join(appPath, 'extensions', 'extension', 'extension-config.json'), { id: 'extension' })
+    })
+
+    after(async () => fsEx.remove(tempDir))
+
+    it('should write backend config to .sgcloud and frontend config to the extension', async () => {
+      const dcHttpClient = {
+        generateExtensionConfig: async () => ({
+          backend: { secret: 'backend-secret' },
+          frontend: { publicValue: 'frontend-value' }
+        })
+      }
+
+      await utils.writeExtensionConfigs(appSettings, dcHttpClient, 'backend')
+
+      assert.deepEqual(
+        await fsEx.readJson(path.join(appPath, '.sgcloud', 'extension', 'backend', 'config.json')),
+        { secret: 'backend-secret' }
+      )
+      assert.equal(await fsEx.pathExists(path.join(appPath, 'extensions', 'extension', 'frontend', 'config.json')), false)
+
+      await utils.writeExtensionConfigs(appSettings, dcHttpClient, 'frontend')
+
+      assert.deepEqual(
+        await fsEx.readJson(path.join(appPath, 'extensions', 'extension', 'frontend', 'config.json')),
+        { publicValue: 'frontend-value' }
+      )
+      assert.deepEqual(await fsEx.readFile(path.join(appPath, '.gitignore'), 'utf8'), '.sgcloud/\n')
+    })
+
+    it('should reject extension paths outside the project extensions directory', () => {
+      assert.throws(
+        () => utils.getBackendConfigPath(appSettings, path.join(tempDir, 'outside')),
+        /Invalid extension path/
+      )
+    })
+
+    it('should remove generated and legacy backend configs', async () => {
+      const generatedConfig = path.join(appPath, '.sgcloud', 'extension', 'backend', 'config.json')
+      const legacyConfig = path.join(appPath, 'extensions', 'extension', 'extension', 'config.json')
+      await fsEx.outputJson(generatedConfig, { secret: 'backend-secret' })
+      await fsEx.outputJson(legacyConfig, { secret: 'legacy-secret' })
+
+      await utils.removeGeneratedBackendConfigs(appPath)
+      await utils.removeLegacyBackendConfigs(appPath)
+
+      assert.equal(await fsEx.pathExists(generatedConfig), false)
+      assert.equal(await fsEx.pathExists(legacyConfig), false)
     })
   })
 

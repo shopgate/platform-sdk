@@ -36,7 +36,7 @@ describe('EventHandler', () => {
   }
   let tempDir
 
-  const settings = { getId: async () => (1), getApplicationFolder: () => './build' }
+  const settings = { getId: async () => (1), getApplicationFolder: () => tempDir }
 
   const expectedBackendConfig = { something: 'something' }
   const expectedFrontendConfig = { somethingElse: 'somethingElse' }
@@ -52,7 +52,7 @@ describe('EventHandler', () => {
 
   before(async () => {
     tempDir = await promisify(fsEx.mkdtemp)(path.join(os.tmpdir(), 'sgtest-'))
-    config.path = path.join(tempDir, 'bar')
+    config.path = path.join(tempDir, 'extensions', 'bar')
   })
 
   beforeEach(async () => {
@@ -83,10 +83,19 @@ describe('EventHandler', () => {
       assert.equal(generatedComponentJson, true)
       assert.equal(pushedHooks, true)
       assert.equal(wroteLocalPipelines, true)
-      assert.deepEqual(await fsEx.readJson(path.join(config.path, 'extension', 'config.json')), expectedBackendConfig)
+      assert.deepEqual(await fsEx.readJson(path.join(tempDir, '.sgcloud', 'bar', 'backend', 'config.json')), expectedBackendConfig)
       assert.deepEqual(await fsEx.readJson(path.join(config.path, 'frontend', 'config.json')), expectedFrontendConfig)
       done()
     })
+  })
+
+  it('should only write frontend config for frontend changes', async () => {
+    fsEx.ensureDirSync(path.join(config.path, 'frontend'))
+
+    await EventHandler.extensionConfigChanged(config, settings, dcClient, 'frontend')
+
+    assert.deepEqual(await fsEx.readJson(path.join(config.path, 'frontend', 'config.json')), expectedFrontendConfig)
+    assert.equal(await fsEx.pathExists(path.join(tempDir, '.sgcloud', 'bar', 'backend', 'config.json')), false)
   })
 
   it('should fail because validateExtensionConfig fails', async () => {

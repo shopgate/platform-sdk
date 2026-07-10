@@ -283,9 +283,10 @@ describe('BackendAction', () => {
       fsEx.ensureDirSync(path.join(cfgPath, 'extension'))
 
       try {
-        await utils.updateExtensionConfig({ file: generated, path: cfgPath }, await subjectUnderTest.appSettings.getId(), subjectUnderTest.dcHttpClient)
-        const content = await fsEx.readJson(path.join(cfgPath, 'extension', 'config.json'))
+        await utils.updateExtensionConfig({ file: generated, path: cfgPath }, await subjectUnderTest.appSettings.getId(), subjectUnderTest.dcHttpClient, subjectUnderTest.appSettings, 'backend')
+        const content = await fsEx.readJson(path.join(appPath, '.sgcloud', 'testExt', 'backend', 'config.json'))
         assert.deepEqual(content, { id: 'myGeneratedExtension' })
+        assert.equal(await fsEx.pathExists(path.join(cfgPath, 'extension', 'config.json')), false)
         assert.equal(called, 1)
       } catch (err) {
         assert.ifError(err)
@@ -305,7 +306,7 @@ describe('BackendAction', () => {
       const cfgPath = path.join(appPath, 'extensions', 'testExt')
 
       try {
-        await utils.updateExtensionConfig({ file: generated, path: cfgPath }, await subjectUnderTest.appSettings.getId(), subjectUnderTest.dcHttpClient)
+        await utils.updateExtensionConfig({ file: generated, path: cfgPath }, await subjectUnderTest.appSettings.getId(), subjectUnderTest.dcHttpClient, subjectUnderTest.appSettings, 'backend')
         assert.ok(calledInfo)
       } catch (err) {
         assert.ifError(err)
@@ -321,11 +322,11 @@ describe('BackendAction', () => {
         return Promise.resolve(generated)
       }
 
-      const cfgPath = path.join(appPath, 'extension', 'testExt')
+      const cfgPath = path.join(appPath, 'extensions', 'testExt')
       fsEx.ensureDirSync(path.join(cfgPath, 'frontend'))
 
       try {
-        await utils.updateExtensionConfig({ file: generated, path: cfgPath }, await subjectUnderTest.appSettings.getId(), subjectUnderTest.dcHttpClient)
+        await utils.updateExtensionConfig({ file: generated, path: cfgPath }, await subjectUnderTest.appSettings.getId(), subjectUnderTest.dcHttpClient, subjectUnderTest.appSettings, 'frontend')
         const content = await fsEx.readJson(path.join(cfgPath, 'frontend', 'config.json'))
         assert.deepEqual(content, { id: 'myGeneratedExtension' })
         assert.equal(called, 1)
