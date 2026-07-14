@@ -1,9 +1,9 @@
 const assert = require('assert')
 const EventEmitter = require('events')
 const fsEx = require('fs-extra')
+const net = require('net')
 const os = require('os')
 const path = require('path')
-const portfinder = require('portfinder')
 const proxyquire = require('proxyquire')
 const sinon = require('sinon')
 const { promisify } = require('util')
@@ -29,6 +29,15 @@ describe('BackendProcess', () => {
 
   const socketIOMock = new SocketIOMock()
 
+  const getFreePort = () => new Promise((resolve, reject) => {
+    const server = net.createServer()
+    server.once('error', reject)
+    server.listen(0, '127.0.0.1', () => {
+      const port = server.address().port
+      server.close(err => err ? reject(err) : resolve(port))
+    })
+  })
+
   const BackendProcess = proxyquire('../../../lib/app/backend/BackendProcess', {
     'socket.io-client': () => socketIOMock
   })
@@ -51,14 +60,11 @@ describe('BackendProcess', () => {
       execute: (input, stepMetaData, cb) => cb(null, null)
     }
 
-    portfinder.getPort((err, port) => {
-      assert.ifError(err)
-
-      process.env.SGCLOUD_DC_ADDRESS = `http://localhost:${port}`
-      logger = { info: () => {}, error: () => {}, debug: () => {} }
-      backendProcess = new BackendProcess(userSettings, logger)
-      backendProcess.executor = stepExecutor
-    })
+    const port = await getFreePort()
+    process.env.SGCLOUD_DC_ADDRESS = `http://localhost:${port}`
+    logger = { info: () => {}, error: () => {}, debug: () => {} }
+    backendProcess = new BackendProcess(userSettings, logger)
+    backendProcess.executor = stepExecutor
   })
 
   afterEach(async () => {

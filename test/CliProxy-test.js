@@ -1,4 +1,3 @@
-require('longjohn')
 const assert = require('assert')
 const request = require('request')
 const nock = require('nock')
