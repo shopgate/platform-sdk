@@ -5,7 +5,7 @@ const os = require('os')
 const path = require('path')
 const { promisify } = require('util')
 const DcHttpClient = require('../lib/DcHttpClient')
-const { UnauthorizedError } = require('../lib/errors')
+const { NotFoundError, UnauthorizedError } = require('../lib/errors')
 const UserSettings = require('../lib/user/UserSettings')
 const config = require('../lib/config')
 
@@ -111,6 +111,37 @@ describe('DcHttpClient', () => {
         assert.fail('Expected an error to be thrown.')
       } catch (err) {
         assert.ok(err)
+      } finally {
+        dcMock.done()
+      }
+    })
+
+    it('should throw a NotFoundError if the pipeline controller does not support encryption keys', async () => {
+      const dcMock = nock(dcClient.dcAddress)
+        .get(`/applications/${appId}/encryptionKeys`)
+        .reply(404, { code: 'EPLCNOENCRYPTIONKEYS', message: 'nope' })
+
+      try {
+        await dcClient.getEncryptionKeys(appId)
+        assert.fail('Expected an error to be thrown.')
+      } catch (err) {
+        assert.ok(err instanceof NotFoundError)
+      } finally {
+        dcMock.done()
+      }
+    })
+
+    it('should throw a generic error on a 404 that is not about an outdated pipeline controller', async () => {
+      const dcMock = nock(dcClient.dcAddress)
+        .get(`/applications/${appId}/encryptionKeys`)
+        .reply(404, { code: 'ResourceNotFound', message: 'no such route' })
+
+      try {
+        await dcClient.getEncryptionKeys(appId)
+        assert.fail('Expected an error to be thrown.')
+      } catch (err) {
+        assert.ok(!(err instanceof NotFoundError))
+        assert.equal(err.message, 'no such route')
       } finally {
         dcMock.done()
       }

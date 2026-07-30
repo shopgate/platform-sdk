@@ -43,4 +43,14 @@ describe('PublicKeyRegistry (SDK)', () => {
   it('builds an empty registry by default', () => {
     assert.throws(() => new PublicKeyRegistry().encrypt('PARTNER_A', Buffer.from('x')), /unknown public key "PARTNER_A"/)
   })
+
+  it('reports why the keys are missing instead of blaming the alias', () => {
+    const registry = new PublicKeyRegistry([], 'pipeline controller is outdated')
+    assert.throws(() => registry.encrypt('PARTNER_A', Buffer.from('x')), /pipeline controller is outdated/)
+  })
+
+  it('still reports an unknown alias if keys were loaded', () => {
+    const registry = new PublicKeyRegistry([{ alias: 'PARTNER_A', publicKeyPem }], 'pipeline controller is outdated')
+    assert.throws(() => registry.encrypt('UNKNOWN', Buffer.from('x')), /unknown public key "UNKNOWN"/)
+  })
 })

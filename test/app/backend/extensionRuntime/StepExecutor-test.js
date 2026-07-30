@@ -8,7 +8,8 @@ const { promisify } = require('util')
 const config = require('../../../../lib/config')
 const DcHttpClient = require('../../../../lib/DcHttpClient')
 const AppSettings = require('../../../../lib/app/AppSettings')
-const { EXTENSIONS_FOLDER, SETTINGS_FOLDER } = require('../../../../lib/app/Constants')
+const { EXTENSIONS_FOLDER, SETTINGS_FOLDER, UNAVAILABLE_UNSUPPORTED, UNAVAILABLE_FAILED } = require('../../../../lib/app/Constants')
+const { NotFoundError } = require('../../../../lib/errors')
 const StepExecutor = require('../../../../lib/app/backend/extensionRuntime/StepExecutor')
 const UserSettings = require('../../../../lib/user/UserSettings')
 
@@ -387,6 +388,68 @@ describe('StepExecutor', () => {
       assert.ok(listeningToEvents.includes('error'))
       assert.ok(listeningToEvents.includes('exit'))
       assert.ok(listeningToEvents.includes('disconnect'))
+    })
+
+    describe('encryption keys', () => {
+      /**
+       * Starts an executor whose dcHttpClient behaves as given and returns the env the child was
+       * forked with, plus everything that was logged as a warning.
+       */
+      const startAndCaptureEnv = async (getEncryptionKeys) => {
+        let forkEnv
+        const warnings = []
+
+        forkMock = () => ({
+          on: (event, cb) => {
+            if (event !== 'message') return
+            const data = { ready: true }
+            return cb(data)
+          }
+        })
+
+        const StepExecutorMocked = proxyquire('../../../../lib/app/backend/extensionRuntime/StepExecutor', {
+          child_process: {
+            fork: (program, options) => {
+              forkEnv = options.env
+              return forkMock()
+            }
+          }
+        })
+
+        const executor = new StepExecutorMocked(
+          { info: () => { }, warn: (message) => warnings.push(message), debug: () => { } },
+          { getApplicationFolder: () => appPath, getId: async () => 'shop_1337' },
+          { getEncryptionKeys },
+          false
+        )
+        await executor.start()
+
+        return { forkEnv, warnings }
+      }
+
+      it('should pass the loaded keys to the child process', async () => {
+        const keys = [{ alias: 'PARTNER_A', publicKeyPem: 'pem' }]
+        const { forkEnv } = await startAndCaptureEnv(async () => keys)
+
+        assert.equal(forkEnv.ENCRYPTION_PUBLIC_KEYS, JSON.stringify(keys))
+        assert.equal(forkEnv.ENCRYPTION_KEYS_UNAVAILABLE, '')
+      })
+
+      it('should tell the child process that the pipeline controller is outdated', async () => {
+        const { forkEnv, warnings } = await startAndCaptureEnv(async () => { throw new NotFoundError('nope') })
+
+        assert.equal(forkEnv.ENCRYPTION_PUBLIC_KEYS, '[]')
+        assert.equal(forkEnv.ENCRYPTION_KEYS_UNAVAILABLE, UNAVAILABLE_UNSUPPORTED)
+        assert.ok(warnings.some(warning => /does not provide encryption keys/.test(warning)))
+      })
+
+      it('should fall back to a generic reason on any other failure', async () => {
+        const { forkEnv, warnings } = await startAndCaptureEnv(async () => { throw new Error('boom') })
+
+        assert.equal(forkEnv.ENCRYPTION_PUBLIC_KEYS, '[]')
+        assert.equal(forkEnv.ENCRYPTION_KEYS_UNAVAILABLE, UNAVAILABLE_FAILED)
+        assert.ok(warnings.some(warning => /Could not load encryption keys/.test(warning)))
+      })
     })
 
     it('should stop the connected child process if stop() is called', () => {
