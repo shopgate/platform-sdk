@@ -28,7 +28,11 @@
     "ERROR_PIPELINE_ID_SHOULD_MATCH_FILENAME": "Pipeline ID \"{pipelineId}\" should match its file name",
     "ERROR_PIPELINE_ID_AND_FILENAME_MISMATCH": "Pipeline ID \"{pipelineId}\" and file name \"{filename}\" mismatch. The pipeline ID and its file name should match.",
     "ERROR_NO_PIPELINES_DIRECTORY": "Pipelines directory not found",
-    "ERROR_NO_PIPELINES": "No pipelines in the pipelines directory"
+    "ERROR_NO_PIPELINES": "No pipelines in the pipelines directory",
+    "ENCRYPTION_KEYS_LOADED": "Encryption keys available for context.encrypt: {aliases}",
+    "ENCRYPTION_KEYS_EMPTY": "No encryption keys are configured for this application; context.encrypt will not find any key",
+    "ERROR_COULD_NOT_LOAD_ENCRYPTION_KEYS": "Could not load encryption keys, context.encrypt will be unavailable",
+    "ERROR_ENCRYPTION_KEYS_NOT_SUPPORTED": "The pipeline controller of this application does not provide encryption keys and is probably outdated; context.encrypt will be unavailable"
   },
   "lib/actions/ExtensionAction": {
     "CREATE_DESCRIPTION": "Creates a new extension",
@@ -221,9 +225,11 @@
     "ERROR_UNREGISTERED_EXTENSION_STEP": "Got step execution of unregistered extension: \"{stepId}\"",
     "ERROR_NO_EXTENSION_CONFIG": "No extension configuration found at {path}",
     "ERROR_STEP_FILE_NOT_FOUND": "StepFile {stepFile} not found",
-    "ERROR_STEP_FUNCTION_NOT_FOUND": "Cannot find step function. Please export a step function using the format ''module.exports = function ([error,] context, input, callback) '{...}'''",
+    "ERROR_STEP_FUNCTION_NOT_FOUND": "Cannot find step function. Please export a step function using the format ''module.exports = function ([error,] context, input, callback) '{...}'''"
+  },
+  "lib/app/backend/extensionRuntime/context/publicKeyRegistryFromEnv": {
     "ERROR_INVALID_ENCRYPTION_KEYS": "Received invalid encryption keys, context.encrypt will be unavailable",
-    "ENCRYPTION_UNAVAILABLE_UNSUPPORTED": "context.encrypt is unavailable: the pipeline controller of this application does not provide encryption keys and is probably outdated",
+    "ENCRYPTION_UNAVAILABLE_UNSUPPORTED": "context.encrypt is unavailable: the application does not provide encryption keys and is probably outdated",
     "ENCRYPTION_UNAVAILABLE_FAILED": "context.encrypt is unavailable: the encryption keys could not be loaded when the backend process was started",
     "ENCRYPTION_UNAVAILABLE_INVALID": "context.encrypt is unavailable: the encryption keys received for this application were invalid"
   },
@@ -239,9 +245,7 @@
     "NO_CALLBACK_FOR_MESSAGE": "Got message from step runtime but no callback found. May have timed out or double used.",
     "UNKNOWN_MESSAGE" : "Unknown message from step runtime",
     "ERROR_PROCESS_NOT_RUNNING": "Process not running, please restart or try again in a few seconds",
-    "ERROR_STEP_TIMEOUT": "Step ''{stepPath}'' timeout",
-    "ERROR_COULD_NOT_LOAD_ENCRYPTION_KEYS": "Could not load encryption keys, context.encrypt will be unavailable",
-    "ERROR_ENCRYPTION_KEYS_NOT_SUPPORTED": "The pipeline controller of this application does not provide encryption keys and is probably outdated; context.encrypt will be unavailable"
+    "ERROR_STEP_TIMEOUT": "Step ''{stepPath}'' timeout"
   },
   "lib/app/backend/PipelineWatcher": {
     "ERROR_NOT_DISCONNECTED": "Not disconnected"

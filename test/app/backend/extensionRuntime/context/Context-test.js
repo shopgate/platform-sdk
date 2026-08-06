@@ -409,5 +409,38 @@ describe('Context', () => {
       const context = new Context(null, null, null, null, '', defaultMeta, loggerStub)
       assert.throws(() => context.encrypt('PARTNER_A', Buffer.from('secret')), /unknown public key "PARTNER_A"/)
     })
+
+    it('throws synchronously without a callback rather than rejecting', () => {
+      const context = new Context(null, null, null, null, '', defaultMeta, loggerStub, registry)
+
+      // A step author has to use try/catch around the await; `.catch()` on the return value would
+      // never see this because the throw happens before any promise exists.
+      assert.throws(() => context.encrypt('UNKNOWN', Buffer.from('secret')), /unknown public key "UNKNOWN"/)
+    })
+
+    it('is awaitable in a try/catch when the key is unknown', async () => {
+      const context = new Context(null, null, null, null, '', defaultMeta, loggerStub, registry)
+
+      await assert.rejects(async () => context.encrypt('UNKNOWN', Buffer.from('secret')), /unknown public key "UNKNOWN"/)
+    })
+
+    it('rejects a non-buffer payload through the callback', (done) => {
+      const context = new Context(null, null, null, null, '', defaultMeta, loggerStub, registry)
+      context.encrypt('PARTNER_A', 'secret', (err) => {
+        assert.ok(err)
+        assert.strictEqual(err.message, 'context.encrypt expects a Buffer payload')
+        done()
+      })
+    })
+
+    it('reports why no keys are available instead of blaming the alias', () => {
+      const unavailable = new PublicKeyRegistry([], 'context.encrypt is unavailable: the keys could not be loaded')
+      const context = new Context(null, null, null, null, '', defaultMeta, loggerStub, unavailable)
+
+      assert.throws(
+        () => context.encrypt('PARTNER_A', Buffer.from('secret')),
+        /context\.encrypt is unavailable: the keys could not be loaded/
+      )
+    })
   })
 })

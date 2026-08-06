@@ -8,8 +8,7 @@ const { promisify } = require('util')
 const config = require('../../../../lib/config')
 const DcHttpClient = require('../../../../lib/DcHttpClient')
 const AppSettings = require('../../../../lib/app/AppSettings')
-const { EXTENSIONS_FOLDER, SETTINGS_FOLDER, UNAVAILABLE_UNSUPPORTED, UNAVAILABLE_FAILED } = require('../../../../lib/app/Constants')
-const { NotFoundError } = require('../../../../lib/errors')
+const { EXTENSIONS_FOLDER, SETTINGS_FOLDER, UNAVAILABLE_UNSUPPORTED } = require('../../../../lib/app/Constants')
 const StepExecutor = require('../../../../lib/app/backend/extensionRuntime/StepExecutor')
 const UserSettings = require('../../../../lib/user/UserSettings')
 
@@ -306,8 +305,8 @@ describe('StepExecutor', () => {
 
       const executor = new StepExecutorMocked(
         { info: () => { }, warn: () => { }, debug: () => { } },
-        { getApplicationFolder: () => appPath, getId: async () => 'shop_1337' },
-        { getEncryptionKeys: async () => [] },
+        { getApplicationFolder: () => appPath },
+        {},
         true
       )
       await executor.start()
@@ -378,8 +377,8 @@ describe('StepExecutor', () => {
 
       const executor = new StepExecutorMocked(
         { info: () => { }, warn: () => { }, debug: () => { } },
-        { getApplicationFolder: () => appPath, getId: async () => 'shop_1337' },
-        { getEncryptionKeys: async () => [] },
+        { getApplicationFolder: () => appPath },
+        {},
         false
       )
       await executor.start()
@@ -392,63 +391,84 @@ describe('StepExecutor', () => {
 
     describe('encryption keys', () => {
       /**
-       * Starts an executor whose dcHttpClient behaves as given and returns the env the child was
-       * forked with, plus everything that was logged as a warning.
+       * Builds an executor around the given encryption keys and returns it together with a
+       * `forkEnvs` array collecting the env of every child that gets forked.
        */
-      const startAndCaptureEnv = async (getEncryptionKeys) => {
-        let forkEnv
-        const warnings = []
+      const buildExecutor = (encryptionKeys) => {
+        const forkEnvs = []
+        const dcHttpClient = { getEncryptionKeys: sinon.stub().rejects(new Error('must not be called')) }
 
-        forkMock = () => ({
-          on: (event, cb) => {
-            if (event !== 'message') return
-            const data = { ready: true }
-            return cb(data)
+        // Behaves like a real child for the stop() flow: kill() fires the registered exit
+        // listeners, which lets the executor drop its reference and accept a second start().
+        forkMock = () => {
+          const listeners = {}
+          const child = {
+            connected: true,
+            on: (event, cb) => {
+              if (event === 'message') {
+                const data = { ready: true }
+                return cb(data)
+              }
+              listeners[event] = (listeners[event] || []).concat(cb)
+            },
+            disconnect: () => { child.connected = false },
+            kill: () => (listeners.exit || []).forEach(cb => cb(null, 'SIGINT'))
           }
-        })
+
+          return child
+        }
 
         const StepExecutorMocked = proxyquire('../../../../lib/app/backend/extensionRuntime/StepExecutor', {
           child_process: {
             fork: (program, options) => {
-              forkEnv = options.env
+              forkEnvs.push(options.env)
               return forkMock()
             }
           }
         })
 
         const executor = new StepExecutorMocked(
-          { info: () => { }, warn: (message) => warnings.push(message), debug: () => { } },
+          { info: () => { }, warn: () => { }, debug: () => { } },
           { getApplicationFolder: () => appPath, getId: async () => 'shop_1337' },
-          { getEncryptionKeys },
-          false
+          dcHttpClient,
+          false,
+          encryptionKeys
         )
-        await executor.start()
 
-        return { forkEnv, warnings }
+        return { executor, forkEnvs, dcHttpClient }
       }
 
       it('should pass the loaded keys to the child process', async () => {
         const keys = [{ alias: 'PARTNER_A', publicKeyPem: 'pem' }]
-        const { forkEnv } = await startAndCaptureEnv(async () => keys)
+        const { executor, forkEnvs } = buildExecutor({ keys, unavailableReason: '' })
 
-        assert.equal(forkEnv.ENCRYPTION_PUBLIC_KEYS, JSON.stringify(keys))
-        assert.equal(forkEnv.ENCRYPTION_KEYS_UNAVAILABLE, '')
+        await executor.start()
+
+        assert.equal(forkEnvs[0].ENCRYPTION_PUBLIC_KEYS, JSON.stringify(keys))
+        assert.equal(forkEnvs[0].ENCRYPTION_KEYS_UNAVAILABLE, '')
       })
 
-      it('should tell the child process that the pipeline controller is outdated', async () => {
-        const { forkEnv, warnings } = await startAndCaptureEnv(async () => { throw new NotFoundError('nope') })
+      it('should pass the reason on to the child process when no keys are available', async () => {
+        const { executor, forkEnvs } = buildExecutor({ keys: [], unavailableReason: UNAVAILABLE_UNSUPPORTED })
 
-        assert.equal(forkEnv.ENCRYPTION_PUBLIC_KEYS, '[]')
-        assert.equal(forkEnv.ENCRYPTION_KEYS_UNAVAILABLE, UNAVAILABLE_UNSUPPORTED)
-        assert.ok(warnings.some(warning => /does not provide encryption keys/.test(warning)))
+        await executor.start()
+
+        assert.equal(forkEnvs[0].ENCRYPTION_PUBLIC_KEYS, '[]')
+        assert.equal(forkEnvs[0].ENCRYPTION_KEYS_UNAVAILABLE, UNAVAILABLE_UNSUPPORTED)
       })
 
-      it('should fall back to a generic reason on any other failure', async () => {
-        const { forkEnv, warnings } = await startAndCaptureEnv(async () => { throw new Error('boom') })
+      it('should reuse the keys on a restart instead of loading them again', async () => {
+        const keys = [{ alias: 'PARTNER_A', publicKeyPem: 'pem' }]
+        const { executor, forkEnvs, dcHttpClient } = buildExecutor({ keys, unavailableReason: '' })
 
-        assert.equal(forkEnv.ENCRYPTION_PUBLIC_KEYS, '[]')
-        assert.equal(forkEnv.ENCRYPTION_KEYS_UNAVAILABLE, UNAVAILABLE_FAILED)
-        assert.ok(warnings.some(warning => /Could not load encryption keys/.test(warning)))
+        await executor.start()
+        await executor.stop()
+        await executor.start()
+
+        assert.equal(forkEnvs.length, 2)
+        assert.equal(forkEnvs[1].ENCRYPTION_PUBLIC_KEYS, JSON.stringify(keys))
+        assert.equal(forkEnvs[1].ENCRYPTION_KEYS_UNAVAILABLE, '')
+        assert.ok(dcHttpClient.getEncryptionKeys.notCalled, 'a restart must not fetch the keys again')
       })
     })
 

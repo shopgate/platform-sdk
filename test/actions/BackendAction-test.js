@@ -7,7 +7,8 @@ const sinon = require('sinon')
 const { promisify } = require('util')
 const DcHttpClient = require('../../lib/DcHttpClient')
 const AppSettings = require('../../lib/app/AppSettings')
-const { SETTINGS_FOLDER, EXTENSIONS_FOLDER } = require('../../lib/app/Constants')
+const { SETTINGS_FOLDER, EXTENSIONS_FOLDER, UNAVAILABLE_UNSUPPORTED, UNAVAILABLE_FAILED } = require('../../lib/app/Constants')
+const { NotFoundError } = require('../../lib/errors')
 const config = require('../../lib/config')
 const UserSettings = require('../../lib/user/UserSettings')
 
@@ -32,7 +33,8 @@ describe('BackendAction', () => {
     '../logger': {
       info: (param) => { info(param) },
       error: (param) => { error(param) },
-      debug: (param) => { debug(param) }
+      debug: (param) => { debug(param) },
+      warn: (param) => { warn(param) }
     },
     '../utils/utils': utils
   })
@@ -44,6 +46,7 @@ describe('BackendAction', () => {
   let info
   let error
   let debug
+  let warn
 
   before(async () => {
     tempDir = await promisify(fsEx.mkdtemp)(path.join(os.tmpdir(), 'sgtest-'))
@@ -62,6 +65,8 @@ describe('BackendAction', () => {
     appSettings.loadAttachedExtensions = sinon.stub().resolves()
     userSettings = await new UserSettings().setToken({})
     dcHttpClient = new DcHttpClient(userSettings, null)
+    // run() loads the encryption keys; without this stub every run() test would hit the real DC
+    dcHttpClient.getEncryptionKeys = sinon.stub().resolves([])
 
     subjectUnderTest = new BackendAction(appSettings, userSettings, dcHttpClient)
 
@@ -93,6 +98,7 @@ describe('BackendAction', () => {
     info = (param) => {}
     error = (param) => {}
     debug = (param) => {}
+    warn = (param) => {}
   })
 
   afterEach(async () => {
@@ -521,6 +527,87 @@ describe('BackendAction', () => {
       await subjectUnderTest.run({})
       assert.ok(checkPermissionsCalled, 'checkPermissions was not called')
       assert.ok(validateExtensionConfigsCalled, 'validateExtensionConfigs was not called')
+    })
+
+    it('should hand the loaded encryption keys to the StepExecutor', async () => {
+      const keys = [{ alias: 'PARTNER_A', publicKeyPem: 'pem' }]
+      subjectUnderTest.dcHttpClient.getEncryptionKeys = sinon.stub().resolves(keys)
+      subjectUnderTest.writeExtensionConfigs = () => {}
+      subjectUnderTest.pushHooks = () => {}
+      subjectUnderTest.dcHttpClient.checkPermissions = () => {}
+      subjectUnderTest.validateExtensionConfigs = () => {}
+
+      let passedEncryptionKeys
+      subjectUnderTest._startSubProcess = async function () {
+        passedEncryptionKeys = this.backendProcess.executor.encryptionKeys
+      }
+
+      await subjectUnderTest.run({})
+
+      assert.deepEqual(passedEncryptionKeys, { keys, unavailableReason: '' })
+    })
+  })
+
+  describe('loadEncryptionKeys', () => {
+    it('should return the keys of the application', async () => {
+      const keys = [{ alias: 'PARTNER_A', publicKeyPem: 'pem' }]
+      subjectUnderTest.dcHttpClient.getEncryptionKeys = sinon.stub().resolves(keys)
+
+      assert.deepEqual(await subjectUnderTest.loadEncryptionKeys(), { keys, unavailableReason: '' })
+      assert.ok(subjectUnderTest.dcHttpClient.getEncryptionKeys.calledWith('foobarTest'))
+    })
+
+    it('should log the aliases of the available keys', async () => {
+      const infos = []
+      info = (message) => infos.push(message)
+      subjectUnderTest.dcHttpClient.getEncryptionKeys = sinon.stub().resolves([
+        { alias: 'PARTNER_A', publicKeyPem: 'pem' },
+        { alias: 'PARTNER_B', publicKeyPem: 'pem' }
+      ])
+
+      await subjectUnderTest.loadEncryptionKeys()
+
+      assert.ok(
+        infos.some(message => /context\.encrypt: PARTNER_A, PARTNER_B$/.test(message)),
+        `expected the key aliases to be logged, got: ${JSON.stringify(infos)}`
+      )
+    })
+
+    it('should log that the application has no keys configured', async () => {
+      const infos = []
+      info = (message) => infos.push(message)
+      subjectUnderTest.dcHttpClient.getEncryptionKeys = sinon.stub().resolves([])
+
+      await subjectUnderTest.loadEncryptionKeys()
+
+      assert.ok(
+        infos.some(message => /No encryption keys are configured/.test(message)),
+        `expected a message about missing keys, got: ${JSON.stringify(infos)}`
+      )
+    })
+
+    it('should report an outdated pipeline controller instead of failing', async () => {
+      const warnings = []
+      warn = (message) => warnings.push(message)
+      subjectUnderTest.dcHttpClient.getEncryptionKeys = sinon.stub().rejects(new NotFoundError('nope'))
+
+      assert.deepEqual(
+        await subjectUnderTest.loadEncryptionKeys(),
+        { keys: [], unavailableReason: UNAVAILABLE_UNSUPPORTED }
+      )
+      assert.ok(warnings.some(warning => /does not provide encryption keys/.test(warning)))
+    })
+
+    it('should fall back to a generic reason on any other failure', async () => {
+      const warnings = []
+      warn = (message) => warnings.push(message)
+      subjectUnderTest.dcHttpClient.getEncryptionKeys = sinon.stub().rejects(new Error('boom'))
+
+      assert.deepEqual(
+        await subjectUnderTest.loadEncryptionKeys(),
+        { keys: [], unavailableReason: UNAVAILABLE_FAILED }
+      )
+      assert.ok(warnings.some(warning => /Could not load encryption keys/.test(warning)))
     })
   })
 })
