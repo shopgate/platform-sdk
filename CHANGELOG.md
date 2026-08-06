@@ -1,3 +1,10 @@
+## 3.0.0
+* Added `context.encrypt` for backend extension steps, encrypting payloads locally with the application's public keys so plaintext never leaves the development machine
+* Encryption keys are loaded once during `backend start`; the available key aliases are listed in the start log
+* `backend start` keeps working against a pipeline controller without encryption key support — `context.encrypt` then reports why no key is available instead of blaming the key alias
+### Breaking Change
+- Drop support for node < 24
+
 ## 2.0.0
 * Added support for Node 24
 ### Breaking Change
