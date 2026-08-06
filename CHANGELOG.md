@@ -3,7 +3,7 @@
 * Encryption keys are loaded once during `backend start`; the available key aliases are listed in the start log
 * `backend start` keeps working against a pipeline controller without encryption key support — `context.encrypt` then reports why no key is available instead of blaming the key alias
 ### Breaking Change
-- Drop support for node < 24
+- Drop support for node < 20.12.1
 
 ## 2.0.0
 * Added support for Node 24
