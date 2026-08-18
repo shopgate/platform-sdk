@@ -3,7 +3,7 @@
 * Fixed high CPU usage of the backend process by only watching the steps of attached extensions
 * Updated to chokidar 5, which no longer needs the native fsevents module on macOS
 ### Breaking Change
-- The minimum supported node version is now 20.19.0, required by chokidar 5
+- Node 20.19 or newer, or 22.12 or newer, is now required. chokidar 5 is ESM-only and those are the releases that can `require()` it
 
 ## 3.0.0
 * Added `context.encrypt` for backend extension steps, encrypting payloads locally with the application's public keys so plaintext never leaves the development machine
