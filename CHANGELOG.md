@@ -1,3 +1,10 @@
+## next
+* Fixed high CPU usage of the frontend process caused by the extension config watcher
+* Fixed high CPU usage of the backend process by only watching the steps of attached extensions
+* Updated to chokidar 5, which no longer needs the native fsevents module on macOS
+### Breaking Change
+- The minimum supported node version is now 20.19.0, required by chokidar 5
+
 ## 3.0.0
 * Added `context.encrypt` for backend extension steps, encrypting payloads locally with the application's public keys so plaintext never leaves the development machine
 * Encryption keys are loaded once during `backend start`; the available key aliases are listed in the start log

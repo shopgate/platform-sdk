@@ -282,6 +282,39 @@ describe('BackendProcess', () => {
     })
   })
 
+  describe('restartStepWatcher', () => {
+    it('should serialize restarts so no watcher is left behind', async () => {
+      let open = 0
+      backendProcess.executor = {
+        stopWatcher: async () => { if (open) open-- },
+        startWatcher: async () => { open++ }
+      }
+
+      // one change to the attached extensions emits one event per extension
+      await Promise.all([
+        backendProcess.restartStepWatcher(),
+        backendProcess.restartStepWatcher(),
+        backendProcess.restartStepWatcher()
+      ])
+
+      assert.equal(open, 1)
+    })
+
+    it('should not start a watcher again once the shutdown has begun', async () => {
+      let started = 0
+      backendProcess.executor = {
+        stopWatcher: async () => {},
+        startWatcher: async () => { started++ }
+      }
+
+      backendProcess._disconnecting = true
+      await backendProcess.restartStepWatcher()
+      backendProcess._disconnecting = false
+
+      assert.equal(started, 0)
+    })
+  })
+
   describe('stepCall', () => {
     it('should call a step', (done) => {
       stepExecutor.execute = (input, stepMetaData, cb) => cb(null, { input, stepMetaData })
