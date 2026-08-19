@@ -389,9 +389,13 @@ describe('Context', () => {
       assert.strictEqual(decrypt(encrypted), 'secret')
     })
 
-    it('returns a synchronously usable buffer', () => {
+    it('returns a promise, not a buffer, when called without a callback', async () => {
       const context = new Context(null, null, null, null, '', defaultMeta, loggerStub, registry)
-      const encrypted = context.encrypt('PARTNER_A', Buffer.from('secret'))
+      const result = context.encrypt('PARTNER_A', Buffer.from('secret'))
+      assert.ok(result instanceof Promise)
+      assert.ok(!Buffer.isBuffer(result))
+
+      const encrypted = await result
       assert.ok(Buffer.isBuffer(encrypted))
       assert.strictEqual(decrypt(encrypted), 'secret')
     })
@@ -405,17 +409,26 @@ describe('Context', () => {
       })
     })
 
-    it('throws when no key registry is configured', () => {
+    it('rejects when no key registry is configured', async () => {
       const context = new Context(null, null, null, null, '', defaultMeta, loggerStub)
-      assert.throws(() => context.encrypt('PARTNER_A', Buffer.from('secret')), /unknown public key "PARTNER_A"/)
+      await assert.rejects(() => context.encrypt('PARTNER_A', Buffer.from('secret')), /unknown public key "PARTNER_A"/)
     })
 
-    it('throws synchronously without a callback rather than rejecting', () => {
+    it('rejects instead of throwing synchronously when the key is unknown', async () => {
       const context = new Context(null, null, null, null, '', defaultMeta, loggerStub, registry)
 
-      // A step author has to use try/catch around the await; `.catch()` on the return value would
-      // never see this because the throw happens before any promise exists.
-      assert.throws(() => context.encrypt('UNKNOWN', Buffer.from('secret')), /unknown public key "UNKNOWN"/)
+      let result
+      assert.doesNotThrow(() => { result = context.encrypt('UNKNOWN', Buffer.from('secret')) })
+      await assert.rejects(result, /unknown public key "UNKNOWN"/)
+    })
+
+    it('passes the missing-registry error to the callback', (done) => {
+      const context = new Context(null, null, null, null, '', defaultMeta, loggerStub)
+      context.encrypt('PARTNER_A', Buffer.from('secret'), (err) => {
+        assert.ok(err)
+        assert.strictEqual(err.message, 'unknown public key "PARTNER_A"')
+        done()
+      })
     })
 
     it('is awaitable in a try/catch when the key is unknown', async () => {
@@ -433,11 +446,11 @@ describe('Context', () => {
       })
     })
 
-    it('reports why no keys are available instead of blaming the alias', () => {
+    it('reports why no keys are available instead of blaming the alias', async () => {
       const unavailable = new PublicKeyRegistry([], 'context.encrypt is unavailable: the keys could not be loaded')
       const context = new Context(null, null, null, null, '', defaultMeta, loggerStub, unavailable)
 
-      assert.throws(
+      await assert.rejects(
         () => context.encrypt('PARTNER_A', Buffer.from('secret')),
         /context\.encrypt is unavailable: the keys could not be loaded/
       )
