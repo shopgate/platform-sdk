@@ -245,7 +245,8 @@
     "NO_CALLBACK_FOR_MESSAGE": "Got message from step runtime but no callback found. May have timed out or double used.",
     "UNKNOWN_MESSAGE" : "Unknown message from step runtime",
     "ERROR_PROCESS_NOT_RUNNING": "Process not running, please restart or try again in a few seconds",
-    "ERROR_STEP_TIMEOUT": "Step ''{stepPath}'' timeout"
+    "ERROR_STEP_TIMEOUT": "Step ''{stepPath}'' timeout",
+    "STEP_RETURNED_ERROR": "Step ''{stepPath}'' returned an error; this may be intentional — check the pipeline response for details"
   },
   "lib/app/backend/PipelineWatcher": {
     "ERROR_NOT_DISCONNECTED": "Not disconnected"
