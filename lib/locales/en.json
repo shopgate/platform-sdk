@@ -32,7 +32,8 @@
     "ENCRYPTION_KEYS_LOADED": "Encryption keys available for context.encrypt: {aliases}",
     "ENCRYPTION_KEYS_EMPTY": "No encryption keys are configured for this application; context.encrypt will not find any key",
     "ERROR_COULD_NOT_LOAD_ENCRYPTION_KEYS": "Could not load encryption keys, context.encrypt will be unavailable",
-    "ERROR_ENCRYPTION_KEYS_NOT_SUPPORTED": "The application does not provide encryption keys and is probably outdated; context.encrypt will be unavailable"
+    "ERROR_ENCRYPTION_KEYS_NOT_SUPPORTED": "The application does not provide encryption keys and is probably outdated; context.encrypt will be unavailable",
+    "ERROR_COULD_NOT_CLEAR_HOOKS": "Could not clear hooks during shutdown"
   },
   "lib/actions/ExtensionAction": {
     "CREATE_DESCRIPTION": "Creates a new extension",
