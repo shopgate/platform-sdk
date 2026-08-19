@@ -2,6 +2,7 @@
 * Added `context.encrypt` for backend extension steps, encrypting payloads locally with the application's public keys so plaintext never leaves the development machine
 * Encryption keys are loaded once during `backend start`; the available key aliases are listed in the start log
 * `backend start` keeps working against a pipeline controller without encryption key support — `context.encrypt` then reports why no key is available instead of blaming the key alias
+* Errors returned by extension steps (callback error or rejected promise) are now logged as a warning in the SDK console, including the error's stack trace (or message as fallback); previously they were only visible in the pipeline response
 ### Breaking Change
 - Drop support for node < 20.12.1
 
