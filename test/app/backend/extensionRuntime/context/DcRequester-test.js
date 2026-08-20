@@ -119,6 +119,31 @@ describe('DcRequester', () => {
 
         subjectUnderTest.request('some resource', expectedAppId, expectedDeviceId, expectedCallback)
       })
+
+      it('should request userAuth when calling requestUserAuth()', done => {
+        process.send = data => {
+          data.type.should.equal('dcRequest')
+          data.dcRequest.should.include({
+            resourceName: 'userAuth',
+            appId: expectedAppId,
+            pipelineRequestId: 'pipelineRequest1',
+            userId: 'user-1'
+          })
+          data.dcRequest.should.have.property('requestId').that.is.a('string')
+          done()
+        }
+
+        subjectUnderTest.requestUserAuth(expectedAppId, 'pipelineRequest1', 'user-1', () => {})
+      })
+
+      it('should return a promise from requestUserAuth() when no callback is given', async () => {
+        process.send = data => {
+          DcRequester.handleResponse({ type: 'dcResponse', requestId: data.dcRequest.requestId, info: { success: true } })
+        }
+
+        const result = await subjectUnderTest.requestUserAuth(expectedAppId, 'pipelineRequest1', null)
+        result.should.deep.equal({ success: true })
+      })
     })
 
     describe('pull', () => {
@@ -132,6 +157,15 @@ describe('DcRequester', () => {
 
         subjectUnderTest._requests.push({ requestId: expectedUuid, cb: expectedCallback })
         subjectUnderTest.pull(expectedUuid)(null, expectedMessage)
+      })
+
+      it('should remove the pulled entry so it cannot leak', () => {
+        subjectUnderTest._requests.push({ requestId: expectedUuid, cb: () => {} })
+        subjectUnderTest.pull(expectedUuid)
+        subjectUnderTest._requests.should.have.length(0);
+        (() => {
+          subjectUnderTest.pull(expectedUuid)
+        }).should.throw(Error)
       })
 
       it('should throw an error if no callback could be found for a given request ID', () => {
@@ -162,6 +196,18 @@ describe('DcRequester', () => {
         subjectUnderTest._requests.push({ requestId: expectedUuid, cb: expectedCallback })
 
         DcRequester.handleResponse({ type: 'dcResponse', requestId: expectedUuid, info: expectedMessage })
+      })
+
+      it('should call the callback with an error when the response carries one', done => {
+        const expectedCallback = (err) => {
+          err.should.be.instanceOf(Error)
+          err.message.should.equal('boom')
+          err.code.should.equal('EBOOM')
+          done()
+        }
+        subjectUnderTest._requests.push({ requestId: expectedUuid, cb: expectedCallback })
+
+        DcRequester.handleResponse({ type: 'dcResponse', requestId: expectedUuid, error: { message: 'boom', code: 'EBOOM' } })
       })
 
       it('should throw an error if callback not found', () => {

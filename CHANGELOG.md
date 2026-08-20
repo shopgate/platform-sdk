@@ -4,6 +4,9 @@
 * Encryption keys are loaded once during `backend start`; the available key aliases are listed in the start log
 * `backend start` keeps working against a pipeline controller without encryption key support — `context.encrypt` then reports why no key is available instead of blaming the key alias
 * Errors returned by extension steps (callback error or rejected promise) are now logged as a warning in the SDK console, including the error's stack trace (or message as fallback); previously they were only visible in the pipeline response
+* Added `context.user.login(userId)` and `context.user.logout()` for backend extension steps — they behave exactly like the platform's auth step: the user is logged in or out on the current pipeline request, and steps running afterwards see the new session (e.g. `context.storage.user` becomes available after a login). `login` only works in trusted pipelines and rejects elsewhere; `logout` is always available
+* `context.user.login()`/`logout()` return a promise and reject with a clear error when the login/logout fails or the application's backend does not support it yet
+* Failing calls of `context.app.getInfo`, `context.device.getInfo` and `context.user.*` now report the actual error to the step; previously the step silently hung until it ran into the step timeout
 ### Breaking Change
 - Drop support for node < 20.12.1
 
