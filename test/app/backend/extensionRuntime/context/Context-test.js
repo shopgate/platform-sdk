@@ -374,15 +374,6 @@ describe('Context', () => {
       registry = new PublicKeyRegistry([{ alias: 'PARTNER_A', publicKeyPem: keyPair.publicKey.export({ type: 'spki', format: 'pem' }).toString() }])
     })
 
-    it('encrypts via callback', (done) => {
-      const context = new Context(null, null, null, null, '', defaultMeta, loggerStub, registry)
-      context.encrypt('PARTNER_A', Buffer.from('secret'), (err, encrypted) => {
-        assert.ifError(err)
-        assert.strictEqual(decrypt(encrypted), 'secret')
-        done()
-      })
-    })
-
     it('encrypts via await', async () => {
       const context = new Context(null, null, null, null, '', defaultMeta, loggerStub, registry)
       const encrypted = await context.encrypt('PARTNER_A', Buffer.from('secret'))
@@ -400,15 +391,6 @@ describe('Context', () => {
       assert.strictEqual(decrypt(encrypted), 'secret')
     })
 
-    it('passes unknown-key errors to the callback', (done) => {
-      const context = new Context(null, null, null, null, '', defaultMeta, loggerStub, registry)
-      context.encrypt('UNKNOWN', Buffer.from('secret'), (err) => {
-        assert.ok(err)
-        assert.strictEqual(err.message, 'unknown public key "UNKNOWN"')
-        done()
-      })
-    })
-
     it('rejects when no key registry is configured', async () => {
       const context = new Context(null, null, null, null, '', defaultMeta, loggerStub)
       await assert.rejects(() => context.encrypt('PARTNER_A', Buffer.from('secret')), /unknown public key "PARTNER_A"/)
@@ -422,28 +404,15 @@ describe('Context', () => {
       await assert.rejects(result, /unknown public key "UNKNOWN"/)
     })
 
-    it('passes the missing-registry error to the callback', (done) => {
-      const context = new Context(null, null, null, null, '', defaultMeta, loggerStub)
-      context.encrypt('PARTNER_A', Buffer.from('secret'), (err) => {
-        assert.ok(err)
-        assert.strictEqual(err.message, 'unknown public key "PARTNER_A"')
-        done()
-      })
-    })
-
     it('is awaitable in a try/catch when the key is unknown', async () => {
       const context = new Context(null, null, null, null, '', defaultMeta, loggerStub, registry)
 
       await assert.rejects(async () => context.encrypt('UNKNOWN', Buffer.from('secret')), /unknown public key "UNKNOWN"/)
     })
 
-    it('rejects a non-buffer payload through the callback', (done) => {
+    it('rejects a non-buffer payload', async () => {
       const context = new Context(null, null, null, null, '', defaultMeta, loggerStub, registry)
-      context.encrypt('PARTNER_A', 'secret', (err) => {
-        assert.ok(err)
-        assert.strictEqual(err.message, 'context.encrypt expects a Buffer payload')
-        done()
-      })
+      await assert.rejects(() => context.encrypt('PARTNER_A', 'secret'), /context\.encrypt expects a Buffer payload/)
     })
 
     it('reports why no keys are available instead of blaming the alias', async () => {
