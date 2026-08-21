@@ -812,15 +812,15 @@ describe('ExtensionAction', () => {
 
         const pipelineDir = path.join(extensionPath, 'pipelines')
         fsEx.ensureDirSync(pipelineDir)
-        fsEx.writeJSON(path.join(pipelineDir, 'awesomeOrganization.awesomePipeline.v1.json'), {})
+        fsEx.writeJsonSync(path.join(pipelineDir, 'awesomeOrganization.awesomePipeline.v1.json'), {})
 
         const exConfFile = path.join(extensionPath, 'extension-config.json')
-        fsEx.writeJSON(exConfFile, {})
+        fsEx.writeJsonSync(exConfFile, {})
 
         return subjectUnderTest
           ._updateBackendFiles(userInput, state)
           .then(() => {
-            assert.ok(fsEx.exists(path.join(extensionPath, 'pipelines', 'o1.awesomePipeline.json')))
+            assert.ok(fsEx.pathExistsSync(path.join(extensionPath, 'pipelines', 'o1.awesomePipeline.v1.json')))
             assert.deepEqual(fsEx.readJsonSync(exConfFile), { trusted: true })
           })
       })

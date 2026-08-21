@@ -31,21 +31,146 @@ describe('StepExecutor', () => {
   })
 
   describe('watcher', () => {
-    it('should start the watcher', (done) => {
-      const watcher = {
-        events: {},
-        on: function (event, fn) {
-          this.events[event] = fn
-        },
-        emit: function (event, param1, param2, cb) {
-          this.events[event](param1, param2)
-        }
+    const attachedExtensions = {
+      '@shopgate/attachedExt': { path: 'attachedExt' },
+      '@shopgate/otherAttachedExt': { path: 'otherAttachedExt' }
+    }
+    let appSettingsMock
+    let pathes
+
+    // 'ready' is fired as soon as it is subscribed to, because startWatcher() resolves on it.
+    const createWatcherMock = () => ({
+      closed: false,
+      closeCalls: 0,
+      events: {},
+      close: function () {
+        this.closeCalls++
+        this.closed = true
+      },
+      on: function (event, fn) {
+        this.events[event] = fn
+        if (event === 'ready') fn()
+        return this
+      },
+      emit: function (event, param1, param2) {
+        this.events[event](param1, param2)
+      },
+      removeAllListeners: () => {}
+    })
+
+    beforeEach(async () => {
+      appSettingsMock = {
+        getApplicationFolder: () => appPath,
+        loadAttachedExtensions: async () => attachedExtensions
+      }
+      pathes = Object.values(attachedExtensions)
+        .map(extension => path.join(appPath, EXTENSIONS_FOLDER, extension.path, 'extension'))
+
+      for (const folder of pathes) await fsEx.ensureDir(folder)
+    })
+
+    afterEach(async () => fsEx.remove(path.join(appPath, EXTENSIONS_FOLDER)))
+
+    // Uses real chokidar: the mock always fires 'ready', so it cannot reproduce the empty case.
+    it('should start with no attached extensions and still watch after a restart', async function () {
+      this.timeout(10000)
+      const stepExecutor = new StepExecutor({ info: () => {} }, {
+        getApplicationFolder: () => appPath,
+        loadAttachedExtensions: async () => ({})
+      })
+
+      // chokidar never becomes ready for an empty path list, so this would hang
+      await stepExecutor.startWatcher()
+      assert.deepEqual(Object.keys(stepExecutor.watcher.getWatched()), [])
+
+      stepExecutor.appSettings.loadAttachedExtensions = async () => attachedExtensions
+      await stepExecutor.stopWatcher()
+      await stepExecutor.startWatcher()
+
+      assert.deepEqual(await stepExecutor._getStepFolders(), pathes)
+      await stepExecutor.stopWatcher()
+    })
+
+    it('should not be disabled by ignored segments in the project path', async () => {
+      // matching an absolute path would also match the project's own location, e.g. a checkout
+      // inside a hidden directory, and silently ignore everything below it
+      const nested = path.join(appPath, '.hidden', 'project')
+      const stepFolder = path.join(nested, EXTENSIONS_FOLDER, 'attachedExt', 'extension')
+      await fsEx.ensureDir(stepFolder)
+      const stepExecutor = new StepExecutor({ info: () => {} }, {
+        getApplicationFolder: () => nested,
+        loadAttachedExtensions: async () => ({ '@shopgate/attachedExt': { path: 'attachedExt' } })
+      })
+
+      const { ignored } = stepExecutor.watcherOptions
+      const step = path.join(stepFolder, 'step.js')
+      await fsEx.writeFile(step, '// step')
+
+      assert.equal(ignored(stepFolder, await fsEx.stat(stepFolder)), false, 'the step folder was ignored')
+      assert.equal(ignored(step, await fsEx.stat(step)), false, 'the step file was ignored')
+    })
+
+    it('should watch step json but not dependency manifests', async () => {
+      const stepFolder = pathes[0]
+      const stepExecutor = new StepExecutor({ info: () => {} }, appSettingsMock)
+      const { ignored } = stepExecutor.watcherOptions
+
+      const decide = async (name) => {
+        const file = path.join(stepFolder, name)
+        await fsEx.outputFile(file, '{}')
+        return ignored(file, await fsEx.stat(file))
       }
 
-      const pathes = [
-        path.join(appPath, 'extensions', '**', 'extension', '*.js'),
-        path.join(appPath, 'extensions', '**', 'extension', '**', '*.js')
-      ]
+      assert.equal(await decide('step.js'), false)
+      // the runtime re-reads config.json on every step call, so changing it needs no restart
+      assert.equal(await decide('config.json'), true, 'config.json would restart the runtime')
+      assert.equal(await decide('translations.json'), false)
+      assert.equal(await decide('package.json'), true, 'package.json would restart the runtime')
+      assert.equal(await decide('package-lock.json'), true, 'package-lock.json would restart the runtime')
+      assert.equal(await decide('notes.md'), true)
+    })
+
+    it('should only watch the step folders of attached extensions', async () => {
+      await fsEx.ensureDir(path.join(appPath, EXTENSIONS_FOLDER, 'notAttachedExt', 'extension'))
+      const stepExecutor = new StepExecutor({ info: () => {} }, appSettingsMock)
+
+      assert.deepEqual(await stepExecutor._getStepFolders(), pathes)
+    })
+
+    // chokidar watches the parent of a path that does not exist yet, so an extension that gains a
+    // backend later is covered without restarting the process
+    it('should also watch a step folder that does not exist yet', async () => {
+      await fsEx.remove(pathes[1])
+      const stepExecutor = new StepExecutor({ info: () => {} }, appSettingsMock)
+
+      assert.deepEqual(await stepExecutor._getStepFolders(), pathes)
+    })
+
+    it('should pick up a step folder created after the start', async function () {
+      this.timeout(15000)
+      const late = pathes[1]
+      await fsEx.remove(late)
+      const stepExecutor = new StepExecutor({ info: () => {} }, appSettingsMock)
+      let onRestart
+      const restarted = new Promise(resolve => { onRestart = resolve })
+      stepExecutor.stop = async () => onRestart()
+      stepExecutor.start = async () => {}
+
+      await stepExecutor.startWatcher()
+      await new Promise(resolve => setTimeout(resolve, 300))
+      await fsEx.outputFile(path.join(late, 'step.js'), '// a backend added later')
+
+      const detected = await Promise.race([
+        restarted.then(() => true),
+        new Promise(resolve => setTimeout(() => resolve(false), 8000))
+      ])
+      await stepExecutor.stopWatcher()
+
+      assert.ok(detected, 'a step folder created after the start was not watched')
+    })
+
+    it('should start the watcher', (done) => {
+      const watcher = createWatcherMock()
 
       const StepExecutorMocked = proxyquire('../../../../lib/app/backend/extensionRuntime/StepExecutor', {
         chokidar: {
@@ -55,7 +180,7 @@ describe('StepExecutor', () => {
           }
         }
       })
-      const stepExecutor = new StepExecutorMocked({ info: () => {} }, { getApplicationFolder: () => appPath })
+      const stepExecutor = new StepExecutorMocked({ info: () => {} }, appSettingsMock)
       stepExecutor.start = sinon.stub().resolves()
       stepExecutor.stop = () => {
         return new Promise((resolve, reject) => {
@@ -66,31 +191,10 @@ describe('StepExecutor', () => {
 
       assert.equal(stepExecutor.watcher, undefined)
       stepExecutor.startWatcher().then(() => watcher.emit('all'))
-      watcher.emit('ready')
     })
 
-    it('should stop the watcher', () => {
-      let called = 0
-      const watcher = {
-        closed: false,
-        close: function () {
-          called++
-          this.closed = true
-        },
-        events: {},
-        on: function (event, fn) {
-          this.events[event] = fn
-        },
-        emit: function (event, param1, param2, cb) {
-          this.events[event](param1, param2)
-        },
-        removeAllListeners: () => {}
-      }
-
-      const pathes = [
-        path.join(appPath, 'extensions', '**', 'extension', '*.js'),
-        path.join(appPath, 'extensions', '**', 'extension', '**', '*.js')
-      ]
+    it('should stop the watcher', async () => {
+      const watcher = createWatcherMock()
 
       const StepExecutorMocked = proxyquire('../../../../lib/app/backend/extensionRuntime/StepExecutor', {
         chokidar: {
@@ -101,12 +205,12 @@ describe('StepExecutor', () => {
         }
       })
 
-      const stepExecutor = new StepExecutorMocked({ info: () => {} }, { getApplicationFolder: () => appPath })
+      const stepExecutor = new StepExecutorMocked({ info: () => {} }, appSettingsMock)
 
-      stepExecutor.startWatcher()
-      watcher.emit('ready')
+      await stepExecutor.startWatcher()
+      await stepExecutor.stopWatcher()
 
-      return stepExecutor.stopWatcher().then(() => assert.equal(called, 1))
+      assert.equal(watcher.closeCalls, 1)
     })
   })
 

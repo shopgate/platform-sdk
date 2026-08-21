@@ -22,6 +22,7 @@
     "ERROR_PIPELINE_INVALID": "Pipeline invalid: {message}",
     "ERROR_UPLOADING_PIPELINE": "Error while uploading pipeline ''{file}'': {message}",
     "ERROR_ACTIVATING_PIPELINES": "Error while activating local pipelines on the remote server",
+    "ERROR_RESTARTING_STEP_WATCHER": "Error while restarting the step watcher: {message}",
     "ERROR_COULD_NOT_START_CLI_PROXY": "Could not start CLI-Proxy {err}",
     "ERROR_COULD_NOT_REMOVE_PIPELINE": "Could not remove pipeline ''{pipelineId}'': {message}",
     "ERROR_CHECK_INVALID_PIPELINE": "Invalid pipeline; check the pipeline.id property in {file}",
@@ -177,6 +178,7 @@
   },
   "lib/app/backend/BackendProcess": {
     "ESTABLISHING_SDK_CONNECTION": "Establishing SDK connection",
+    "RETRYING_STEP_WATCHER": "Could not start the step watcher, retrying",
     "ERROR_CONNECTION_ERROR": "Connection error! Trying to reconnect...",
     "ERROR_SOCKET_EMIT_TIMEOUT": "Socket emit timeout",
     "TRYING_TO_ATTACH_EXTENSION": "Trying to attach {extensionId} (trusted: {trusted}) ...",
@@ -255,6 +257,7 @@
   "lib/app/ExtensionConfigWatcher": {
     "STARTING_CONFIG_WATCHER": "Starting config watcher",
     "ANOTHER_PROCESS_RUNNING": "Skipping start of config watcher, {check} is running",
+    "ERROR_STARTING_CONFIG_WATCHER": "Error while starting the config watcher: {message}",
     "ERROR_NOT_DISCONNECTED": "Not disconnected"
   },
   "lib/app/frontend/FrontendSetup": {

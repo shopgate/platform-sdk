@@ -1,3 +1,10 @@
+## next
+* Fixed high CPU usage of the frontend process caused by the extension config watcher
+* Fixed high CPU usage of the backend process by only watching the steps of attached extensions
+* Updated to chokidar 5, which no longer needs the native fsevents module on macOS
+### Breaking Change
+- Node 20.19 or newer, or 22.12 or newer, is now required. chokidar 5 is ESM-only and those are the releases that can `require()` it
+
 ## 3.0.0
 * Fixed `backend start` failing when a previous session ended unexpectedly — leftover hooks are now cleaned up automatically before connecting and on shutdown
 * Added `context.encrypt` for backend extension steps, encrypting payloads locally with the application's public keys so plaintext never leaves the development machine

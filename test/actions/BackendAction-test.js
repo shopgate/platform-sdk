@@ -151,6 +151,30 @@ describe('BackendAction', () => {
     })
   })
 
+  describe('_stop', () => {
+    it('should await every watcher it shuts down', async () => {
+      const settled = []
+      const shutdown = (name, ms) => async () => {
+        await new Promise(resolve => setTimeout(resolve, ms))
+        settled.push(name)
+      }
+
+      // the pipeline watcher outlasts the others on purpose: if it is not awaited, _stop()
+      // returns while it is still closing and the assertion below sees it missing
+      subjectUnderTest.pipelineWatcher = { close: shutdown('pipelineWatcher', 200) }
+      subjectUnderTest.extensionConfigWatcher = { stop: shutdown('extensionConfigWatcher', 10) }
+      subjectUnderTest.attachedExtensionsWatcher = { stop: shutdown('attachedExtensionsWatcher', 10) }
+      subjectUnderTest.backendProcess = { disconnect: shutdown('backendProcess', 10) }
+      subjectUnderTest.cliProxy = { close: shutdown('cliProxy', 10) }
+
+      await subjectUnderTest._stop()
+
+      // a watcher missing from the Promise.all would still be settling here
+      assert.equal(settled.length, 5, `only settled: ${settled.join(', ')}`)
+      assert.ok(settled.includes('pipelineWatcher'), 'the pipeline watcher was not awaited')
+    })
+  })
+
   describe('_pipelineEvent', () => {
     it('should not do anything when the extension is not attached', (done) => {
       subjectUnderTest._pipelineRemoved = sinon.stub().resolves()
