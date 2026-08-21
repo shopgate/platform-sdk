@@ -33,7 +33,8 @@
     "ENCRYPTION_KEYS_LOADED": "Encryption keys available for context.encrypt: {aliases}",
     "ENCRYPTION_KEYS_EMPTY": "No encryption keys are configured for this application; context.encrypt will not find any key",
     "ERROR_COULD_NOT_LOAD_ENCRYPTION_KEYS": "Could not load encryption keys, context.encrypt will be unavailable",
-    "ERROR_ENCRYPTION_KEYS_NOT_SUPPORTED": "The pipeline controller of this application does not provide encryption keys and is probably outdated; context.encrypt will be unavailable"
+    "ERROR_ENCRYPTION_KEYS_NOT_SUPPORTED": "The application does not provide encryption keys and is probably outdated; context.encrypt will be unavailable",
+    "ERROR_COULD_NOT_CLEAR_HOOKS": "Could not clear hooks during shutdown"
   },
   "lib/actions/ExtensionAction": {
     "CREATE_DESCRIPTION": "Creates a new extension",
@@ -247,7 +248,8 @@
     "NO_CALLBACK_FOR_MESSAGE": "Got message from step runtime but no callback found. May have timed out or double used.",
     "UNKNOWN_MESSAGE" : "Unknown message from step runtime",
     "ERROR_PROCESS_NOT_RUNNING": "Process not running, please restart or try again in a few seconds",
-    "ERROR_STEP_TIMEOUT": "Step ''{stepPath}'' timeout"
+    "ERROR_STEP_TIMEOUT": "Step ''{stepPath}'' timeout",
+    "STEP_RETURNED_ERROR": "Step ''{stepPath}'' returned an error; this may be intentional"
   },
   "lib/app/backend/PipelineWatcher": {
     "ERROR_NOT_DISCONNECTED": "Not disconnected"
@@ -311,7 +313,7 @@
     "ERROR_NO_ACCESS_TO_APP": "You do not have access to this application",
     "ERROR_COULD_NOT_GET": "Could not get {infoType}",
     "ERROR_COULD_NOT_GET_ENCRYPTION_KEYS": "Could not get encryption keys",
-    "ERROR_ENCRYPTION_KEYS_NOT_SUPPORTED": "The pipeline controller of this application does not provide encryption keys",
+    "ERROR_ENCRYPTION_KEYS_NOT_SUPPORTED": "The application does not provide encryption keys",
     "ERROR_APP_NOT_FOUND": "The application with ID ''{applicationId}'' was not found",
     "ERROR_PIPELINE_DOWNLOAD_FAILED": "Pipeline download failed",
     "ERROR_PIPELINE_DOWNLOAD_FAILED_INFO": "Pipeline download failed: {additionalInfo}",

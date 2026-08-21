@@ -400,9 +400,9 @@ describe('StepExecutor', () => {
       }
       const StepExecutorMocked = proxyquire('../../../../lib/app/backend/extensionRuntime/StepExecutor', {
         child_process: {
-          fork: (program, { execArgv }, options) => {
+          fork: (program, args, { execArgv }) => {
             assert.ok(execArgv.includes('--inspect'))
-            return forkMock(program, execArgv, options)
+            return forkMock(program, execArgv, args)
           }
         }
       })
@@ -472,9 +472,9 @@ describe('StepExecutor', () => {
       }
       const StepExecutorMocked = proxyquire('../../../../lib/app/backend/extensionRuntime/StepExecutor', {
         child_process: {
-          fork: (program, { execArgv }, options) => {
+          fork: (program, args, { execArgv }) => {
             assert.ok(!execArgv.includes('--inspect'))
-            return forkMock(program, execArgv, options)
+            return forkMock(program, execArgv, args)
           }
         }
       })
@@ -524,7 +524,7 @@ describe('StepExecutor', () => {
 
         const StepExecutorMocked = proxyquire('../../../../lib/app/backend/extensionRuntime/StepExecutor', {
           child_process: {
-            fork: (program, options) => {
+            fork: (program, args, options) => {
               forkEnvs.push(options.env)
               return forkMock()
             }
