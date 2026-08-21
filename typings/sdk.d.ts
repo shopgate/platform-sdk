@@ -19,9 +19,8 @@ declare namespace Shopgate.PlatformSdk {
     }
 
     interface ContextEncrypt {
-        /** Encrypts the buffer with the named RSA public key. The returned buffer can be awaited. */
-        (keyName: string, buffer: Buffer): Promise<Buffer> & Buffer
-        (keyName: string, buffer: Buffer, cb: (err: Error | null, encrypted?: Buffer) => void): void
+        /** Encrypts the buffer with the named RSA public key. */
+        (keyName: string, buffer: Buffer): Promise<Buffer>
     }
 
     interface AppContext {

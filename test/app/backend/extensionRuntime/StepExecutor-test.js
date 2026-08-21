@@ -357,18 +357,19 @@ describe('StepExecutor', () => {
       const expectedRequestId = '1337'
 
       dcHttpClient.getInfos = () => assert.fail('getInfos must not be called for userAuth')
-      dcHttpClient.userAuthenticate = (appId, pipelineRequestId, userId) => {
+      // the real userAuthenticate resolves without a value
+      dcHttpClient.userAuthenticate = async (appId, pipelineRequestId, userId) => {
         assert.equal(appId, 'shop_1337')
         assert.equal(pipelineRequestId, 'pipelineRequest1')
         assert.equal(userId, 'user-1')
-        return { success: true }
       }
 
       executor.childProcess = {
         send: message => {
           assert.equal(message.type, 'dcResponse')
           assert.equal(message.requestId, expectedRequestId)
-          assert.deepEqual(message.info, { success: true })
+          assert.equal(message.info, undefined)
+          assert.equal(message.error, undefined)
           done()
         }
       }
