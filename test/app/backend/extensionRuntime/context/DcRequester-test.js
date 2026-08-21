@@ -133,16 +133,27 @@ describe('DcRequester', () => {
           done()
         }
 
-        subjectUnderTest.requestUserAuth(expectedAppId, 'pipelineRequest1', 'user-1', () => {})
+        subjectUnderTest.requestUserAuth(expectedAppId, 'pipelineRequest1', 'user-1').catch(() => {})
       })
 
-      it('should return a promise from requestUserAuth() when no callback is given', async () => {
+      it('should resolve the promise from requestUserAuth() when the dcResponse arrives', async () => {
         process.send = data => {
           DcRequester.handleResponse({ type: 'dcResponse', requestId: data.dcRequest.requestId, info: { success: true } })
         }
 
         const result = await subjectUnderTest.requestUserAuth(expectedAppId, 'pipelineRequest1', null)
         result.should.deep.equal({ success: true })
+      })
+
+      it('should reject the promise from requestUserAuth() when the dcResponse contains an error', async () => {
+        process.send = data => {
+          DcRequester.handleResponse({ type: 'dcResponse', requestId: data.dcRequest.requestId, error: { message: 'nope', code: 'EFORBIDDEN' } })
+        }
+
+        await assert.rejects(
+          subjectUnderTest.requestUserAuth(expectedAppId, 'pipelineRequest1', 'user-1'),
+          { message: 'nope', code: 'EFORBIDDEN' }
+        )
       })
     })
 
