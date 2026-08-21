@@ -1,9 +1,9 @@
 const assert = require('assert')
 const EventEmitter = require('events')
 const fsEx = require('fs-extra')
+const net = require('net')
 const os = require('os')
 const path = require('path')
-const portfinder = require('portfinder')
 const proxyquire = require('proxyquire')
 const sinon = require('sinon')
 const { promisify } = require('util')
@@ -29,6 +29,15 @@ describe('BackendProcess', () => {
 
   const socketIOMock = new SocketIOMock()
 
+  const getFreePort = () => new Promise((resolve, reject) => {
+    const server = net.createServer()
+    server.once('error', reject)
+    server.listen(0, '127.0.0.1', () => {
+      const port = server.address().port
+      server.close(err => err ? reject(err) : resolve(port))
+    })
+  })
+
   const BackendProcess = proxyquire('../../../lib/app/backend/BackendProcess', {
     'socket.io-client': () => socketIOMock
   })
@@ -51,14 +60,11 @@ describe('BackendProcess', () => {
       execute: (input, stepMetaData, cb) => cb(null, null)
     }
 
-    portfinder.getPort((err, port) => {
-      assert.ifError(err)
-
-      process.env.SGCLOUD_DC_ADDRESS = `http://localhost:${port}`
-      logger = { info: () => {}, error: () => {}, debug: () => {} }
-      backendProcess = new BackendProcess(userSettings, logger)
-      backendProcess.executor = stepExecutor
-    })
+    const port = await getFreePort()
+    process.env.SGCLOUD_DC_ADDRESS = `http://localhost:${port}`
+    logger = { info: () => {}, error: () => {}, debug: () => {} }
+    backendProcess = new BackendProcess(userSettings, logger)
+    backendProcess.executor = stepExecutor
   })
 
   afterEach(async () => {
@@ -273,6 +279,39 @@ describe('BackendProcess', () => {
         assert.ok(startCalled)
       }
       return backendProcess.startStepExecutor()
+    })
+  })
+
+  describe('restartStepWatcher', () => {
+    it('should serialize restarts so no watcher is left behind', async () => {
+      let open = 0
+      backendProcess.executor = {
+        stopWatcher: async () => { if (open) open-- },
+        startWatcher: async () => { open++ }
+      }
+
+      // one change to the attached extensions emits one event per extension
+      await Promise.all([
+        backendProcess.restartStepWatcher(),
+        backendProcess.restartStepWatcher(),
+        backendProcess.restartStepWatcher()
+      ])
+
+      assert.equal(open, 1)
+    })
+
+    it('should not start a watcher again once the shutdown has begun', async () => {
+      let started = 0
+      backendProcess.executor = {
+        stopWatcher: async () => {},
+        startWatcher: async () => { started++ }
+      }
+
+      backendProcess._disconnecting = true
+      await backendProcess.restartStepWatcher()
+      backendProcess._disconnecting = false
+
+      assert.equal(started, 0)
     })
   })
 
