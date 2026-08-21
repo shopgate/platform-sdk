@@ -32,7 +32,8 @@
     "ENCRYPTION_KEYS_LOADED": "Encryption keys available for context.encrypt: {aliases}",
     "ENCRYPTION_KEYS_EMPTY": "No encryption keys are configured for this application; context.encrypt will not find any key",
     "ERROR_COULD_NOT_LOAD_ENCRYPTION_KEYS": "Could not load encryption keys, context.encrypt will be unavailable",
-    "ERROR_ENCRYPTION_KEYS_NOT_SUPPORTED": "The application does not provide encryption keys and is probably outdated; context.encrypt will be unavailable"
+    "ERROR_ENCRYPTION_KEYS_NOT_SUPPORTED": "The application does not provide encryption keys and is probably outdated; context.encrypt will be unavailable",
+    "ERROR_COULD_NOT_CLEAR_HOOKS": "Could not clear hooks during shutdown"
   },
   "lib/actions/ExtensionAction": {
     "CREATE_DESCRIPTION": "Creates a new extension",
@@ -246,7 +247,7 @@
     "UNKNOWN_MESSAGE" : "Unknown message from step runtime",
     "ERROR_PROCESS_NOT_RUNNING": "Process not running, please restart or try again in a few seconds",
     "ERROR_STEP_TIMEOUT": "Step ''{stepPath}'' timeout",
-    "STEP_RETURNED_ERROR": "Step ''{stepPath}'' returned an error; this may be intentional — check the pipeline response for details"
+    "STEP_RETURNED_ERROR": "Step ''{stepPath}'' returned an error; this may be intentional"
   },
   "lib/app/backend/PipelineWatcher": {
     "ERROR_NOT_DISCONNECTED": "Not disconnected"

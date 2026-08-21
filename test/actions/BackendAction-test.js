@@ -205,6 +205,76 @@ describe('BackendAction', () => {
         })
     })
 
+    it('should clear leftover hooks via HTTP before connecting', async () => {
+      subjectUnderTest.backendProcess = {
+        connect: sinon.stub().resolves(),
+        selectApplication: sinon.stub().resolves(),
+        resetPipelines: sinon.stub().resolves(),
+        resetHooks: sinon.stub().resolves(),
+        startStepExecutor: sinon.stub().resolves(),
+        reloadPipelineController: sinon.stub().resolves()
+      }
+
+      subjectUnderTest.attachedExtensionsWatcher = {
+        attachedExtensions: [],
+        start: () => sinon.stub().resolves(),
+        on: () => sinon.stub().resolves()
+      }
+
+      subjectUnderTest._updateExtensionConfig = sinon.stub().resolves()
+
+      await subjectUnderTest._startSubProcess()
+
+      sinon.assert.callOrder(
+        subjectUnderTest.dcHttpClient.clearHooks,
+        subjectUnderTest.backendProcess.connect,
+        subjectUnderTest.backendProcess.selectApplication
+      )
+      // the socket-based reset became redundant; clearHooks covers it before connecting
+      sinon.assert.notCalled(subjectUnderTest.backendProcess.resetHooks)
+    })
+
+    it('should not connect when clearing leftover hooks fails', async () => {
+      subjectUnderTest.dcHttpClient.clearHooks = sinon.stub().rejects(new Error('dc unreachable'))
+      subjectUnderTest.backendProcess = {
+        connect: sinon.stub().resolves(),
+        selectApplication: sinon.stub().resolves()
+      }
+
+      try {
+        await subjectUnderTest._startSubProcess()
+        assert.fail('Expected error to be thrown.')
+      } catch (err) {
+        assert.equal(err.message, 'dc unreachable')
+      }
+      sinon.assert.notCalled(subjectUnderTest.backendProcess.connect)
+    })
+
+    it('should stop cleanly even when the best-effort hook cleanup fails', async () => {
+      subjectUnderTest.dcHttpClient.clearHooks = sinon.stub().rejects(new Error('dc unreachable'))
+      subjectUnderTest.backendProcess = {
+        disconnect: sinon.stub().resolves()
+      }
+      subjectUnderTest.attachedExtensionsWatcher.stop = sinon.stub().resolves()
+
+      await subjectUnderTest._stop()
+
+      sinon.assert.calledOnce(subjectUnderTest.dcHttpClient.clearHooks)
+      sinon.assert.calledOnce(subjectUnderTest.backendProcess.disconnect)
+    })
+
+    it('should clear hooks best-effort on stop', async () => {
+      subjectUnderTest.backendProcess = {
+        disconnect: sinon.stub().resolves()
+      }
+      subjectUnderTest.attachedExtensionsWatcher.stop = sinon.stub().resolves()
+
+      await subjectUnderTest._stop()
+
+      sinon.assert.calledWith(subjectUnderTest.dcHttpClient.clearHooks, 'foobarTest')
+      sinon.assert.calledOnce(subjectUnderTest.backendProcess.disconnect)
+    })
+
     it('should fail when pipeline IDs not matching pipeline file names', (done) => {
       appSettings.loadAttachedExtensions = () => { return { testExtension: { path: '..' } } }
       subjectUnderTest.backendProcess = {
@@ -219,6 +289,7 @@ describe('BackendAction', () => {
       subjectUnderTest.dcHttpClient = {
         downloadPipelines: sinon.stub().resolves({ pipelines: [] }),
         removePipeline: sinon.stub().resolves(),
+        clearHooks: sinon.stub().resolves(),
         uploadMultiplePipelines: sinon.stub().resolves()
       }
 
