@@ -122,8 +122,7 @@ describe('StepExecutor', () => {
       }
 
       assert.equal(await decide('step.js'), false)
-      // the runtime re-reads config.json on every step call, so changing it needs no restart
-      assert.equal(await decide('config.json'), true, 'config.json would restart the runtime')
+      assert.equal(await decide('config.json'), false, 'config.json was not watched')
       assert.equal(await decide('translations.json'), false)
       assert.equal(await decide('package.json'), true, 'package.json would restart the runtime')
       assert.equal(await decide('package-lock.json'), true, 'package-lock.json would restart the runtime')
