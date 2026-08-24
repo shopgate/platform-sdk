@@ -148,6 +148,85 @@ describe('DcHttpClient', () => {
     })
   })
 
+  describe('userAuthenticate', () => {
+    const appId = 'foobarAppId'
+    const pipelineRequestId = 'foobarRequestId'
+
+    it('should post a login to the developer connector', async () => {
+      const dcMock = nock(dcClient.dcAddress)
+        .post(`/applications/${appId}/auth`, { requestId: pipelineRequestId, userId: 'user-1' })
+        .reply(200, { success: true })
+
+      await dcClient.userAuthenticate(appId, pipelineRequestId, 'user-1')
+      dcMock.done()
+    })
+
+    it('should post a logout without userId to the developer connector', async () => {
+      const dcMock = nock(dcClient.dcAddress)
+        .post(`/applications/${appId}/auth`, { requestId: pipelineRequestId })
+        .reply(200, { success: true })
+
+      await dcClient.userAuthenticate(appId, pipelineRequestId, null)
+      dcMock.done()
+    })
+
+    it('should update the usertoken on jwt-update', async () => {
+      const newToken = 'foobarTokenNewAuth'
+      const dcMock = nock(dcClient.dcAddress)
+        .post(`/applications/${appId}/auth`)
+        .reply(200, { success: true }, { 'x-jwt': newToken })
+
+      await dcClient.userAuthenticate(appId, pipelineRequestId, 'user-1')
+      assert.equal(await dcClient.userSettings.getToken(), newToken)
+      dcMock.done()
+    })
+
+    it('should throw a NotFoundError if the pipeline controller does not support user login/logout', async () => {
+      const dcMock = nock(dcClient.dcAddress)
+        .post(`/applications/${appId}/auth`)
+        .reply(404, { code: 'EPLCNOAUTH', message: 'nope' })
+
+      try {
+        await dcClient.userAuthenticate(appId, pipelineRequestId, 'user-1')
+        assert.fail('Expected an error to be thrown.')
+      } catch (err) {
+        assert.ok(err instanceof NotFoundError)
+      } finally {
+        dcMock.done()
+      }
+    })
+
+    it('should forward the error message of the developer connector', async () => {
+      const dcMock = nock(dcClient.dcAddress)
+        .post(`/applications/${appId}/auth`)
+        .reply(403, { code: 'Forbidden', message: 'user.login is not allowed in untrusted scope' })
+
+      try {
+        await dcClient.userAuthenticate(appId, pipelineRequestId, 'user-1')
+        assert.fail('Expected an error to be thrown.')
+      } catch (err) {
+        assert.equal(err.message, 'user.login is not allowed in untrusted scope')
+      } finally {
+        dcMock.done()
+      }
+    })
+
+    it('should throw error on dc error', async () => {
+      const dcMock = nock(dcClient.dcAddress)
+        .post(`/applications/${appId}/auth`)
+        .reply(500)
+
+      try {
+        await dcClient.userAuthenticate(appId, pipelineRequestId, 'user-1')
+        assert.fail('Expected an error to be thrown.')
+      } catch (err) {
+        assert.ok(err)
+      } finally {
+        dcMock.done()
+      }
+    })
+  })
+
   describe('downloadPipelines', () => {
     const appId = 'foobarAppId'
 

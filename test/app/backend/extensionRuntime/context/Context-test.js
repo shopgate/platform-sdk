@@ -190,6 +190,58 @@ describe('Context', () => {
     })
   })
 
+  describe('user', () => {
+    const metaWithRequestId = { ...defaultMeta, requestId: 'pipelineRequest1' }
+
+    it('should forward login to the dcRequester', async () => {
+      const authCalls = []
+      const dcRequesterMock = {
+        requestUserAuth: async (appId, pipelineRequestId, userId) => {
+          authCalls.push({ appId, pipelineRequestId, userId })
+          return { success: true }
+        }
+      }
+
+      const context = new Context(null, null, null, dcRequesterMock, '', metaWithRequestId, null)
+      assert.equal(await context.user.login('user-1'), undefined)
+      assert.deepEqual(authCalls, [{ appId: defaultMeta.appId, pipelineRequestId: 'pipelineRequest1', userId: 'user-1' }])
+    })
+
+    it('should forward logout to the dcRequester', async () => {
+      const authCalls = []
+      const dcRequesterMock = {
+        requestUserAuth: async (appId, pipelineRequestId, userId) => {
+          authCalls.push({ appId, pipelineRequestId, userId })
+          return { success: true }
+        }
+      }
+
+      const context = new Context(null, null, null, dcRequesterMock, '', metaWithRequestId, null)
+      assert.equal(await context.user.logout(), undefined)
+      assert.deepEqual(authCalls, [{ appId: defaultMeta.appId, pipelineRequestId: 'pipelineRequest1', userId: null }])
+    })
+
+    it('should reject a login without userId', async () => {
+      const context = new Context(null, null, null, {}, '', metaWithRequestId, null)
+      await assert.rejects(context.user.login(), /requires a userId/)
+    })
+
+    it('should reject when the meta carries no requestId', async () => {
+      const context = new Context(null, null, null, {}, '', defaultMeta, null)
+      await assert.rejects(context.user.login('user-1'), /pipeline request/)
+      await assert.rejects(context.user.logout(), /pipeline request/)
+    })
+
+    it('should reject when the dcRequester fails', async () => {
+      const dcRequesterMock = {
+        requestUserAuth: async () => { throw new Error('user.login is not allowed in untrusted scope') }
+      }
+
+      const context = new Context(null, null, null, dcRequesterMock, '', metaWithRequestId, null)
+      await assert.rejects(context.user.login('user-1'), /not allowed in untrusted scope/)
+    })
+  })
+
   it('should have tracedRequest', () => {
     const context = new Context(null, null, null, null, '', defaultMeta, null)
     assert.equal(typeof context.tracedRequest, 'function')

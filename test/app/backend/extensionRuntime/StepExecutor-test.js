@@ -457,6 +457,67 @@ describe('StepExecutor', () => {
       })
     })
 
+    it('should route a userAuth dcRequest to userAuthenticate and send the response back', (done) => {
+      const expectedRequestId = '1337'
+
+      dcHttpClient.getInfos = () => assert.fail('getInfos must not be called for userAuth')
+      // the real userAuthenticate resolves without a value
+      dcHttpClient.userAuthenticate = async (appId, pipelineRequestId, userId) => {
+        assert.equal(appId, 'shop_1337')
+        assert.equal(pipelineRequestId, 'pipelineRequest1')
+        assert.equal(userId, 'user-1')
+      }
+
+      executor.childProcess = {
+        send: message => {
+          assert.equal(message.type, 'dcResponse')
+          assert.equal(message.requestId, expectedRequestId)
+          assert.equal(message.info, undefined)
+          assert.equal(message.error, undefined)
+          done()
+        }
+      }
+
+      executor.onMessage({
+        type: 'dcRequest',
+        dcRequest: {
+          resourceName: 'userAuth',
+          appId: 'shop_1337',
+          pipelineRequestId: 'pipelineRequest1',
+          userId: 'user-1',
+          requestId: expectedRequestId
+        }
+      })
+    })
+
+    it('should send a dcResponse error back to the child process when the DC request fails', (done) => {
+      const expectedRequestId = '1337'
+
+      const err = new Error('nope')
+      err.code = 'EPLCNOAUTH'
+      dcHttpClient.userAuthenticate = () => { throw err }
+
+      executor.childProcess = {
+        send: message => {
+          assert.equal(message.type, 'dcResponse')
+          assert.equal(message.requestId, expectedRequestId)
+          assert.deepEqual(message.error, { message: 'nope', code: 'EPLCNOAUTH' })
+          done()
+        }
+      }
+
+      executor.onMessage({
+        type: 'dcRequest',
+        dcRequest: {
+          resourceName: 'userAuth',
+          appId: 'shop_1337',
+          pipelineRequestId: 'pipelineRequest1',
+          userId: 'user-1',
+          requestId: expectedRequestId
+        }
+      })
+    })
+
     it('should start the sub process without "--inspect" if not requested', async () => {
       const listeners = []
       forkMock = () => {

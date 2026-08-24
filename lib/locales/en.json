@@ -204,6 +204,8 @@
   },
   "lib/app/backend/extensionRuntime/context/Context": {
     "ERROR_USER_NOT_LOGGED_IN": "User not logged in",
+    "ERROR_LOGIN_REQUIRES_USER_ID": "user.login requires a userId",
+    "ERROR_NO_PIPELINE_REQUEST": "user.login/logout is only available while a pipeline request is being processed",
     "SENT_TRACED_REQUEST": "Extension sending a context.tracedRequest.",
     "RECEIVED_TRACED_REQUEST_RESPONSE": "Extension received response from a context.tracedRequest"
   },
@@ -324,7 +326,9 @@
     "ERROR_SET_START_PAGE_FAILED": "Setting start page URL failed",
     "ERROR_PUSH_HOOKS_FAILED": "Pushing hooks failed",
     "ERROR_PUSH_HOOKS_FOR_EXT_FAILED": "Could not push hooks for {extensionId} : {message}",
-    "ERROR_GET_APP_DATA_FAILED": "Getting application data failed"
+    "ERROR_GET_APP_DATA_FAILED": "Getting application data failed",
+    "ERROR_USER_AUTH_NOT_SUPPORTED": "The pipeline controller of this application does not support user login/logout",
+    "ERROR_USER_AUTH_FAILED": "User login/logout failed"
   },
   "lib/user/UserSettings": {
     "ERROR_NOT_LOGGED_IN": "You're not logged in. Please run `sgconnect login` again."
