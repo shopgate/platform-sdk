@@ -7,6 +7,20 @@ declare namespace Shopgate.PlatformSdk {
         app: AppContext
         device: DeviceContext
         log: Logger
+        encrypt: ContextEncrypt
+        user: UserContext
+    }
+
+    interface UserContext {
+        /** Logs the given user in on the current pipeline request. Trusted pipelines only. */
+        login(userId: string): Promise<void>
+        /** Logs the current user out on the current pipeline request. */
+        logout(): Promise<void>
+    }
+
+    interface ContextEncrypt {
+        /** Encrypts the buffer with the named RSA public key. */
+        (keyName: string, buffer: Buffer): Promise<Buffer>
     }
 
     interface AppContext {
@@ -33,6 +47,7 @@ declare namespace Shopgate.PlatformSdk {
         userId?: string
         appId: string,
         deviceId: string
+        requestId?: string
     }
 
     interface ContextStorage {

@@ -1,7 +1,23 @@
+## 3.0.0
+* Fixed high CPU usage of the frontend process caused by the extension config watcher
+* Fixed high CPU usage of the backend process by only watching the steps of attached extensions
+* Updated to chokidar 5, which no longer needs the native fsevents module on macOS
+* Fixed `backend start` failing when a previous session ended unexpectedly — leftover hooks are now cleaned up automatically before connecting and on shutdown
+* Added `context.encrypt` for backend extension steps, encrypting payloads locally with the application's public keys so plaintext never leaves the development machine
+* Encryption keys are loaded once during `backend start`; the available key aliases are listed in the start log
+* `backend start` keeps working when the application's backend does not support encryption keys yet — `context.encrypt` then reports why no key is available instead of blaming the key alias
+* Errors returned by extension steps (callback error or rejected promise) are now logged as a warning in the SDK console, including the error's stack trace (or message as fallback); previously they were only visible in the pipeline response
+* Added `context.user.login(userId)` and `context.user.logout()` for backend extension steps — they behave exactly like the platform's auth step: the user is logged in or out on the current pipeline request, and steps running afterwards see the new session (e.g. `context.storage.user` becomes available after a login). `login` only works in trusted pipelines and rejects elsewhere; `logout` is always available
+* `context.user.login()`/`logout()` return a promise and reject with a clear error when the login/logout fails or the application's backend does not support it yet
+* Failing calls of `context.app.getInfo`, `context.device.getInfo` and `context.user.*` now report the actual error to the step; previously the step silently hung until it ran into the step timeout
+### Breaking Change
+- Node 20.19 or newer, or 22.12 or newer, is now required
+
 ## 2.0.0
 * Added support for Node 24
 ### Breaking Change
 - Drop support for node < 18
+
 ## 1.12.1
 * Update @shopgate/extension-config-validator to support connectApiCredentials
 

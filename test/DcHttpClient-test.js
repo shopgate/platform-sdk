@@ -5,7 +5,7 @@ const os = require('os')
 const path = require('path')
 const { promisify } = require('util')
 const DcHttpClient = require('../lib/DcHttpClient')
-const { UnauthorizedError } = require('../lib/errors')
+const { NotFoundError, UnauthorizedError } = require('../lib/errors')
 const UserSettings = require('../lib/user/UserSettings')
 const config = require('../lib/config')
 
@@ -59,6 +59,165 @@ describe('DcHttpClient', () => {
 
       try {
         await dcClient.getInfos(infoType, appId, deviceId)
+        assert.fail('Expected an error to be thrown.')
+      } catch (err) {
+        assert.ok(err)
+      } finally {
+        dcMock.done()
+      }
+    })
+  })
+
+  describe('getEncryptionKeys', () => {
+    const appId = 'foobarAppId'
+
+    it('should return the configured keys', async () => {
+      const keys = [{ alias: 'PARTNER_A', publicKeyPem: '-----BEGIN PUBLIC KEY-----\nx\n-----END PUBLIC KEY-----' }]
+      const dcMock = nock(dcClient.dcAddress)
+        .get(`/applications/${appId}/encryptionKeys`)
+        .reply(200, { keys })
+
+      assert.deepEqual(await dcClient.getEncryptionKeys(appId), keys)
+      dcMock.done()
+    })
+
+    it('should default to an empty list when no keys are returned', async () => {
+      const dcMock = nock(dcClient.dcAddress)
+        .get(`/applications/${appId}/encryptionKeys`)
+        .reply(200, {})
+
+      assert.deepEqual(await dcClient.getEncryptionKeys(appId), [])
+      dcMock.done()
+    })
+
+    it('should update the usertoken on jwt-update', async () => {
+      const newToken = 'foobarTokenNewEnc'
+      const dcMock = nock(dcClient.dcAddress)
+        .get(`/applications/${appId}/encryptionKeys`)
+        .reply(200, { keys: [] }, { 'x-jwt': newToken })
+
+      await dcClient.getEncryptionKeys(appId)
+      assert.equal(await dcClient.userSettings.getToken(), newToken)
+      dcMock.done()
+    })
+
+    it('should throw error on dc error', async () => {
+      const dcMock = nock(dcClient.dcAddress)
+        .get(`/applications/${appId}/encryptionKeys`)
+        .reply(500)
+
+      try {
+        await dcClient.getEncryptionKeys(appId)
+        assert.fail('Expected an error to be thrown.')
+      } catch (err) {
+        assert.ok(err)
+      } finally {
+        dcMock.done()
+      }
+    })
+
+    it('should throw a NotFoundError if the pipeline controller does not support encryption keys', async () => {
+      const dcMock = nock(dcClient.dcAddress)
+        .get(`/applications/${appId}/encryptionKeys`)
+        .reply(404, { code: 'EPLCNOENCRYPTIONKEYS', message: 'nope' })
+
+      try {
+        await dcClient.getEncryptionKeys(appId)
+        assert.fail('Expected an error to be thrown.')
+      } catch (err) {
+        assert.ok(err instanceof NotFoundError)
+      } finally {
+        dcMock.done()
+      }
+    })
+
+    it('should throw a generic error on a 404 that is not about an outdated pipeline controller', async () => {
+      const dcMock = nock(dcClient.dcAddress)
+        .get(`/applications/${appId}/encryptionKeys`)
+        .reply(404, { code: 'ResourceNotFound', message: 'no such route' })
+
+      try {
+        await dcClient.getEncryptionKeys(appId)
+        assert.fail('Expected an error to be thrown.')
+      } catch (err) {
+        assert.ok(!(err instanceof NotFoundError))
+        assert.equal(err.message, 'no such route')
+      } finally {
+        dcMock.done()
+      }
+    })
+  })
+
+  describe('userAuthenticate', () => {
+    const appId = 'foobarAppId'
+    const pipelineRequestId = 'foobarRequestId'
+
+    it('should post a login to the developer connector', async () => {
+      const dcMock = nock(dcClient.dcAddress)
+        .post(`/applications/${appId}/auth`, { requestId: pipelineRequestId, userId: 'user-1' })
+        .reply(200, { success: true })
+
+      await dcClient.userAuthenticate(appId, pipelineRequestId, 'user-1')
+      dcMock.done()
+    })
+
+    it('should post a logout without userId to the developer connector', async () => {
+      const dcMock = nock(dcClient.dcAddress)
+        .post(`/applications/${appId}/auth`, { requestId: pipelineRequestId })
+        .reply(200, { success: true })
+
+      await dcClient.userAuthenticate(appId, pipelineRequestId, null)
+      dcMock.done()
+    })
+
+    it('should update the usertoken on jwt-update', async () => {
+      const newToken = 'foobarTokenNewAuth'
+      const dcMock = nock(dcClient.dcAddress)
+        .post(`/applications/${appId}/auth`)
+        .reply(200, { success: true }, { 'x-jwt': newToken })
+
+      await dcClient.userAuthenticate(appId, pipelineRequestId, 'user-1')
+      assert.equal(await dcClient.userSettings.getToken(), newToken)
+      dcMock.done()
+    })
+
+    it('should throw a NotFoundError if the pipeline controller does not support user login/logout', async () => {
+      const dcMock = nock(dcClient.dcAddress)
+        .post(`/applications/${appId}/auth`)
+        .reply(404, { code: 'EPLCNOAUTH', message: 'nope' })
+
+      try {
+        await dcClient.userAuthenticate(appId, pipelineRequestId, 'user-1')
+        assert.fail('Expected an error to be thrown.')
+      } catch (err) {
+        assert.ok(err instanceof NotFoundError)
+      } finally {
+        dcMock.done()
+      }
+    })
+
+    it('should forward the error message of the developer connector', async () => {
+      const dcMock = nock(dcClient.dcAddress)
+        .post(`/applications/${appId}/auth`)
+        .reply(403, { code: 'Forbidden', message: 'user.login is not allowed in untrusted scope' })
+
+      try {
+        await dcClient.userAuthenticate(appId, pipelineRequestId, 'user-1')
+        assert.fail('Expected an error to be thrown.')
+      } catch (err) {
+        assert.equal(err.message, 'user.login is not allowed in untrusted scope')
+      } finally {
+        dcMock.done()
+      }
+    })
+
+    it('should throw error on dc error', async () => {
+      const dcMock = nock(dcClient.dcAddress)
+        .post(`/applications/${appId}/auth`)
+        .reply(500)
+
+      try {
+        await dcClient.userAuthenticate(appId, pipelineRequestId, 'user-1')
         assert.fail('Expected an error to be thrown.')
       } catch (err) {
         assert.ok(err)

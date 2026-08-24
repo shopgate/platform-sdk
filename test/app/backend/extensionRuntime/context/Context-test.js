@@ -1,5 +1,7 @@
 const assert = require('assert')
+const { constants, generateKeyPairSync, privateDecrypt } = require('node:crypto')
 const Context = require('../../../../../lib/app/backend/extensionRuntime/context/Context')
+const PublicKeyRegistry = require('../../../../../lib/app/backend/extensionRuntime/context/PublicKeyRegistry')
 const fsExtra = require('fs-extra')
 const path = require('path')
 const nock = require('nock')
@@ -188,6 +190,58 @@ describe('Context', () => {
     })
   })
 
+  describe('user', () => {
+    const metaWithRequestId = { ...defaultMeta, requestId: 'pipelineRequest1' }
+
+    it('should forward login to the dcRequester', async () => {
+      const authCalls = []
+      const dcRequesterMock = {
+        requestUserAuth: async (appId, pipelineRequestId, userId) => {
+          authCalls.push({ appId, pipelineRequestId, userId })
+          return { success: true }
+        }
+      }
+
+      const context = new Context(null, null, null, dcRequesterMock, '', metaWithRequestId, null)
+      assert.equal(await context.user.login('user-1'), undefined)
+      assert.deepEqual(authCalls, [{ appId: defaultMeta.appId, pipelineRequestId: 'pipelineRequest1', userId: 'user-1' }])
+    })
+
+    it('should forward logout to the dcRequester', async () => {
+      const authCalls = []
+      const dcRequesterMock = {
+        requestUserAuth: async (appId, pipelineRequestId, userId) => {
+          authCalls.push({ appId, pipelineRequestId, userId })
+          return { success: true }
+        }
+      }
+
+      const context = new Context(null, null, null, dcRequesterMock, '', metaWithRequestId, null)
+      assert.equal(await context.user.logout(), undefined)
+      assert.deepEqual(authCalls, [{ appId: defaultMeta.appId, pipelineRequestId: 'pipelineRequest1', userId: null }])
+    })
+
+    it('should reject a login without userId', async () => {
+      const context = new Context(null, null, null, {}, '', metaWithRequestId, null)
+      await assert.rejects(context.user.login(), /requires a userId/)
+    })
+
+    it('should reject when the meta carries no requestId', async () => {
+      const context = new Context(null, null, null, {}, '', defaultMeta, null)
+      await assert.rejects(context.user.login('user-1'), /pipeline request/)
+      await assert.rejects(context.user.logout(), /pipeline request/)
+    })
+
+    it('should reject when the dcRequester fails', async () => {
+      const dcRequesterMock = {
+        requestUserAuth: async () => { throw new Error('user.login is not allowed in untrusted scope') }
+      }
+
+      const context = new Context(null, null, null, dcRequesterMock, '', metaWithRequestId, null)
+      await assert.rejects(context.user.login('user-1'), /not allowed in untrusted scope/)
+    })
+  })
+
   it('should have tracedRequest', () => {
     const context = new Context(null, null, null, null, '', defaultMeta, null)
     assert.equal(typeof context.tracedRequest, 'function')
@@ -353,6 +407,74 @@ describe('Context', () => {
       } catch (err) {
         assert.ifError(err)
       }
+    })
+  })
+
+  describe('encrypt', () => {
+    let registry
+    let privateKey
+
+    const decrypt = (encrypted) => privateDecrypt({
+      key: privateKey,
+      padding: constants.RSA_PKCS1_OAEP_PADDING,
+      oaepHash: 'sha256'
+    }, encrypted).toString()
+
+    beforeEach(() => {
+      const keyPair = generateKeyPairSync('rsa', { modulusLength: 2048 })
+      privateKey = keyPair.privateKey
+      registry = new PublicKeyRegistry([{ alias: 'PARTNER_A', publicKeyPem: keyPair.publicKey.export({ type: 'spki', format: 'pem' }).toString() }])
+    })
+
+    it('encrypts via await', async () => {
+      const context = new Context(null, null, null, null, '', defaultMeta, loggerStub, registry)
+      const encrypted = await context.encrypt('PARTNER_A', Buffer.from('secret'))
+      assert.strictEqual(decrypt(encrypted), 'secret')
+    })
+
+    it('returns a promise, not a buffer, when called without a callback', async () => {
+      const context = new Context(null, null, null, null, '', defaultMeta, loggerStub, registry)
+      const result = context.encrypt('PARTNER_A', Buffer.from('secret'))
+      assert.ok(result instanceof Promise)
+      assert.ok(!Buffer.isBuffer(result))
+
+      const encrypted = await result
+      assert.ok(Buffer.isBuffer(encrypted))
+      assert.strictEqual(decrypt(encrypted), 'secret')
+    })
+
+    it('rejects when no key registry is configured', async () => {
+      const context = new Context(null, null, null, null, '', defaultMeta, loggerStub)
+      await assert.rejects(() => context.encrypt('PARTNER_A', Buffer.from('secret')), /unknown public key "PARTNER_A"/)
+    })
+
+    it('rejects instead of throwing synchronously when the key is unknown', async () => {
+      const context = new Context(null, null, null, null, '', defaultMeta, loggerStub, registry)
+
+      let result
+      assert.doesNotThrow(() => { result = context.encrypt('UNKNOWN', Buffer.from('secret')) })
+      await assert.rejects(result, /unknown public key "UNKNOWN"/)
+    })
+
+    it('is awaitable in a try/catch when the key is unknown', async () => {
+      const context = new Context(null, null, null, null, '', defaultMeta, loggerStub, registry)
+
+      await assert.rejects(async () => context.encrypt('UNKNOWN', Buffer.from('secret')), /unknown public key "UNKNOWN"/)
+    })
+
+    it('rejects a non-buffer payload', async () => {
+      const context = new Context(null, null, null, null, '', defaultMeta, loggerStub, registry)
+      await assert.rejects(() => context.encrypt('PARTNER_A', 'secret'), /context\.encrypt expects a Buffer payload/)
+    })
+
+    it('reports why no keys are available instead of blaming the alias', async () => {
+      const unavailable = new PublicKeyRegistry([], 'context.encrypt is unavailable: the keys could not be loaded')
+      const context = new Context(null, null, null, null, '', defaultMeta, loggerStub, unavailable)
+
+      await assert.rejects(
+        () => context.encrypt('PARTNER_A', Buffer.from('secret')),
+        /context\.encrypt is unavailable: the keys could not be loaded/
+      )
     })
   })
 })
