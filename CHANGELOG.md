@@ -10,6 +10,7 @@
 * Added `context.user.login(userId)` and `context.user.logout()` for backend extension steps — they behave exactly like the platform's auth step: the user is logged in or out on the current pipeline request, and steps running afterwards see the new session (e.g. `context.storage.user` becomes available after a login). `login` only works in trusted pipelines and rejects elsewhere; `logout` is always available
 * `context.user.login()`/`logout()` return a promise and reject with a clear error when the login/logout fails or the application's backend does not support it yet
 * Failing calls of `context.app.getInfo`, `context.device.getInfo` and `context.user.*` now report the actual error to the step; previously the step silently hung until it ran into the step timeout
+* Added `extension version [extension] [tag]` command: sets the version in `extension-config.json`, commits it and creates a git tag with the same name — like `npm version`. Without arguments it asks for the extension and the new version interactively
 ### Breaking Change
 - Node 20.19 or newer, or 22.12 or newer, is now required
 
