@@ -1146,16 +1146,19 @@ describe('ExtensionAction', () => {
     let extensionsFolder
     let configPath
     let loggerPlainStub
+    let loggerWarnStub
     let inquirerPromptStub
     let gitStub
 
     before(() => {
       loggerPlainStub = sinon.stub(logger, 'plain')
+      loggerWarnStub = sinon.stub(logger, 'warn')
       inquirerPromptStub = sinon.stub(inquirer, 'prompt')
     })
 
     after(() => {
       loggerPlainStub.restore()
+      loggerWarnStub.restore()
       inquirerPromptStub.restore()
     })
 
@@ -1177,6 +1180,7 @@ describe('ExtensionAction', () => {
 
     afterEach(() => {
       loggerPlainStub.reset()
+      loggerWarnStub.reset()
       inquirerPromptStub.reset()
     })
 
@@ -1196,6 +1200,7 @@ describe('ExtensionAction', () => {
       ])
       gitStub.getCalls().forEach(call => assert.equal(call.args[0], path.join(extensionsFolder, 'acme-one')))
       sinon.assert.notCalled(inquirerPromptStub)
+      sinon.assert.notCalled(loggerWarnStub)
       sinon.assert.calledWith(loggerPlainStub, 'Extension @acme/one is now at version 1.2.0 (git tag 1.2.0 created)')
     })
 
@@ -1286,16 +1291,15 @@ describe('ExtensionAction', () => {
       }
     })
 
-    it('should throw if the extension is not a git repository', async () => {
+    it('should set the version and warn if the extension is not a git repository', async () => {
       gitStub.withArgs(sinon.match.any, ['rev-parse', '--is-inside-work-tree']).rejects(new Error('fatal: not a git repository'))
 
-      try {
-        await subjectUnderTest.versionExtension({ extension: 'acme-one', tag: '1.2.0' })
-        assert.fail('Expected to throw an error')
-      } catch (err) {
-        assert.equal(err.message, 'acme-one is not a git repository')
-      }
-      assert.equal((await fsEx.readJSON(configPath)).version, '1.0.0')
+      await subjectUnderTest.versionExtension({ extension: 'acme-one', tag: '1.2.0' })
+
+      assert.equal((await fsEx.readJSON(configPath)).version, '1.2.0')
+      assert.deepEqual(gitCalls(), ['rev-parse --is-inside-work-tree'])
+      sinon.assert.calledWith(loggerWarnStub, 'acme-one is not a git repository. Skipping git commit and tag.')
+      sinon.assert.calledWith(loggerPlainStub, 'Extension @acme/one is now at version 1.2.0')
     })
 
     it('should throw if the git working tree is not clean', async () => {
@@ -1309,6 +1313,7 @@ describe('ExtensionAction', () => {
       }
       assert.equal((await fsEx.readJSON(configPath)).version, '1.0.0')
       assert(!gitCalls().includes('add extension-config.json'))
+      sinon.assert.notCalled(loggerWarnStub)
     })
 
     it('should throw if the git tag already exists', async () => {
@@ -1321,6 +1326,20 @@ describe('ExtensionAction', () => {
         assert.equal(err.message, 'Git tag 1.2.0 already exists in acme-one')
       }
       assert.equal((await fsEx.readJSON(configPath)).version, '1.0.0')
+      sinon.assert.notCalled(loggerWarnStub)
+    })
+
+    it('should throw if committing fails', async () => {
+      gitStub.withArgs(sinon.match.any, ['commit', '-m', '1.2.0']).rejects(new Error('git commit -m 1.2.0 failed: Please tell me who you are.'))
+
+      try {
+        await subjectUnderTest.versionExtension({ extension: 'acme-one', tag: '1.2.0' })
+        assert.fail('Expected to throw an error')
+      } catch (err) {
+        assert.equal(err.message, 'git commit -m 1.2.0 failed: Please tell me who you are.')
+      }
+      assert(!gitCalls().includes('tag -a 1.2.0 -m 1.2.0'))
+      sinon.assert.notCalled(loggerPlainStub)
     })
 
     describe('_git', () => {
