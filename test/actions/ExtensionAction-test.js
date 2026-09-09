@@ -49,9 +49,11 @@ const unzip = {
 const ExtensionAction = proxyquire('../../lib/actions/ExtensionAction', {
   'unzipper': unzip,
   'child_process': {
-    spawn: () => (mockProcess)
+    spawn: () => (mockProcess),
+    execFile: (...args) => mockExecFile(...args)
   }
 })
+let mockExecFile = () => {}
 let spawnEventCallback = { code: 0, signal: 'none' }
 const mockProcess = {
   on: (event, callback) => {
@@ -114,7 +116,8 @@ describe('ExtensionAction', () => {
         createExtension: async () => (true),
         detachExtensions: async () => (true),
         manageExtensions: async () => (true),
-        uploadExtension: async () => (true)
+        uploadExtension: async () => (true),
+        versionExtension: async () => (true)
       })
       ExtensionAction.register(caporal)
 
@@ -123,6 +126,7 @@ describe('ExtensionAction', () => {
       assert(caporal.command.calledWith('extension detach'))
       assert(caporal.command.calledWith('extension manage'))
       assert(caporal.command.calledWith('extension upload'))
+      assert(caporal.command.calledWith('extension version'))
       assert(caporal.command.calledWith('theme upload'))
     })
     it('should throw if user not logged in', async () => {
@@ -1135,6 +1139,318 @@ describe('ExtensionAction', () => {
 
       await subjectUnderTest.uploadExtension({ extension: 'acme-theme' }, { pollInterval: 3, _isTheme: true })
       sinon.assert.calledWith(loggerPlainStub, 'Theme @acme/theme@1.0.0 successfully uploaded')
+    })
+  })
+
+  describe('extension version', () => {
+    let extensionsFolder
+    let configPath
+    let loggerPlainStub
+    let loggerWarnStub
+    let inquirerPromptStub
+    let gitStub
+
+    before(() => {
+      loggerPlainStub = sinon.stub(logger, 'plain')
+      loggerWarnStub = sinon.stub(logger, 'warn')
+      inquirerPromptStub = sinon.stub(inquirer, 'prompt')
+    })
+
+    after(() => {
+      loggerPlainStub.restore()
+      loggerWarnStub.restore()
+      inquirerPromptStub.restore()
+    })
+
+    beforeEach(async () => {
+      sinon.stub(subjectUnderTest, '_getAllExtensionProperties').resolves([
+        { id: '@acme/one', dir: 'acme-one' },
+        { id: '@acme/two', dir: 'acme-two' }
+      ])
+      gitStub = sinon.stub(subjectUnderTest, '_git').resolves('')
+      gitStub.withArgs(sinon.match.any, ['rev-parse', '--is-inside-work-tree']).resolves('true')
+
+      extensionsFolder = path.join(subjectUnderTest.appSettings.getApplicationFolder(), EXTENSIONS_FOLDER)
+      configPath = path.join(extensionsFolder, 'acme-one', 'extension-config.json')
+      await fsEx.ensureDir(path.join(extensionsFolder, 'acme-one'))
+      await fsEx.ensureDir(path.join(extensionsFolder, 'acme-two'))
+      await fsEx.writeFile(configPath, '{"id": "@acme/one", "version": "1.0.0"}')
+      await fsEx.writeFile(path.join(extensionsFolder, 'acme-two', 'extension-config.json'), '{"id": "@acme/two", "version": "2.0.0"}')
+    })
+
+    afterEach(() => {
+      loggerPlainStub.reset()
+      loggerWarnStub.reset()
+      inquirerPromptStub.reset()
+    })
+
+    const gitCalls = () => gitStub.getCalls().map(call => call.args[1].join(' '))
+
+    it('should set the version, commit and tag when extension and tag are given', async () => {
+      await subjectUnderTest.versionExtension({ extension: 'acme-one', tag: '1.2.0' })
+
+      assert.equal(await fsEx.readFile(configPath, 'utf8'), '{\n  "id": "@acme/one",\n  "version": "1.2.0"\n}\n')
+      assert.deepEqual(gitCalls(), [
+        'rev-parse --is-inside-work-tree',
+        'status --porcelain',
+        'tag -l 1.2.0',
+        'add extension-config.json',
+        'commit -m 1.2.0',
+        'tag -a 1.2.0 -m 1.2.0'
+      ])
+      gitStub.getCalls().forEach(call => assert.equal(call.args[0], path.join(extensionsFolder, 'acme-one')))
+      sinon.assert.notCalled(inquirerPromptStub)
+      sinon.assert.notCalled(loggerWarnStub)
+      sinon.assert.calledWith(loggerPlainStub, 'Extension @acme/one is now at version 1.2.0 (git tag 1.2.0 created)')
+    })
+
+    it('should ask for the extension when none is given', async () => {
+      inquirerPromptStub.resolves({ extensionDir: 'acme-one' })
+
+      await subjectUnderTest.versionExtension({ tag: '1.2.0' })
+
+      sinon.assert.calledOnce(inquirerPromptStub)
+      const prompt = inquirerPromptStub.firstCall.args[0]
+      assert.equal(prompt.type, 'list')
+      assert.equal(prompt.message, 'Select an extension to version')
+      assert.deepEqual(prompt.choices, [{ name: '@acme/one', value: 'acme-one' }, { name: '@acme/two', value: 'acme-two' }])
+      assert.equal((await fsEx.readJson(configPath)).version, '1.2.0')
+    })
+
+    it('should show the current version and ask for a new one when no tag is given', async () => {
+      inquirerPromptStub.resolves({ tag: '1.2.0' })
+
+      await subjectUnderTest.versionExtension({ extension: 'acme-one' })
+
+      sinon.assert.calledOnce(inquirerPromptStub)
+      const prompt = inquirerPromptStub.firstCall.args[0]
+      assert.equal(prompt.type, 'input')
+      assert.equal(prompt.message, 'Current version of @acme/one is 1.0.0. New version:')
+      assert.equal(prompt.validate('abc'), "'abc' is not a valid semver version")
+      assert.equal(prompt.validate('1.0.0'), 'Version 1.0.0 is already the current version')
+      assert.equal(prompt.validate('0.9.0'), 'Version 0.9.0 is lower than the current version 1.0.0')
+      assert.equal(prompt.validate('1.2.0'), true)
+      assert.equal((await fsEx.readJson(configPath)).version, '1.2.0')
+    })
+
+    it('should treat a single semver argument as the tag and ask for the extension', async () => {
+      inquirerPromptStub.resolves({ extensionDir: 'acme-two' })
+
+      await subjectUnderTest.versionExtension({ extension: '2.1.0' })
+
+      sinon.assert.calledOnce(inquirerPromptStub)
+      assert.equal(inquirerPromptStub.firstCall.args[0].type, 'list')
+      const twoConfigPath = path.join(extensionsFolder, 'acme-two', 'extension-config.json')
+      assert.equal((await fsEx.readJson(twoConfigPath)).version, '2.1.0')
+      assert.equal((await fsEx.readJson(configPath)).version, '1.0.0')
+    })
+
+    it('should prefer an existing extension directory over the semver heuristic', async () => {
+      await fsEx.ensureDir(path.join(extensionsFolder, '1.2.0'))
+      await fsEx.writeFile(path.join(extensionsFolder, '1.2.0', 'extension-config.json'), '{"id": "@acme/semver", "version": "1.0.0"}')
+
+      await subjectUnderTest.versionExtension({ extension: '1.2.0', tag: '1.3.0' })
+
+      sinon.assert.notCalled(inquirerPromptStub)
+      assert.equal((await fsEx.readJson(path.join(extensionsFolder, '1.2.0', 'extension-config.json'))).version, '1.3.0')
+    })
+
+    it('should normalize the tag to a clean semver version', async () => {
+      await subjectUnderTest.versionExtension({ extension: 'acme-one', tag: 'v1.2.0' })
+
+      assert.equal((await fsEx.readJson(configPath)).version, '1.2.0')
+      assert(gitCalls().includes('tag -a 1.2.0 -m 1.2.0'))
+    })
+
+    it('should throw if the tag is not a valid semver version', async () => {
+      try {
+        await subjectUnderTest.versionExtension({ extension: 'acme-one', tag: 'abc' })
+        assert.fail('Expected to throw an error')
+      } catch (err) {
+        assert.equal(err.message, "'abc' is not a valid semver version")
+      }
+      sinon.assert.notCalled(gitStub)
+      assert.equal((await fsEx.readJson(configPath)).version, '1.0.0')
+    })
+
+    it('should throw if the tag equals the current version', async () => {
+      try {
+        await subjectUnderTest.versionExtension({ extension: 'acme-one', tag: '1.0.0' })
+        assert.fail('Expected to throw an error')
+      } catch (err) {
+        assert.equal(err.message, 'Version 1.0.0 is already the current version')
+      }
+      sinon.assert.notCalled(gitStub)
+    })
+
+    it('should throw if the tag is lower than the current version', async () => {
+      try {
+        await subjectUnderTest.versionExtension({ extension: 'acme-one', tag: '0.9.0' })
+        assert.fail('Expected to throw an error')
+      } catch (err) {
+        assert.equal(err.message, 'Version 0.9.0 is lower than the current version 1.0.0')
+      }
+      sinon.assert.notCalled(gitStub)
+      assert.equal((await fsEx.readJson(configPath)).version, '1.0.0')
+    })
+
+    it('should accept any valid version if the current version is not valid semver', async () => {
+      await fsEx.writeFile(configPath, '{"id": "@acme/one", "version": "next"}')
+
+      await subjectUnderTest.versionExtension({ extension: 'acme-one', tag: '0.1.0' })
+
+      assert.equal((await fsEx.readJson(configPath)).version, '0.1.0')
+    })
+
+    it('should throw if a pre-release tag is lower than the current version', async () => {
+      await fsEx.writeFile(configPath, '{"id": "@acme/one", "version": "1.0.2"}')
+
+      try {
+        await subjectUnderTest.versionExtension({ extension: 'acme-one', tag: '1.0.1-alpha.0' })
+        assert.fail('Expected to throw an error')
+      } catch (err) {
+        assert.equal(err.message, 'Version 1.0.1-alpha.0 is lower than the current version 1.0.2')
+      }
+      sinon.assert.notCalled(gitStub)
+      assert.equal((await fsEx.readJson(configPath)).version, '1.0.2')
+    })
+
+    it('should compare pre-release versions by semver precedence', async () => {
+      await fsEx.writeFile(configPath, '{"id": "@acme/one", "version": "1.0.2"}')
+      inquirerPromptStub.resolves({ tag: '1.0.3-alpha.0' })
+
+      await subjectUnderTest.versionExtension({ extension: 'acme-one' })
+
+      const { validate } = inquirerPromptStub.firstCall.args[0]
+      assert.equal(validate('1.0.1-alpha.0'), 'Version 1.0.1-alpha.0 is lower than the current version 1.0.2')
+      assert.equal(validate('1.0.2-alpha.0'), 'Version 1.0.2-alpha.0 is lower than the current version 1.0.2')
+      assert.equal(validate('1.0.3-alpha.0'), true)
+      assert.equal((await fsEx.readJson(configPath)).version, '1.0.3-alpha.0')
+      assert(gitCalls().includes('tag -a 1.0.3-alpha.0 -m 1.0.3-alpha.0'))
+    })
+
+    it('should allow a higher pre-release and the final release of the current pre-release', async () => {
+      await fsEx.writeFile(configPath, '{"id": "@acme/one", "version": "1.0.2-alpha.0"}')
+      inquirerPromptStub.resolves({ tag: '1.0.2' })
+
+      await subjectUnderTest.versionExtension({ extension: 'acme-one' })
+
+      const { validate } = inquirerPromptStub.firstCall.args[0]
+      assert.equal(validate('1.0.1'), 'Version 1.0.1 is lower than the current version 1.0.2-alpha.0')
+      assert.equal(validate('1.0.2-alpha.1'), true)
+      assert.equal(validate('1.0.2'), true)
+      assert.equal((await fsEx.readJson(configPath)).version, '1.0.2')
+    })
+
+    it('should throw if the extension directory does not exist', async () => {
+      try {
+        await subjectUnderTest.versionExtension({ extension: 'acme-six', tag: '1.2.0' })
+        assert.fail('Expected to throw an error')
+      } catch (err) {
+        assert.equal(err.message, 'Extension directory acme-six does not exist')
+      }
+    })
+
+    it('should set the version and warn if the extension is not a git repository', async () => {
+      gitStub.withArgs(sinon.match.any, ['rev-parse', '--is-inside-work-tree']).rejects(new Error('fatal: not a git repository'))
+
+      await subjectUnderTest.versionExtension({ extension: 'acme-one', tag: '1.2.0' })
+
+      assert.equal((await fsEx.readJson(configPath)).version, '1.2.0')
+      assert.deepEqual(gitCalls(), ['rev-parse --is-inside-work-tree'])
+      sinon.assert.calledWith(loggerWarnStub, 'acme-one is not a git repository. Skipping git commit and tag.')
+      sinon.assert.calledWith(loggerPlainStub, 'Extension @acme/one is now at version 1.2.0')
+    })
+
+    it('should throw if the git working tree is not clean', async () => {
+      gitStub.withArgs(sinon.match.any, ['status', '--porcelain']).resolves(' M steps/foo.js')
+
+      try {
+        await subjectUnderTest.versionExtension({ extension: 'acme-one', tag: '1.2.0' })
+        assert.fail('Expected to throw an error')
+      } catch (err) {
+        assert.equal(err.message, 'Git working tree of acme-one is not clean. Commit or stash your changes first.')
+      }
+      assert.equal((await fsEx.readJson(configPath)).version, '1.0.0')
+      assert(!gitCalls().includes('add extension-config.json'))
+      sinon.assert.notCalled(loggerWarnStub)
+    })
+
+    it('should throw if the git tag already exists', async () => {
+      gitStub.withArgs(sinon.match.any, ['tag', '-l', '1.2.0']).resolves('1.2.0')
+
+      try {
+        await subjectUnderTest.versionExtension({ extension: 'acme-one', tag: '1.2.0' })
+        assert.fail('Expected to throw an error')
+      } catch (err) {
+        assert.equal(err.message, 'Git tag 1.2.0 already exists in acme-one')
+      }
+      assert.equal((await fsEx.readJson(configPath)).version, '1.0.0')
+      sinon.assert.notCalled(loggerWarnStub)
+    })
+
+    it('should throw if committing fails', async () => {
+      gitStub.withArgs(sinon.match.any, ['commit', '-m', '1.2.0']).rejects(new Error('git commit -m 1.2.0 failed: Please tell me who you are.'))
+
+      try {
+        await subjectUnderTest.versionExtension({ extension: 'acme-one', tag: '1.2.0' })
+        assert.fail('Expected to throw an error')
+      } catch (err) {
+        assert.equal(err.message, 'git commit -m 1.2.0 failed: Please tell me who you are.')
+      }
+      assert(!gitCalls().includes('tag -a 1.2.0 -m 1.2.0'))
+      sinon.assert.notCalled(loggerPlainStub)
+    })
+
+    describe('_git', () => {
+      beforeEach(() => {
+        gitStub.restore()
+      })
+
+      afterEach(() => {
+        mockExecFile = () => {}
+      })
+
+      it('should run git in the extension directory and resolve with trimmed stdout', async () => {
+        let received
+        mockExecFile = (file, args, options, callback) => {
+          received = { file, args, options }
+          callback(null, '  1.2.0\n', '')
+        }
+
+        const result = await subjectUnderTest._git('/some/extension', ['tag', '-l', '1.2.0'])
+
+        assert.equal(result, '1.2.0')
+        assert.equal(received.file, 'git')
+        assert.deepEqual(received.args, ['tag', '-l', '1.2.0'])
+        assert.equal(received.options.cwd, '/some/extension')
+      })
+
+      it('should reject with stderr when git fails', async () => {
+        mockExecFile = (file, args, options, callback) => {
+          callback(new Error('Command failed'), '', 'fatal: not a git repository\n')
+        }
+
+        try {
+          await subjectUnderTest._git('/some/extension', ['status', '--porcelain'])
+          assert.fail('Expected to throw an error')
+        } catch (err) {
+          assert.equal(err.message, 'git status --porcelain failed: fatal: not a git repository')
+        }
+      })
+
+      it('should fall back to the error message when stderr is empty', async () => {
+        mockExecFile = (file, args, options, callback) => {
+          callback(new Error('spawn git ENOENT'), '', '')
+        }
+
+        try {
+          await subjectUnderTest._git('/some/extension', ['rev-parse'])
+          assert.fail('Expected to throw an error')
+        } catch (err) {
+          assert.equal(err.message, 'git rev-parse failed: spawn git ENOENT')
+        }
+      })
     })
   })
 })
