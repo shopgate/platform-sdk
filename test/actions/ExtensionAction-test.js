@@ -1193,15 +1193,15 @@ describe('ExtensionAction', () => {
       assert.deepEqual(gitCalls(), [
         'rev-parse --is-inside-work-tree',
         'status --porcelain',
-        'tag -l 1.2.0',
+        'tag -l v1.2.0',
         'add extension-config.json',
         'commit -m 1.2.0',
-        'tag -a 1.2.0 -m 1.2.0'
+        'tag -a v1.2.0 -m 1.2.0'
       ])
       gitStub.getCalls().forEach(call => assert.equal(call.args[0], path.join(extensionsFolder, 'acme-one')))
       sinon.assert.notCalled(inquirerPromptStub)
       sinon.assert.notCalled(loggerWarnStub)
-      sinon.assert.calledWith(loggerPlainStub, 'Extension @acme/one is now at version 1.2.0 (git tag 1.2.0 created)')
+      sinon.assert.calledWith(loggerPlainStub, 'Extension @acme/one is now at version 1.2.0 (git tag v1.2.0 created)')
     })
 
     it('should ask for the extension when none is given', async () => {
@@ -1259,7 +1259,7 @@ describe('ExtensionAction', () => {
       await subjectUnderTest.versionExtension({ extension: 'acme-one', tag: 'v1.2.0' })
 
       assert.equal((await fsEx.readJson(configPath)).version, '1.2.0')
-      assert(gitCalls().includes('tag -a 1.2.0 -m 1.2.0'))
+      assert(gitCalls().includes('tag -a v1.2.0 -m 1.2.0'))
     })
 
     it('should throw if the tag is not a valid semver version', async () => {
@@ -1326,7 +1326,7 @@ describe('ExtensionAction', () => {
       assert.equal(validate('1.0.2-alpha.0'), 'Version 1.0.2-alpha.0 is lower than the current version 1.0.2')
       assert.equal(validate('1.0.3-alpha.0'), true)
       assert.equal((await fsEx.readJson(configPath)).version, '1.0.3-alpha.0')
-      assert(gitCalls().includes('tag -a 1.0.3-alpha.0 -m 1.0.3-alpha.0'))
+      assert(gitCalls().includes('tag -a v1.0.3-alpha.0 -m 1.0.3-alpha.0'))
     })
 
     it('should allow a higher pre-release and the final release of the current pre-release', async () => {
@@ -1377,15 +1377,16 @@ describe('ExtensionAction', () => {
     })
 
     it('should throw if the git tag already exists', async () => {
-      gitStub.withArgs(sinon.match.any, ['tag', '-l', '1.2.0']).resolves('1.2.0')
+      gitStub.withArgs(sinon.match.any, ['tag', '-l', 'v1.2.0']).resolves('v1.2.0')
 
       try {
         await subjectUnderTest.versionExtension({ extension: 'acme-one', tag: '1.2.0' })
         assert.fail('Expected to throw an error')
       } catch (err) {
-        assert.equal(err.message, 'Git tag 1.2.0 already exists in acme-one')
+        assert.equal(err.message, 'Git tag v1.2.0 already exists in acme-one')
       }
       assert.equal((await fsEx.readJson(configPath)).version, '1.0.0')
+      assert(!gitCalls().includes('commit -m 1.2.0'))
       sinon.assert.notCalled(loggerWarnStub)
     })
 
@@ -1398,7 +1399,7 @@ describe('ExtensionAction', () => {
       } catch (err) {
         assert.equal(err.message, 'git commit -m 1.2.0 failed: Please tell me who you are.')
       }
-      assert(!gitCalls().includes('tag -a 1.2.0 -m 1.2.0'))
+      assert(!gitCalls().some(call => call.startsWith('tag -a')))
       sinon.assert.notCalled(loggerPlainStub)
     })
 
