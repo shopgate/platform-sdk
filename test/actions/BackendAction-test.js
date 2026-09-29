@@ -7,7 +7,8 @@ const sinon = require('sinon')
 const { promisify } = require('util')
 const DcHttpClient = require('../../lib/DcHttpClient')
 const AppSettings = require('../../lib/app/AppSettings')
-const { SETTINGS_FOLDER, EXTENSIONS_FOLDER } = require('../../lib/app/Constants')
+const { SETTINGS_FOLDER, EXTENSIONS_FOLDER, UNAVAILABLE_UNSUPPORTED, UNAVAILABLE_FAILED } = require('../../lib/app/Constants')
+const { NotFoundError } = require('../../lib/errors')
 const config = require('../../lib/config')
 const UserSettings = require('../../lib/user/UserSettings')
 
@@ -32,7 +33,8 @@ describe('BackendAction', () => {
     '../logger': {
       info: (param) => { info(param) },
       error: (param) => { error(param) },
-      debug: (param) => { debug(param) }
+      debug: (param) => { debug(param) },
+      warn: (param) => { warn(param) }
     },
     '../utils/utils': utils
   })
@@ -44,6 +46,7 @@ describe('BackendAction', () => {
   let info
   let error
   let debug
+  let warn
 
   before(async () => {
     tempDir = await promisify(fsEx.mkdtemp)(path.join(os.tmpdir(), 'sgtest-'))
@@ -62,6 +65,8 @@ describe('BackendAction', () => {
     appSettings.loadAttachedExtensions = sinon.stub().resolves()
     userSettings = await new UserSettings().setToken({})
     dcHttpClient = new DcHttpClient(userSettings, null)
+    // run() loads the encryption keys; without this stub every run() test would hit the real DC
+    dcHttpClient.getEncryptionKeys = sinon.stub().resolves([])
 
     subjectUnderTest = new BackendAction(appSettings, userSettings, dcHttpClient)
 
@@ -93,6 +98,7 @@ describe('BackendAction', () => {
     info = (param) => {}
     error = (param) => {}
     debug = (param) => {}
+    warn = (param) => {}
   })
 
   afterEach(async () => {
@@ -142,6 +148,30 @@ describe('BackendAction', () => {
           assert.equal(err.message, `Backend process is already running with pid: ${pid}. Please quit this process first.`)
           done()
         })
+    })
+  })
+
+  describe('_stop', () => {
+    it('should await every watcher it shuts down', async () => {
+      const settled = []
+      const shutdown = (name, ms) => async () => {
+        await new Promise(resolve => setTimeout(resolve, ms))
+        settled.push(name)
+      }
+
+      // the pipeline watcher outlasts the others on purpose: if it is not awaited, _stop()
+      // returns while it is still closing and the assertion below sees it missing
+      subjectUnderTest.pipelineWatcher = { close: shutdown('pipelineWatcher', 200) }
+      subjectUnderTest.extensionConfigWatcher = { stop: shutdown('extensionConfigWatcher', 10) }
+      subjectUnderTest.attachedExtensionsWatcher = { stop: shutdown('attachedExtensionsWatcher', 10) }
+      subjectUnderTest.backendProcess = { disconnect: shutdown('backendProcess', 10) }
+      subjectUnderTest.cliProxy = { close: shutdown('cliProxy', 10) }
+
+      await subjectUnderTest._stop()
+
+      // a watcher missing from the Promise.all would still be settling here
+      assert.equal(settled.length, 5, `only settled: ${settled.join(', ')}`)
+      assert.ok(settled.includes('pipelineWatcher'), 'the pipeline watcher was not awaited')
     })
   })
 
@@ -199,6 +229,76 @@ describe('BackendAction', () => {
         })
     })
 
+    it('should clear leftover hooks via HTTP before connecting', async () => {
+      subjectUnderTest.backendProcess = {
+        connect: sinon.stub().resolves(),
+        selectApplication: sinon.stub().resolves(),
+        resetPipelines: sinon.stub().resolves(),
+        resetHooks: sinon.stub().resolves(),
+        startStepExecutor: sinon.stub().resolves(),
+        reloadPipelineController: sinon.stub().resolves()
+      }
+
+      subjectUnderTest.attachedExtensionsWatcher = {
+        attachedExtensions: [],
+        start: () => sinon.stub().resolves(),
+        on: () => sinon.stub().resolves()
+      }
+
+      subjectUnderTest._updateExtensionConfig = sinon.stub().resolves()
+
+      await subjectUnderTest._startSubProcess()
+
+      sinon.assert.callOrder(
+        subjectUnderTest.dcHttpClient.clearHooks,
+        subjectUnderTest.backendProcess.connect,
+        subjectUnderTest.backendProcess.selectApplication
+      )
+      // the socket-based reset became redundant; clearHooks covers it before connecting
+      sinon.assert.notCalled(subjectUnderTest.backendProcess.resetHooks)
+    })
+
+    it('should not connect when clearing leftover hooks fails', async () => {
+      subjectUnderTest.dcHttpClient.clearHooks = sinon.stub().rejects(new Error('dc unreachable'))
+      subjectUnderTest.backendProcess = {
+        connect: sinon.stub().resolves(),
+        selectApplication: sinon.stub().resolves()
+      }
+
+      try {
+        await subjectUnderTest._startSubProcess()
+        assert.fail('Expected error to be thrown.')
+      } catch (err) {
+        assert.equal(err.message, 'dc unreachable')
+      }
+      sinon.assert.notCalled(subjectUnderTest.backendProcess.connect)
+    })
+
+    it('should stop cleanly even when the best-effort hook cleanup fails', async () => {
+      subjectUnderTest.dcHttpClient.clearHooks = sinon.stub().rejects(new Error('dc unreachable'))
+      subjectUnderTest.backendProcess = {
+        disconnect: sinon.stub().resolves()
+      }
+      subjectUnderTest.attachedExtensionsWatcher.stop = sinon.stub().resolves()
+
+      await subjectUnderTest._stop()
+
+      sinon.assert.calledOnce(subjectUnderTest.dcHttpClient.clearHooks)
+      sinon.assert.calledOnce(subjectUnderTest.backendProcess.disconnect)
+    })
+
+    it('should clear hooks best-effort on stop', async () => {
+      subjectUnderTest.backendProcess = {
+        disconnect: sinon.stub().resolves()
+      }
+      subjectUnderTest.attachedExtensionsWatcher.stop = sinon.stub().resolves()
+
+      await subjectUnderTest._stop()
+
+      sinon.assert.calledWith(subjectUnderTest.dcHttpClient.clearHooks, 'foobarTest')
+      sinon.assert.calledOnce(subjectUnderTest.backendProcess.disconnect)
+    })
+
     it('should fail when pipeline IDs not matching pipeline file names', (done) => {
       appSettings.loadAttachedExtensions = () => { return { testExtension: { path: '..' } } }
       subjectUnderTest.backendProcess = {
@@ -213,6 +313,7 @@ describe('BackendAction', () => {
       subjectUnderTest.dcHttpClient = {
         downloadPipelines: sinon.stub().resolves({ pipelines: [] }),
         removePipeline: sinon.stub().resolves(),
+        clearHooks: sinon.stub().resolves(),
         uploadMultiplePipelines: sinon.stub().resolves()
       }
 
@@ -521,6 +622,87 @@ describe('BackendAction', () => {
       await subjectUnderTest.run({})
       assert.ok(checkPermissionsCalled, 'checkPermissions was not called')
       assert.ok(validateExtensionConfigsCalled, 'validateExtensionConfigs was not called')
+    })
+
+    it('should hand the loaded encryption keys to the StepExecutor', async () => {
+      const keys = [{ alias: 'PARTNER_A', publicKeyPem: 'pem' }]
+      subjectUnderTest.dcHttpClient.getEncryptionKeys = sinon.stub().resolves(keys)
+      subjectUnderTest.writeExtensionConfigs = () => {}
+      subjectUnderTest.pushHooks = () => {}
+      subjectUnderTest.dcHttpClient.checkPermissions = () => {}
+      subjectUnderTest.validateExtensionConfigs = () => {}
+
+      let passedEncryptionKeys
+      subjectUnderTest._startSubProcess = async function () {
+        passedEncryptionKeys = this.backendProcess.executor.encryptionKeys
+      }
+
+      await subjectUnderTest.run({})
+
+      assert.deepEqual(passedEncryptionKeys, { keys, unavailableReason: '' })
+    })
+  })
+
+  describe('loadEncryptionKeys', () => {
+    it('should return the keys of the application', async () => {
+      const keys = [{ alias: 'PARTNER_A', publicKeyPem: 'pem' }]
+      subjectUnderTest.dcHttpClient.getEncryptionKeys = sinon.stub().resolves(keys)
+
+      assert.deepEqual(await subjectUnderTest.loadEncryptionKeys(), { keys, unavailableReason: '' })
+      assert.ok(subjectUnderTest.dcHttpClient.getEncryptionKeys.calledWith('foobarTest'))
+    })
+
+    it('should log the aliases of the available keys', async () => {
+      const infos = []
+      info = (message) => infos.push(message)
+      subjectUnderTest.dcHttpClient.getEncryptionKeys = sinon.stub().resolves([
+        { alias: 'PARTNER_A', publicKeyPem: 'pem' },
+        { alias: 'PARTNER_B', publicKeyPem: 'pem' }
+      ])
+
+      await subjectUnderTest.loadEncryptionKeys()
+
+      assert.ok(
+        infos.some(message => /context\.encrypt: PARTNER_A, PARTNER_B$/.test(message)),
+        `expected the key aliases to be logged, got: ${JSON.stringify(infos)}`
+      )
+    })
+
+    it('should log that the application has no keys configured', async () => {
+      const infos = []
+      info = (message) => infos.push(message)
+      subjectUnderTest.dcHttpClient.getEncryptionKeys = sinon.stub().resolves([])
+
+      await subjectUnderTest.loadEncryptionKeys()
+
+      assert.ok(
+        infos.some(message => /No encryption keys are configured/.test(message)),
+        `expected a message about missing keys, got: ${JSON.stringify(infos)}`
+      )
+    })
+
+    it('should report an outdated pipeline controller instead of failing', async () => {
+      const warnings = []
+      warn = (message) => warnings.push(message)
+      subjectUnderTest.dcHttpClient.getEncryptionKeys = sinon.stub().rejects(new NotFoundError('nope'))
+
+      assert.deepEqual(
+        await subjectUnderTest.loadEncryptionKeys(),
+        { keys: [], unavailableReason: UNAVAILABLE_UNSUPPORTED }
+      )
+      assert.ok(warnings.some(warning => /does not provide encryption keys/.test(warning)))
+    })
+
+    it('should fall back to a generic reason on any other failure', async () => {
+      const warnings = []
+      warn = (message) => warnings.push(message)
+      subjectUnderTest.dcHttpClient.getEncryptionKeys = sinon.stub().rejects(new Error('boom'))
+
+      assert.deepEqual(
+        await subjectUnderTest.loadEncryptionKeys(),
+        { keys: [], unavailableReason: UNAVAILABLE_FAILED }
+      )
+      assert.ok(warnings.some(warning => /Could not load encryption keys/.test(warning)))
     })
   })
 })

@@ -17,7 +17,7 @@
 
 // check node version
   if (!semver.satisfies(process.version, pkg.engines.node)) {
-    console.error(`You have an outdated node version (${process.version}). Please upgrade to the newest version`)
+    console.error(`You have an outdated node version (${process.version}). This version requires node ${pkg.engines.node}`)
     process.exit(1)
   }
 

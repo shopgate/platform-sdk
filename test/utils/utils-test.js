@@ -17,6 +17,50 @@ const utils = proxyquire('../../lib/utils/utils', {
 })
 
 describe('utils', async () => {
+  describe('updateExtensionConfig', () => {
+    let tempDir
+    let extensionPath
+    let backendConfig
+
+    const dcHttpClient = { generateExtensionConfig: async () => ({ backend: backendConfig, frontend: {} }) }
+    const update = () => utils.updateExtensionConfig({ file: { id: '@shopgate/ext' }, path: extensionPath }, 'appId', dcHttpClient)
+    const configFile = () => path.join(extensionPath, 'extension', 'config.json')
+
+    beforeEach(async () => {
+      tempDir = await promisify(fsEx.mkdtemp)(path.join(os.tmpdir(), 'sgtest-'))
+      extensionPath = path.join(tempDir, 'extensions', 'ext')
+      backendConfig = { some: 'value' }
+      await fsEx.ensureDir(path.join(extensionPath, 'extension'))
+    })
+
+    afterEach(async () => fsEx.remove(tempDir))
+
+    it('should write the config', async () => {
+      await update()
+
+      assert.deepEqual(await fsEx.readJson(configFile()), { some: 'value' })
+    })
+
+    // rewriting an unchanged config would update its mtime and make the watchers reload for nothing
+    it('should not rewrite an unchanged config', async () => {
+      await update()
+      const { mtimeMs } = await fsEx.stat(configFile())
+
+      await update()
+
+      assert.equal((await fsEx.stat(configFile())).mtimeMs, mtimeMs, 'the unchanged config was rewritten')
+    })
+
+    it('should rewrite a config that changed', async () => {
+      await update()
+      backendConfig = { some: 'other value' }
+
+      await update()
+
+      assert.deepEqual(await fsEx.readJson(configFile()), { some: 'other value' })
+    })
+  })
+
   describe('resetProject', () => {
     const dirs = []
     const files = []
