@@ -1,3 +1,6 @@
+## 3.0.1
+* `extension upload` and `theme upload` now accept versions that are released right after processing (status `RELEASED`); previously the upload failed with "Unexpected status: RELEASED" although it worked
+
 ## 3.0.0
 * Fixed high CPU usage of the frontend process caused by the extension config watcher
 * Fixed high CPU usage of the backend process by only watching the steps of attached extensions

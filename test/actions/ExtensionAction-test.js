@@ -1114,6 +1114,58 @@ describe('ExtensionAction', () => {
       sinon.assert.calledWith(loggerPlainStub, 'Extension @acme/one@1.0.0 successfully uploaded')
     })
 
+    it('should accept an extension that is released right after preprocessing', async () => {
+      nock(SGCLOUD_DC_ADDRESS)
+        .put(`/extensions/${encodeURIComponent('@acme/one')}/versions/1.0.0/file`)
+        .query({ force: false, cancelReview: false })
+        .reply(201)
+
+      nock(SGCLOUD_DC_ADDRESS)
+        .get(`/extensions/${encodeURIComponent('@acme/one')}/versions/1.0.0`)
+        .reply(200, { status: 'PREPROCESSING' })
+        .get(`/extensions/${encodeURIComponent('@acme/one')}/versions/1.0.0`)
+        .reply(200, { status: 'RELEASED' })
+
+      await subjectUnderTest.uploadExtension({ extension: 'acme-one' }, { pollInterval: 3 })
+      sinon.assert.calledWith(loggerPlainStub, 'Extension @acme/one@1.0.0 successfully uploaded')
+    })
+
+    it('should throw an error if the preprocessing failed', async () => {
+      nock(SGCLOUD_DC_ADDRESS)
+        .put(`/extensions/${encodeURIComponent('@acme/one')}/versions/1.0.0/file`)
+        .query({ force: false, cancelReview: false })
+        .reply(201)
+
+      nock(SGCLOUD_DC_ADDRESS)
+        .get(`/extensions/${encodeURIComponent('@acme/one')}/versions/1.0.0`)
+        .reply(200, { status: 'ERROR', logs: [{ trace: 'Invalid frontend dependencies' }] })
+
+      try {
+        await subjectUnderTest.uploadExtension({ extension: 'acme-one' }, { pollInterval: 3 })
+        assert.fail('Expected to throw an error')
+      } catch (err) {
+        assert.ok(err.message.includes('Invalid frontend dependencies'), err.message)
+      }
+    })
+
+    it('should throw an error for an unexpected status', async () => {
+      nock(SGCLOUD_DC_ADDRESS)
+        .put(`/extensions/${encodeURIComponent('@acme/one')}/versions/1.0.0/file`)
+        .query({ force: false, cancelReview: false })
+        .reply(201)
+
+      nock(SGCLOUD_DC_ADDRESS)
+        .get(`/extensions/${encodeURIComponent('@acme/one')}/versions/1.0.0`)
+        .reply(200, { status: 'REJECTED' })
+
+      try {
+        await subjectUnderTest.uploadExtension({ extension: 'acme-one' }, { pollInterval: 3 })
+        assert.fail('Expected to throw an error')
+      } catch (err) {
+        assert.equal(err.message, 'Unexpected status: REJECTED')
+      }
+    })
+
     it('should support a theme uploading', async () => {
       nock(SGCLOUD_DC_ADDRESS)
         .put(`/extensions/${encodeURIComponent('@acme/theme')}/versions/1.0.0/file`)
