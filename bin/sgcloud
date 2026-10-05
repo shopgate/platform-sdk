@@ -5,12 +5,12 @@
   // @type {Caporal}
   const caporal = require('caporal')
   const semver = require('semver')
-  const updateNotifier = require('update-notifier')
   const AppSettings = require('../lib/app/AppSettings')
   const UserSettings = require('../lib/user/UserSettings')
   const DcHttpClient = require('../lib/DcHttpClient')
   const logger = require('../lib/logger')
   const utils = require('../lib/utils/utils')
+  const notifyAboutUpdate = require('../lib/utils/updateCheck')
 
 // set version (includes version command)
   const pkg = require('../package.json')
@@ -21,11 +21,7 @@
     process.exit(1)
   }
 
-  const notifier = updateNotifier({ pkg, updateCheckInterval: 0 })
-  if (updateNotifier.update && updateNotifier.update.latest !== pkg.version) {
-    notifier.notify({ isGlobal: true })
-    process.exit(0)
-  }
+  notifyAboutUpdate(pkg)
 
   caporal.version(pkg.version)
   process.env['SDK_BETA'] = process.env['SDK_BETA'] || (Array.isArray(semver.prerelease(pkg.version)) && semver.prerelease(pkg.version).includes('beta'))
