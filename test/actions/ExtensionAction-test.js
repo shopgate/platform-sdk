@@ -724,6 +724,54 @@ describe('ExtensionAction', () => {
             dirs.forEach((dir) => assert.ok(!fsEx.existsSync(dir)))
           })
       })
+
+      it('should remove the components of a removed frontend from the extension config', async () => {
+        const state = { extensionPath }
+        const configPath = path.join(extensionPath, 'extension-config.json')
+
+        await fsEx.ensureDir(path.join(extensionPath, 'frontend'))
+        await fsEx.ensureDir(path.join(extensionPath, 'extension'))
+        await fsEx.writeJson(configPath, {
+          version: '1.0.0',
+          id: '@acme/ex1',
+          components: [
+            { id: 'Banner', path: 'frontend/portals/Banner', target: ['product.header.after'], type: 'portals' },
+            { id: 'locale/en-US', path: 'frontend/locale/en-US.json', type: 'translations' },
+            { id: 'Other', path: 'other/Component', type: 'portals' }
+          ],
+          configuration: {}
+        })
+
+        await subjectUnderTest._removeUnusedDirs({ toBeCreated: { backend: true, frontend: false } }, state)
+
+        assert.ok(!await fsEx.pathExists(path.join(extensionPath, 'frontend')))
+        assert.ok(await fsEx.pathExists(path.join(extensionPath, 'extension')))
+        assert.deepStrictEqual(await fsEx.readJson(configPath), {
+          version: '1.0.0',
+          id: '@acme/ex1',
+          components: [
+            { id: 'Other', path: 'other/Component', type: 'portals' }
+          ],
+          configuration: {}
+        })
+      })
+
+      it('should keep the extension config unchanged when frontend and backend are created', async () => {
+        const state = { extensionPath }
+        const configPath = path.join(extensionPath, 'extension-config.json')
+        const config = {
+          id: '@acme/ex1',
+          components: [{ id: 'Banner', path: 'frontend/portals/Banner', type: 'portals' }]
+        }
+
+        await fsEx.ensureDir(path.join(extensionPath, 'frontend'))
+        await fsEx.writeJson(configPath, config)
+
+        await subjectUnderTest._removeUnusedDirs({ toBeCreated: { backend: true, frontend: true } }, state)
+
+        assert.ok(await fsEx.pathExists(path.join(extensionPath, 'frontend')))
+        assert.deepStrictEqual(await fsEx.readJson(configPath), config)
+      })
     })
 
     describe('removePlaceHolders', () => {
