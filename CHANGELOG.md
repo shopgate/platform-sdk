@@ -1,5 +1,6 @@
 ## 3.0.1
 * `extension upload` and `theme upload` now accept versions that are released right after processing (status `RELEASED`); previously the upload failed with "Unexpected status: RELEASED" although it worked
+* `.sgcloud/attachedExtensions.json` is now written with one property per line instead of as a single line, like the other files in `.sgcloud`
 
 ## 3.0.0
 * Fixed high CPU usage of the frontend process caused by the extension config watcher
