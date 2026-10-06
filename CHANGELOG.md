@@ -1,6 +1,8 @@
 ## 3.0.1
 * `extension upload` and `theme upload` now accept versions that are released right after processing (status `RELEASED`); previously the upload failed with "Unexpected status: RELEASED" although it worked
 * `.sgcloud/attachedExtensions.json` is now written with one property per line instead of as a single line, like the other files in `.sgcloud`
+* `extension create` removes the components of the boilerplate from `extension-config.json` when their folder isn't created, e.g. the frontend components of an extension that only has a backend
+* The SDK tells you again when a newer version is available. The check had been without effect since 1.10.0. It no longer stops the command: the message is shown at the start and the command runs as usual
 
 ## 3.0.0
 * Fixed high CPU usage of the frontend process caused by the extension config watcher
