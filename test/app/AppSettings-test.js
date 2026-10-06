@@ -43,6 +43,25 @@ describe('AppSettings', () => {
     }
   })
 
+  it('should write the attached extensions file with one property per line', async () => {
+    const appSettings = new AppSettings(testFolder)
+    fsEx.emptyDirSync(appSettings.settingsFolder)
+
+    await appSettings.attachExtension('extension-1', { id: '@shopgate/extension-1', trusted: false })
+
+    assert.equal(fsEx.readFileSync(appSettings.attachedExtensionsFile, 'utf8'), [
+      '{',
+      '  "attachedExtensions": {',
+      '    "@shopgate/extension-1": {',
+      '      "path": "extension-1",',
+      '      "trusted": false',
+      '    }',
+      '  }',
+      '}',
+      ''
+    ].join('\n'))
+  })
+
   it('should validate and update attached extensions file', async () => {
     const appSettings = new AppSettings(testFolder)
     const extensionsDir = path.join(appSettings.getApplicationFolder(), EXTENSIONS_FOLDER)
