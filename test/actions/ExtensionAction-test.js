@@ -127,6 +127,7 @@ describe('ExtensionAction', () => {
       assert(caporal.command.calledWith('extension manage'))
       assert(caporal.command.calledWith('extension upload'))
       assert(caporal.command.calledWith('extension version'))
+      assert(caporal.option.calledWith('-u, --upload'))
       assert(caporal.command.calledWith('theme upload'))
     })
     it('should throw if user not logged in', async () => {
@@ -1178,6 +1179,22 @@ describe('ExtensionAction', () => {
       sinon.assert.calledWith(loggerPlainStub, 'Extension @acme/one@1.0.0 successfully uploaded')
     })
 
+    it('should create the version without asking when _createVersion is set', async () => {
+      nock(SGCLOUD_DC_ADDRESS)
+        .put(`/extensions/${encodeURIComponent('@acme/one')}/versions/1.0.0/file`)
+        .query({ force: true, cancelReview: false })
+        .reply(201)
+
+      const statusRequest = nock(SGCLOUD_DC_ADDRESS)
+        .get(`/extensions/${encodeURIComponent('@acme/one')}/versions/1.0.0`)
+        .reply(200, { status: 'UPLOADED' })
+
+      await subjectUnderTest.uploadExtension({ extension: 'acme-one' }, { pollInterval: 3, _createVersion: true })
+
+      assert(statusRequest.isDone())
+      sinon.assert.notCalled(inquirerPromptStub)
+    })
+
     it('should throw an error if the preprocessing failed', async () => {
       nock(SGCLOUD_DC_ADDRESS)
         .put(`/extensions/${encodeURIComponent('@acme/one')}/versions/1.0.0/file`)
@@ -1249,6 +1266,7 @@ describe('ExtensionAction', () => {
     let loggerWarnStub
     let inquirerPromptStub
     let gitStub
+    let uploadStub
 
     before(() => {
       loggerPlainStub = sinon.stub(logger, 'plain')
@@ -1269,6 +1287,7 @@ describe('ExtensionAction', () => {
       ])
       gitStub = sinon.stub(subjectUnderTest, '_git').resolves('')
       gitStub.withArgs(sinon.match.any, ['rev-parse', '--is-inside-work-tree']).resolves('true')
+      uploadStub = sinon.stub(subjectUnderTest, 'uploadExtension').resolves()
 
       extensionsFolder = path.join(subjectUnderTest.appSettings.getApplicationFolder(), EXTENSIONS_FOLDER)
       configPath = path.join(extensionsFolder, 'acme-one', 'extension-config.json')
@@ -1301,6 +1320,7 @@ describe('ExtensionAction', () => {
       gitStub.getCalls().forEach(call => assert.equal(call.args[0], path.join(extensionsFolder, 'acme-one')))
       sinon.assert.notCalled(inquirerPromptStub)
       sinon.assert.notCalled(loggerWarnStub)
+      sinon.assert.notCalled(uploadStub)
       sinon.assert.calledWith(loggerPlainStub, 'Extension @acme/one is now at version 1.2.0 (git tag v1.2.0 created)')
     })
 
@@ -1309,7 +1329,7 @@ describe('ExtensionAction', () => {
 
       await subjectUnderTest.versionExtension({ tag: '1.2.0' })
 
-      sinon.assert.calledOnce(inquirerPromptStub)
+      sinon.assert.calledTwice(inquirerPromptStub)
       const prompt = inquirerPromptStub.firstCall.args[0]
       assert.equal(prompt.type, 'list')
       assert.equal(prompt.message, 'Select an extension to version')
@@ -1322,7 +1342,7 @@ describe('ExtensionAction', () => {
 
       await subjectUnderTest.versionExtension({ extension: 'acme-one' })
 
-      sinon.assert.calledOnce(inquirerPromptStub)
+      sinon.assert.calledTwice(inquirerPromptStub)
       const prompt = inquirerPromptStub.firstCall.args[0]
       assert.equal(prompt.type, 'input')
       assert.equal(prompt.message, 'Current version of @acme/one is 1.0.0. New version:')
@@ -1338,7 +1358,7 @@ describe('ExtensionAction', () => {
 
       await subjectUnderTest.versionExtension({ extension: '2.1.0' })
 
-      sinon.assert.calledOnce(inquirerPromptStub)
+      sinon.assert.calledTwice(inquirerPromptStub)
       assert.equal(inquirerPromptStub.firstCall.args[0].type, 'list')
       const twoConfigPath = path.join(extensionsFolder, 'acme-two', 'extension-config.json')
       assert.equal((await fsEx.readJson(twoConfigPath)).version, '2.1.0')
@@ -1501,6 +1521,88 @@ describe('ExtensionAction', () => {
       }
       assert(!gitCalls().some(call => call.startsWith('tag -a')))
       sinon.assert.notCalled(loggerPlainStub)
+    })
+
+    it('should upload the extension after tagging when the upload option is set', async () => {
+      await subjectUnderTest.versionExtension({ extension: 'acme-one', tag: '1.2.0' }, { upload: true })
+
+      sinon.assert.notCalled(inquirerPromptStub)
+      sinon.assert.calledOnce(uploadStub)
+      sinon.assert.calledWith(uploadStub, { extension: 'acme-one' }, { preprocessTimeout: 600000, pollInterval: 3000, _createVersion: true })
+      assert.equal(gitCalls().pop(), 'tag -a v1.2.0 -m 1.2.0')
+      assert(uploadStub.calledAfter(gitStub))
+    })
+
+    it('should offer the upload when the command asks for input', async () => {
+      inquirerPromptStub.onFirstCall().resolves({ tag: '1.2.0' })
+      inquirerPromptStub.onSecondCall().resolves({ upload: true })
+
+      await subjectUnderTest.versionExtension({ extension: 'acme-one' })
+
+      sinon.assert.calledTwice(inquirerPromptStub)
+      const prompt = inquirerPromptStub.secondCall.args[0]
+      assert.equal(prompt.type, 'confirm')
+      assert.equal(prompt.default, false)
+      assert.equal(prompt.message, 'Upload @acme/one@1.2.0 to the Shopgate Developer Center afterwards?')
+      sinon.assert.calledOnce(uploadStub)
+    })
+
+    it('should not upload when the offer is declined', async () => {
+      inquirerPromptStub.onFirstCall().resolves({ tag: '1.2.0' })
+      inquirerPromptStub.onSecondCall().resolves({ upload: false })
+
+      await subjectUnderTest.versionExtension({ extension: 'acme-one' })
+
+      assert.equal((await fsEx.readJson(configPath)).version, '1.2.0')
+      sinon.assert.notCalled(uploadStub)
+    })
+
+    it('should not offer the upload when the upload option is set', async () => {
+      inquirerPromptStub.resolves({ tag: '1.2.0' })
+
+      await subjectUnderTest.versionExtension({ extension: 'acme-one' }, { upload: true })
+
+      sinon.assert.calledOnce(inquirerPromptStub)
+      assert.equal(inquirerPromptStub.firstCall.args[0].type, 'input')
+      sinon.assert.calledOnce(uploadStub)
+    })
+
+    it('should throw before changing anything when an upload is wanted and the user is not logged in', async () => {
+      await userSettings.setToken(null)
+
+      try {
+        await subjectUnderTest.versionExtension({ extension: 'acme-one', tag: '1.2.0' }, { upload: true })
+        assert.fail('Expected to throw an error')
+      } catch (err) {
+        assert.equal(err.message, 'You\'re not logged in. Please run `sgconnect login` again.')
+      }
+      assert.equal((await fsEx.readJson(configPath)).version, '1.0.0')
+      sinon.assert.notCalled(gitStub)
+      sinon.assert.notCalled(uploadStub)
+    })
+
+    it('should upload when the extension is not a git repository', async () => {
+      gitStub.withArgs(sinon.match.any, ['rev-parse', '--is-inside-work-tree']).rejects(new Error('fatal: not a git repository'))
+
+      await subjectUnderTest.versionExtension({ extension: 'acme-one', tag: '1.2.0' }, { upload: true })
+
+      assert.equal((await fsEx.readJson(configPath)).version, '1.2.0')
+      sinon.assert.calledWith(loggerWarnStub, 'acme-one is not a git repository. Skipping git commit and tag.')
+      sinon.assert.calledOnce(uploadStub)
+    })
+
+    it('should keep the version and name the retry command when the upload fails', async () => {
+      uploadStub.rejects(new Error('Another upload in progress'))
+
+      try {
+        await subjectUnderTest.versionExtension({ extension: 'acme-one', tag: '1.2.0' }, { upload: true })
+        assert.fail('Expected to throw an error')
+      } catch (err) {
+        assert.equal(err.message, 'Another upload in progress')
+      }
+      assert.equal((await fsEx.readJson(configPath)).version, '1.2.0')
+      assert(gitCalls().includes('tag -a v1.2.0 -m 1.2.0'))
+      sinon.assert.calledWith(loggerWarnStub, 'The version was set, but the upload failed. Run `sgconnect extension upload acme-one` to try again.')
     })
 
     describe('_git', () => {

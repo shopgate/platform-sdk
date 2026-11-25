@@ -1,3 +1,6 @@
+## Unreleased
+* `extension version` can upload the extension right after the version is set: pass `--upload`, or answer the new question when the command runs interactively. The new version is created in the Developer Center automatically
+
 ## 3.0.1
 * `extension upload` and `theme upload` now accept versions that are released right after processing (status `RELEASED`); previously the upload failed with "Unexpected status: RELEASED" although it worked
 * `.sgcloud/attachedExtensions.json` is now written with one property per line instead of as a single line, like the other files in `.sgcloud`
